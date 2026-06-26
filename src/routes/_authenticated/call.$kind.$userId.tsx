@@ -58,6 +58,11 @@ function CallScreen() {
   // source of truth across refresh / reconnect).
   const syncedFreeRef = useRef(0);
   const syncedCoinsRef = useRef(0);
+  // Baseline elapsed seconds already recorded on the call_log from prior
+  // sessions of the same call (after a reconnect / refresh). The wall-clock
+  // total we report to the server is this baseline + the current session's
+  // elapsed counter.
+  const sessionStartElapsedRef = useRef(0);
   const generateCaseFn = useServerFn(generateMysteryCase);
   const profileFn = useServerFn(getMyProfile);
   const qc = useQueryClient();
@@ -152,10 +157,46 @@ function CallScreen() {
           setFreeStart(me?.profile?.free_seconds_remaining ?? 0);
           setCoinStart(me?.walletBalance ?? 0);
           try {
-            const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
+            // Try to resume an in-flight call_log for the same partner/kind
+            // (reconnect or refresh) instead of creating a duplicate row.
+            const resumeKey = `active_call:${userId}:${kind}`;
+            let resumeId: string | null = null;
+            try {
+              const raw = localStorage.getItem(resumeKey);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (
+                  parsed?.id &&
+                  parsed?.lastFlushedAt &&
+                  Date.now() - new Date(parsed.lastFlushedAt).getTime() < 5 * 60 * 1000
+                ) {
+                  resumeId = parsed.id as string;
+                }
+              }
+            } catch { /* ignore */ }
+
+            const res = await startLogFn({
+              data: { calleeId: userId, kind: kind as "voice" | "video", resumeId },
+            });
             callLogIdRef.current = res.id;
+            // Seed local cumulative trackers from server-side baseline so the
+            // first flush after a reconnect doesn't re-bill what was already
+            // persisted.
+            syncedFreeRef.current = res.baselineFreeSecondsUsed ?? 0;
+            syncedCoinsRef.current = res.baselineCoinsSpent ?? 0;
+            sessionStartElapsedRef.current = res.baselineDurationSeconds ?? 0;
+            try {
+              localStorage.setItem(
+                resumeKey,
+                JSON.stringify({ id: res.id, lastFlushedAt: new Date().toISOString() }),
+              );
+            } catch { /* ignore */ }
+            if (res.resumed) {
+              toast.info("Reconnected to your previous call — no duplicate charges.");
+            }
           } catch { /* ignore log start failure */ }
         }, 1200);
+
 
 
       } catch (e: any) {
@@ -234,31 +275,51 @@ function CallScreen() {
   // reconnect, accidental tab close, or app restart. -----------------------
   const flushUsage = useRef<(opts?: { keepalive?: boolean }) => void>(() => {});
   flushUsage.current = () => {
-    const freeUsedNow = Math.min(freeAvail, elapsedRef.current);
-    const coinsUsedNow = Math.ceil(
+    const callLogId = callLogIdRef.current;
+    if (!callLogId) return;
+    // This-session usage so far (live counters).
+    const sessionFreeUsed = Math.min(freeAvail, elapsedRef.current);
+    const sessionCoinsUsed = Math.ceil(
       (Math.max(0, elapsedRef.current - freeAvail) * perMin) / 60,
     );
-    const deltaFree = Math.max(0, freeUsedNow - syncedFreeRef.current);
-    const deltaCoins = Math.max(
-      0,
-      Math.min(coinsAvail - syncedCoinsRef.current, coinsUsedNow - syncedCoinsRef.current),
-    );
-    if (deltaFree === 0 && deltaCoins === 0) return;
-    syncedFreeRef.current = freeUsedNow;
-    syncedCoinsRef.current = coinsUsedNow;
+    const cappedSessionCoinsUsed = Math.min(coinsAvail, sessionCoinsUsed);
+    // Cumulative totals for the entire call_log (carries over reconnects).
+    const totalFree = syncedFreeRef.current + sessionFreeUsed;
+    const totalCoins = syncedCoinsRef.current + cappedSessionCoinsUsed;
+    const totalElapsed = sessionStartElapsedRef.current + elapsedRef.current;
+    // Nothing new to report → no-op (server is idempotent anyway).
+    if (
+      sessionFreeUsed === 0 &&
+      cappedSessionCoinsUsed === 0 &&
+      totalElapsed === sessionStartElapsedRef.current
+    ) {
+      return;
+    }
     applyUsageFn({
       data: {
-        callLogId: callLogIdRef.current,
-        deltaFreeSeconds: deltaFree,
-        deltaCoins: deltaCoins,
-        elapsedSeconds: elapsedRef.current,
+        callLogId,
+        totalFreeSeconds: totalFree,
+        totalCoins: totalCoins,
+        elapsedSeconds: totalElapsed,
       },
-    }).catch(() => {
-      // Roll back local sync counters so the next flush retries this delta.
-      syncedFreeRef.current = Math.max(0, syncedFreeRef.current - deltaFree);
-      syncedCoinsRef.current = Math.max(0, syncedCoinsRef.current - deltaCoins);
-    });
+    })
+      .then(() => {
+        // Server accepted these totals → fold them into the baseline so the
+        // next flush only sends the new portion.
+        syncedFreeRef.current = totalFree;
+        syncedCoinsRef.current = totalCoins;
+        sessionStartElapsedRef.current = totalElapsed;
+        elapsedRef.current = 0;
+        try {
+          localStorage.setItem(
+            `active_call:${userId}:${kind}`,
+            JSON.stringify({ id: callLogId, lastFlushedAt: new Date().toISOString() }),
+          );
+        } catch { /* ignore */ }
+      })
+      .catch(() => { /* will retry next tick */ });
   };
+
 
   // Periodic flush every 10s while connected.
   useEffect(() => {
@@ -328,27 +389,27 @@ function CallScreen() {
     // even if endCallLog races or the network blips.
     flushUsage.current();
     const id = callLogIdRef.current;
-    const seconds = elapsedRef.current;
-    // Bill only the portion not covered by free time, rounded up to whole minutes.
-    const billableSec = Math.max(0, seconds - freeAvail);
-    const billableMin = billableSec > 0 ? Math.ceil(billableSec / 60) : 0;
-    const coins = Math.min(coinsAvail, billableMin * perMin);
+    const totalSeconds = sessionStartElapsedRef.current + elapsedRef.current;
+    const totalCoins = syncedCoinsRef.current;
     if (id) {
       endLogFn({
         data: {
           id,
-          durationSeconds: seconds,
-          coinsSpent: coins,
-          status: seconds > 0 ? "completed" : "cancelled",
+          durationSeconds: totalSeconds,
+          coinsSpent: totalCoins,
+          status: totalSeconds > 0 ? "completed" : "cancelled",
         },
       }).catch(() => {});
     }
+    try { localStorage.removeItem(`active_call:${userId}:${kind}`); } catch { /* ignore */ }
     navigate({ to: "/recents" });
   }
 
 
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
+  const totalElapsed = sessionStartElapsedRef.current + elapsed;
+  const mm = String(Math.floor(totalElapsed / 60)).padStart(2, "0");
+  const ss = String(totalElapsed % 60).padStart(2, "0");
+
 
   return (
     <AppShell>

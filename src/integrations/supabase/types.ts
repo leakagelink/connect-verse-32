@@ -97,8 +97,10 @@ export type Database = {
           created_at: string
           duration_seconds: number
           ended_at: string | null
+          free_seconds_used: number
           id: string
           kind: string
+          last_flushed_at: string | null
           started_at: string
           status: string
         }
@@ -109,8 +111,10 @@ export type Database = {
           created_at?: string
           duration_seconds?: number
           ended_at?: string | null
+          free_seconds_used?: number
           id?: string
           kind: string
+          last_flushed_at?: string | null
           started_at?: string
           status?: string
         }
@@ -121,8 +125,10 @@ export type Database = {
           created_at?: string
           duration_seconds?: number
           ended_at?: string | null
+          free_seconds_used?: number
           id?: string
           kind?: string
+          last_flushed_at?: string | null
           started_at?: string
           status?: string
         }

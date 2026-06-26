@@ -1,11 +1,50 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// If `resumeId` is supplied AND it matches an in-progress call between the
+// same two users that was last touched within RESUME_WINDOW_SECONDS, we
+// reuse it instead of creating a duplicate row. This is what lets a refresh
+// / reconnect continue the same call_log without double-charging the user.
+const RESUME_WINDOW_SECONDS = 5 * 60;
+
 export const startCallLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { calleeId: string; kind: "voice" | "video" }) => input)
+  .inputValidator((input: {
+    calleeId: string;
+    kind: "voice" | "video";
+    resumeId?: string | null;
+  }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    if (data.resumeId) {
+      const { data: existing } = await supabase
+        .from("call_logs")
+        .select("id, caller_id, callee_id, kind, ended_at, last_flushed_at, started_at, duration_seconds, coins_spent, free_seconds_used")
+        .eq("id", data.resumeId)
+        .maybeSingle();
+      const lastTouch = existing?.last_flushed_at ?? existing?.started_at;
+      const fresh = lastTouch
+        ? (Date.now() - new Date(lastTouch).getTime()) / 1000 < RESUME_WINDOW_SECONDS
+        : false;
+      if (
+        existing &&
+        existing.caller_id === userId &&
+        existing.callee_id === data.calleeId &&
+        existing.kind === data.kind &&
+        !existing.ended_at &&
+        fresh
+      ) {
+        return {
+          id: existing.id as string,
+          resumed: true,
+          baselineDurationSeconds: Number(existing.duration_seconds ?? 0),
+          baselineFreeSecondsUsed: Number(existing.free_seconds_used ?? 0),
+          baselineCoinsSpent: Number(existing.coins_spent ?? 0),
+        };
+      }
+    }
+
     const { data: row, error } = await supabase
       .from("call_logs")
       .insert({
@@ -17,8 +56,15 @@ export const startCallLog = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
-    return { id: row.id as string };
+    return {
+      id: row.id as string,
+      resumed: false,
+      baselineDurationSeconds: 0,
+      baselineFreeSecondsUsed: 0,
+      baselineCoinsSpent: 0,
+    };
   });
+
 
 export const endCallLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -46,22 +92,49 @@ export const endCallLog = createServerFn({ method: "POST" })
 // Periodic heartbeat from the active call screen: persist the seconds-of-free-time
 // and coins consumed so far. Lets the "5:00 free" countdown / coin balance survive
 // reconnects, refresh, accidental tab close, or app restart.
+// Idempotent usage reconciliation.
+//
+// The client sends CUMULATIVE totals for this call_log (free seconds used so
+// far + coins spent so far + elapsed seconds). The server compares against
+// what is already persisted on the call_logs row and applies only the delta.
+// This means:
+//   - duplicate flushes are no-ops
+//   - a reconnect that resumes the same call_log can safely re-send totals
+//   - if a flush is lost, the next one self-heals via the stored cumulative
 export const applyCallUsage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: {
-    callLogId?: string | null;
-    deltaFreeSeconds: number;
-    deltaCoins: number;
-    elapsedSeconds?: number;
+    callLogId: string;
+    totalFreeSeconds: number;
+    totalCoins: number;
+    elapsedSeconds: number;
   }) => input)
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const deltaFree = Math.max(0, Math.floor(data.deltaFreeSeconds || 0));
-    const deltaCoins = Math.max(0, Math.floor(data.deltaCoins || 0));
-    if (deltaFree === 0 && deltaCoins === 0) {
-      return { ok: true, freeSeconds: null, balance: null };
-    }
+    const sentFree = Math.max(0, Math.floor(data.totalFreeSeconds || 0));
+    const sentCoins = Math.max(0, Math.floor(data.totalCoins || 0));
+    const sentElapsed = Math.max(0, Math.floor(data.elapsedSeconds || 0));
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Load the call log + verify ownership.
+    const { data: log, error: logErr } = await supabaseAdmin
+      .from("call_logs")
+      .select("id, caller_id, duration_seconds, coins_spent, free_seconds_used, ended_at")
+      .eq("id", data.callLogId)
+      .maybeSingle();
+    if (logErr) throw logErr;
+    if (!log || log.caller_id !== userId) {
+      // Don't bill if caller mismatch or row missing.
+      return { ok: false, freeSeconds: null, balance: null, reason: "no-log" };
+    }
+
+    const storedFree = Number(log.free_seconds_used ?? 0);
+    const storedCoins = Number(log.coins_spent ?? 0);
+    const storedDuration = Number(log.duration_seconds ?? 0);
+
+    const deltaFree = Math.max(0, sentFree - storedFree);
+    const deltaCoins = Math.max(0, sentCoins - storedCoins);
 
     let freeSeconds: number | null = null;
     if (deltaFree > 0) {
@@ -100,36 +173,28 @@ export const applyCallUsage = createServerFn({ method: "POST" })
         coins_delta: -deltaCoins,
         inr_amount: 0,
         metadata: {
-          call_log_id: data.callLogId ?? null,
-          seconds: data.elapsedSeconds ?? null,
+          call_log_id: data.callLogId,
+          seconds: sentElapsed,
+          reconciled: true,
         },
       });
     }
 
-    if (data.callLogId) {
-      // Best-effort: keep running totals on the call log row so /recents is accurate
-      // even if the user never explicitly ends the call.
-      const { data: log } = await supabaseAdmin
-        .from("call_logs")
-        .select("duration_seconds, coins_spent")
-        .eq("id", data.callLogId)
-        .maybeSingle();
-      if (log) {
-        await supabaseAdmin
-          .from("call_logs")
-          .update({
-            duration_seconds: Math.max(
-              Number(log.duration_seconds ?? 0),
-              data.elapsedSeconds ?? 0,
-            ),
-            coins_spent: Number(log.coins_spent ?? 0) + deltaCoins,
-          })
-          .eq("id", data.callLogId);
-      }
-    }
+    // Persist new cumulative totals + last_flushed_at on the call_log so the
+    // next flush / reconnect can reconcile against them.
+    await supabaseAdmin
+      .from("call_logs")
+      .update({
+        duration_seconds: Math.max(storedDuration, sentElapsed),
+        coins_spent: storedCoins + deltaCoins,
+        free_seconds_used: storedFree + deltaFree,
+        last_flushed_at: new Date().toISOString(),
+      })
+      .eq("id", data.callLogId);
 
-    return { ok: true, freeSeconds, balance };
+    return { ok: true, freeSeconds, balance, deltaFree, deltaCoins };
   });
+
 
 export type RecentCall = {
   id: string;
