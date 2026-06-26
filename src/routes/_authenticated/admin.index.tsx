@@ -6,6 +6,7 @@ import {
   adminStats, adminListUsers, adminListReports, adminBanUser, adminUnbanUser,
   adminUpdateReport, adminListTransactions,
 } from "@/lib/admin.functions";
+import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -13,12 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert } from "lucide-react";
+import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -79,6 +81,7 @@ function AdminPanel() {
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-3">
@@ -175,10 +178,57 @@ function AdminPanel() {
             </Card>
           ))}
         </TabsContent>
+
+        <TabsContent value="settings" className="space-y-3">
+          <SettingsTab />
+        </TabsContent>
       </Tabs>
     </AppShell>
   );
 }
+
+function SettingsTab() {
+  const settingsFn = useServerFn(getAppSettings);
+  const setFn = useServerFn(setAppSetting);
+  const qc = useQueryClient();
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: () => settingsFn(),
+  });
+
+  async function toggle(key: "connect_filters_visible", value: boolean) {
+    try {
+      await setFn({ data: { key, value } });
+      toast.success("Setting updated");
+      qc.invalidateQueries({ queryKey: ["app-settings"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to update");
+    }
+  }
+
+  return (
+    <Card className="glass p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <SettingsIcon className="size-4 text-primary" />
+        <h2 className="font-semibold">Feature visibility</h2>
+      </div>
+      <div className="flex items-center justify-between gap-3 py-2">
+        <div className="min-w-0">
+          <p className="font-medium text-sm">Connect screen filters</p>
+          <p className="text-xs text-muted-foreground">
+            Show language / country / state filter section on the Connect screen.
+          </p>
+        </div>
+        <Switch
+          checked={settings?.connect_filters_visible ?? true}
+          disabled={isLoading}
+          onCheckedChange={(v) => toggle("connect_filters_visible", v)}
+        />
+      </div>
+    </Card>
+  );
+}
+
 
 function BanDialog({ onBan, label = "Ban" }: { onBan: (reason: string, type: "temp"|"perm", days?: number) => Promise<void>; label?: string }) {
   const [open, setOpen] = useState(false);

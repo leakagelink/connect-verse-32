@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { heartbeat, listOnlineCreators } from "@/lib/presence.functions";
+import { getAppSettings } from "@/lib/settings.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,11 +56,18 @@ function ConnectScreen() {
   const navigate = useNavigate();
   const beat = useServerFn(heartbeat);
   const creatorsFn = useServerFn(listOnlineCreators);
+  const settingsFn = useServerFn(getAppSettings);
   const { data } = useQuery({
     queryKey: ["online-creators"],
     queryFn: () => creatorsFn(),
     refetchInterval: 15_000,
   });
+  const { data: settings } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: () => settingsFn(),
+    staleTime: 60_000,
+  });
+  const filtersVisible = settings?.connect_filters_visible ?? true;
 
   useEffect(() => {
     beat().catch(() => {});
@@ -90,16 +98,18 @@ function ConnectScreen() {
 
   // Filter + priority sorting
   const sorted = useMemo(() => {
-    const langFilter = language === "any" ? null : language;
-    const countryFilter = country === "any" ? null : country;
-    const stateFilter = state === "any" ? null : state;
+    // If admin has hidden the filter UI, ignore the filter state entirely.
+    const langFilter = !filtersVisible || language === "any" ? null : language;
+    const countryFilter = !filtersVisible || country === "any" ? null : country;
+    const stateFilter = !filtersVisible || state === "any" ? null : state;
+    const useActiveOnly = filtersVisible && activeOnly;
     const activeCutoff = Date.now() - 30_000; // last 30s = "active now"
 
     const filtered = all.filter((u) => {
       if (langFilter && u.language !== langFilter) return false;
       if (countryFilter && u.country !== countryFilter) return false;
       if (stateFilter && u.state !== stateFilter) return false;
-      if (activeOnly) {
+      if (useActiveOnly) {
         const t = u.last_seen_at ? new Date(u.last_seen_at).getTime() : 0;
         if (t < activeCutoff) return false;
       }
@@ -120,7 +130,7 @@ function ConnectScreen() {
       // tiebreak: more recently seen first
       return (b.last_seen_at ?? "").localeCompare(a.last_seen_at ?? "");
     });
-  }, [all, me, language, country, state, activeOnly]);
+  }, [all, me, language, country, state, activeOnly, filtersVisible]);
 
   function autoConnect(kind: "voice" | "video") {
     if (!sorted.length) {
@@ -187,7 +197,8 @@ function ConnectScreen() {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Filters (admin-controlled visibility) */}
+      {filtersVisible && (
       <Card className="glass p-3 mb-5">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
@@ -287,6 +298,8 @@ function ConnectScreen() {
           </p>
         </div>
       </Card>
+      )}
+
 
       {/* Sliding featured creators */}
       <div className="mb-5">
