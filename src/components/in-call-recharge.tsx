@@ -9,7 +9,9 @@ import { Coins, Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { listPlans, mockRecharge, getWallet } from "@/lib/wallet.functions";
 import { bonusForDeposit } from "@/lib/constants";
-import { parseRechargeError } from "@/lib/recharge-errors";
+import { parseRechargeError, type ParsedRechargeError } from "@/lib/recharge-errors";
+import { RechargeHelpDialog } from "./recharge-help-dialog";
+import { HelpCircle } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -29,9 +31,25 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
   const { data: plans } = useQuery({ queryKey: ["plans"], queryFn: () => plansFn(), enabled: open });
   const { data: wallet } = useQuery({ queryKey: ["wallet"], queryFn: () => walletFn(), enabled: open });
   const [busy, setBusy] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpError, setHelpError] = useState<ParsedRechargeError | null>(null);
+  const [helpPlanId, setHelpPlanId] = useState<string | null>(null);
 
   const bonusPct = bonusForDeposit(wallet?.depositCount ?? 0);
   const balance = wallet?.balance ?? 0;
+
+  const refreshBalance = async () => {
+    await qc.invalidateQueries({ queryKey: ["wallet"] });
+    const fresh = await walletFn().catch(() => null);
+    if (fresh) onRecharged?.(fresh.balance ?? 0);
+  };
+
+  function openHelp(err: ParsedRechargeError, planId: string) {
+    setHelpError(err);
+    setHelpPlanId(planId);
+    setHelpOpen(true);
+  }
+
 
   async function buy(planId: string) {
     setBusy(planId);
@@ -52,39 +70,26 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
     } catch (e: any) {
       const parsed = parseRechargeError(e);
 
-      // Refresh balance silently in case the charge actually went through
-      // (covers ALREADY_PURCHASED and partial-failure cases).
-      const refreshBalance = async () => {
-        await qc.invalidateQueries({ queryKey: ["wallet"] });
-        const fresh = await walletFn().catch(() => null);
-        if (fresh) onRecharged?.(fresh.balance ?? 0);
-      };
+      // Silently refresh in case the charge actually landed (ALREADY_PURCHASED / partial).
       if (parsed.code === "ALREADY_PURCHASED") void refreshBalance();
 
-      const action =
-        parsed.nextStep === "retry"
-          ? { label: "Retry", onClick: () => void buy(planId) }
-          : parsed.nextStep === "wait"
-            ? { label: parsed.nextStepLabel, onClick: () => void refreshBalance() }
-            : parsed.nextStep === "reauth"
-              ? {
-                  label: parsed.nextStepLabel,
-                  onClick: () => {
-                    window.location.href = "/auth";
-                  },
-                }
-              : {
-                  label: parsed.nextStepLabel,
-                  // pick_other / contact_support — just dismiss; sheet stays open with plans
-                  onClick: () => {},
-                };
-
+      // Whole toast click opens detailed help. Action button = quick "View help" CTA.
       toast.error(`${parsed.title} (${parsed.code})`, {
-        description: `${parsed.description} Your call is still connected.`,
+        description: `${parsed.description} Tap for help & next steps — your call stays connected.`,
         duration: 12000,
-        action,
-        cancel: { label: "Cancel", onClick: () => {} },
-      });
+        onAutoClose: () => {},
+        // Make the toast body itself clickable
+        onDismiss: () => {},
+        action: {
+          label: "View help",
+          onClick: () => openHelp(parsed, planId),
+        },
+        cancel: { label: "Close", onClick: () => {} },
+        // sonner forwards className to the toast root; we use it to add a pointer cursor
+        className: "cursor-pointer",
+        // Clicking anywhere on the toast opens the help dialog
+        onClick: () => openHelp(parsed, planId),
+      } as any);
     } finally {
       setBusy(null);
     }
@@ -163,8 +168,41 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
 
         <p className="pb-4 text-[11px] text-muted-foreground flex items-center gap-1">
           <Sparkles className="size-3" /> Mock recharge — real payments in Phase 3.
+          <button
+            type="button"
+            className="ml-auto inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+            onClick={() =>
+              openHelp(
+                {
+                  code: "UNKNOWN",
+                  title: "Recharge help",
+                  description: "Common recharge issues and how to resolve them while staying in your call.",
+                  nextStepLabel: "Close",
+                  nextStep: "retry",
+                },
+                "",
+              )
+            }
+          >
+            <HelpCircle className="size-3" /> Need help?
+          </button>
         </p>
       </SheetContent>
+
+      <RechargeHelpDialog
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        error={helpError}
+        planId={helpPlanId}
+        onRetry={(pid) => void buy(pid)}
+        onRefreshBalance={() => void refreshBalance()}
+        onPickAnotherPlan={() => {
+          /* sheet is already open with plan grid; just close dialog */
+        }}
+        onReauth={() => {
+          window.location.href = "/auth";
+        }}
+      />
     </Sheet>
   );
 }
