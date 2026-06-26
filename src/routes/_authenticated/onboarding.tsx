@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
@@ -25,7 +26,8 @@ function Onboarding() {
   const [username, setU] = useState("");
   const [gender, setG] = useState<"male"|"female"|"other"|"">("");
   const [dob, setD] = useState("");
-  const [country, setC] = useState("");
+  const [country, setC] = useState("India");
+  const [state, setSt] = useState("");
   const [language, setL] = useState("English");
   const [accept, setA] = useState(false);
   const [creator, setCr] = useState(false);
@@ -40,7 +42,7 @@ function Onboarding() {
     if (!gender || !dob) return toast.error("Fill all fields");
     setBusy(true);
     try {
-      await onboard({ data: { username, gender, dob, country, language, acceptGuidelines: true as const, asCreator: creator } });
+      await onboard({ data: { username, gender, dob, country, state: state || undefined, language, acceptGuidelines: true as const, asCreator: creator } });
       toast.success("Welcome to ConnectVerse! You got 5 free minutes 🎉");
       navigate({ to: "/home", replace: true });
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
@@ -71,8 +73,32 @@ function Onboarding() {
           <div><Label>Date of birth</Label><Input type="date" value={dob} onChange={(e) => setD(e.target.value)} max={new Date().toISOString().slice(0,10)} /></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Country</Label><Input value={country} onChange={(e) => setC(e.target.value)} placeholder="India" /></div>
-          <div><Label>Language</Label><Input value={language} onChange={(e) => setL(e.target.value)} /></div>
+          <div>
+            <Label>Country</Label>
+            <Select value={country} onValueChange={(v) => { setC(v); setSt(""); }}>
+              <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {COUNTRIES.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>State</Label>
+            {STATES_BY_COUNTRY[country]?.length ? (
+              <Select value={state} onValueChange={setSt}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {STATES_BY_COUNTRY[country].map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={state} onChange={(e) => setSt(e.target.value)} placeholder="State / Region" />
+            )}
+          </div>
+        </div>
+        <div>
+          <Label>Language</Label>
+          <Input value={language} onChange={(e) => setL(e.target.value)} />
         </div>
 
         {gender === "female" && (
