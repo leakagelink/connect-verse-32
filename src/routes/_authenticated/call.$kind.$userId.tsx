@@ -41,6 +41,7 @@ function CallScreen() {
   const [connected, setConnected] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
+  const [rechargeOpen, setRechargeOpen] = useState(false);
 
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
