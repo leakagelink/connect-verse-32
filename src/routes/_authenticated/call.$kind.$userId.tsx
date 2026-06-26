@@ -321,6 +321,7 @@ function CallScreen() {
   // auto-open the recharge sheet with all offers. Call stays connected.
   useEffect(() => {
     if (!connected) return;
+    if (pausedRef.current) return;
     if (outOfFunds && !outOfFundsTriggeredRef.current && !rechargeOpen) {
       outOfFundsTriggeredRef.current = true;
       toast.error("You're out of free minutes & coins — recharge to keep talking.", {
@@ -328,7 +329,7 @@ function CallScreen() {
       });
       setRechargeOpen(true);
     }
-  }, [connected, outOfFunds, rechargeOpen]);
+  }, [connected, outOfFunds, rechargeOpen, paused]);
 
   // ---- Persistence: keep server-side free_seconds_remaining and coin balance
   // in sync so the countdown / "Free minutes used" state survives refresh,
