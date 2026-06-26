@@ -33,7 +33,7 @@ function CallScreen() {
   const streamRef = useRef<MediaStream | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
-  const rechargeAfterEndRef = useRef(false);
+  
   const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
