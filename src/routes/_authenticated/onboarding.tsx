@@ -73,8 +73,32 @@ function Onboarding() {
           <div><Label>Date of birth</Label><Input type="date" value={dob} onChange={(e) => setD(e.target.value)} max={new Date().toISOString().slice(0,10)} /></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Country</Label><Input value={country} onChange={(e) => setC(e.target.value)} placeholder="India" /></div>
-          <div><Label>Language</Label><Input value={language} onChange={(e) => setL(e.target.value)} /></div>
+          <div>
+            <Label>Country</Label>
+            <Select value={country} onValueChange={(v) => { setC(v); setSt(""); }}>
+              <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {COUNTRIES.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>State</Label>
+            {STATES_BY_COUNTRY[country]?.length ? (
+              <Select value={state} onValueChange={setSt}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {STATES_BY_COUNTRY[country].map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={state} onChange={(e) => setSt(e.target.value)} placeholder="State / Region" />
+            )}
+          </div>
+        </div>
+        <div>
+          <Label>Language</Label>
+          <Input value={language} onChange={(e) => setL(e.target.value)} />
         </div>
 
         {gender === "female" && (
