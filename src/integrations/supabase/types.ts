@@ -238,6 +238,7 @@ export type Database = {
           language: string | null
           last_seen_at: string | null
           onboarded: boolean
+          state: string | null
           updated_at: string
           username: string | null
         }
@@ -256,6 +257,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
+          state?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -274,6 +276,7 @@ export type Database = {
           language?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
+          state?: string | null
           updated_at?: string
           username?: string | null
         }
