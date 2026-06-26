@@ -182,9 +182,33 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Radio className={`size-3 ${onlineRecent ? "text-emerald-500 animate-pulse" : "text-muted-foreground"}`} />
-              {presenceQuery.isFetching ? "Checking availability…" : onlineRecent ? "Available now · live" : "Currently unavailable"}
+            <div
+              className={`flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-[11px] transition-colors duration-300 ${
+                onlineRecent
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-muted bg-muted/40 text-muted-foreground"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="relative inline-flex size-2">
+                  <span
+                    className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      onlineRecent ? "bg-emerald-500 animate-ping" : "bg-muted-foreground/40"
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex size-2 rounded-full ${
+                      onlineRecent ? "bg-emerald-500" : "bg-muted-foreground/60"
+                    }`}
+                  />
+                </span>
+                {presenceQuery.isFetching
+                  ? "Checking availability…"
+                  : onlineRecent
+                    ? "Available now · live"
+                    : "Currently unavailable"}
+              </span>
+              <span className="text-[10px] opacity-70">Updated {formatAgo(lastUpdated)}</span>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2">
