@@ -262,19 +262,45 @@ function CallScreen() {
         {/* Mystery game controls */}
         <div className="px-4 pb-3">
           {isMale ? (
-            <Button
-              variant="secondary"
-              className="w-full gap-2"
-              disabled={generating || !connected}
-              onClick={hostMysteryCase}
-            >
-              <Search className="size-4" />
-              {generating
-                ? "Generating case…"
-                : caseId
-                ? "Open mystery case"
-                : `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`}
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                className="w-full gap-2"
+                disabled={generating || !connected}
+                onClick={hostMysteryCase}
+              >
+                <Search className="size-4" />
+                {generating
+                  ? "Generating case…"
+                  : caseId
+                  ? "Open mystery case"
+                  : canAfford
+                  ? `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`
+                  : `Low balance · need ${CASE_GENERATION_COIN_COST} coins`}
+              </Button>
+              {!caseId && (
+                <p
+                  className={`mt-1 text-center text-[11px] ${
+                    canAfford ? "text-muted-foreground" : "text-destructive"
+                  }`}
+                >
+                  <Coins className="inline size-3 -mt-0.5 mr-1" />
+                  Your balance: {myBalance} coins
+                  {!canAfford && (
+                    <>
+                      {" · "}
+                      <button
+                        type="button"
+                        className="underline font-medium"
+                        onClick={() => setLowBalanceOpen(true)}
+                      >
+                        Recharge
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
+            </>
           ) : caseId ? (
             <Button variant="secondary" className="w-full gap-2" onClick={() => setCasePanelOpen(true)}>
               <Search className="size-4" /> Open mystery case
@@ -293,6 +319,7 @@ function CallScreen() {
             </button>
           )}
         </div>
+
 
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
           Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
