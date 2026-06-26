@@ -26,7 +26,8 @@ function Onboarding() {
   const [username, setU] = useState("");
   const [gender, setG] = useState<"male"|"female"|"other"|"">("");
   const [dob, setD] = useState("");
-  const [country, setC] = useState("");
+  const [country, setC] = useState("India");
+  const [state, setSt] = useState("");
   const [language, setL] = useState("English");
   const [accept, setA] = useState(false);
   const [creator, setCr] = useState(false);
