@@ -36,6 +36,7 @@ export const completeOnboarding = createServerFn({ method: "POST" })
         gender: data.gender,
         dob: data.dob,
         country: data.country,
+        state: data.state ?? null,
         language: data.language,
         is_creator: !!data.asCreator,
         onboarded: true,
