@@ -198,7 +198,6 @@ function Home() {
           )}
         </TabsContent>
       </Tabs>
-      </Tabs>
 
       <CreatorPreviewDialog
         userId={preview?.userId ?? null}
