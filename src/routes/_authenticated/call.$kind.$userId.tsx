@@ -47,6 +47,16 @@ function CallScreen() {
   const [freeStart, setFreeStart] = useState<number | null>(null);
   const [coinStart, setCoinStart] = useState<number | null>(null);
   const outOfFundsTriggeredRef = useRef(false);
+  // Single-active-session enforcement: every mount mints a unique token and
+  // writes it into the active_call localStorage slot. A newer tab claiming
+  // ownership overwrites the token; older tabs notice via the `storage` event
+  // and pause (no usage flushes, no elapsed counter, no recharge prompts).
+  const sessionTokenRef = useRef<string>(
+    (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID?.()) ||
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
 
 
