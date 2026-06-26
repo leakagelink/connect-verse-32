@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic } from "lucide-react";
+import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, Gift, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/home")({
