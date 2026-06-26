@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search, Gift } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
@@ -18,6 +18,8 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MysteryPanel } from "@/components/mystery-panel";
 import { InCallRecharge } from "@/components/in-call-recharge";
+import { GiftPanel } from "@/components/gift-panel";
+import { GiftFloater } from "@/components/gift-floater";
 import { supabase } from "@/integrations/supabase/client";
 
 
