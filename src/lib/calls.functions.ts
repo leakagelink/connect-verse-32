@@ -1,11 +1,50 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// If `resumeId` is supplied AND it matches an in-progress call between the
+// same two users that was last touched within RESUME_WINDOW_SECONDS, we
+// reuse it instead of creating a duplicate row. This is what lets a refresh
+// / reconnect continue the same call_log without double-charging the user.
+const RESUME_WINDOW_SECONDS = 5 * 60;
+
 export const startCallLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { calleeId: string; kind: "voice" | "video" }) => input)
+  .inputValidator((input: {
+    calleeId: string;
+    kind: "voice" | "video";
+    resumeId?: string | null;
+  }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    if (data.resumeId) {
+      const { data: existing } = await supabase
+        .from("call_logs")
+        .select("id, caller_id, callee_id, kind, ended_at, last_flushed_at, started_at, duration_seconds, coins_spent, free_seconds_used")
+        .eq("id", data.resumeId)
+        .maybeSingle();
+      const lastTouch = existing?.last_flushed_at ?? existing?.started_at;
+      const fresh = lastTouch
+        ? (Date.now() - new Date(lastTouch).getTime()) / 1000 < RESUME_WINDOW_SECONDS
+        : false;
+      if (
+        existing &&
+        existing.caller_id === userId &&
+        existing.callee_id === data.calleeId &&
+        existing.kind === data.kind &&
+        !existing.ended_at &&
+        fresh
+      ) {
+        return {
+          id: existing.id as string,
+          resumed: true,
+          baselineDurationSeconds: Number(existing.duration_seconds ?? 0),
+          baselineFreeSecondsUsed: Number(existing.free_seconds_used ?? 0),
+          baselineCoinsSpent: Number(existing.coins_spent ?? 0),
+        };
+      }
+    }
+
     const { data: row, error } = await supabase
       .from("call_logs")
       .insert({
@@ -17,8 +56,15 @@ export const startCallLog = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
-    return { id: row.id as string };
+    return {
+      id: row.id as string,
+      resumed: false,
+      baselineDurationSeconds: 0,
+      baselineFreeSecondsUsed: 0,
+      baselineCoinsSpent: 0,
+    };
   });
+
 
 export const endCallLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
