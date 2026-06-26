@@ -48,6 +48,8 @@ function Home() {
     else if (me?.profile && !me.profile.onboarded) navigate({ to: "/onboarding", replace: true });
   }, [me, navigate]);
 
+  const [preview, setPreview] = useState<{ userId: string; kind: "voice" | "video" } | null>(null);
+
   async function openChat(otherId: string) {
     try {
       const { id } = await startChat({ data: { otherUserId: otherId } });
