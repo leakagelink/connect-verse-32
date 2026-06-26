@@ -53,6 +53,11 @@ function CallScreen() {
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
   const startLogFn = useServerFn(startCallLog);
   const endLogFn = useServerFn(endCallLog);
+  const applyUsageFn = useServerFn(applyCallUsage);
+  // Tracks how much we've already persisted to the server (server is the
+  // source of truth across refresh / reconnect).
+  const syncedFreeRef = useRef(0);
+  const syncedCoinsRef = useRef(0);
   const generateCaseFn = useServerFn(generateMysteryCase);
   const profileFn = useServerFn(getMyProfile);
   const qc = useQueryClient();
