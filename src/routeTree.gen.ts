@@ -26,6 +26,7 @@ import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticated/rooms.new'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
+import { Route as AuthenticatedMysteryCaseIdRouteImport } from './routes/_authenticated/mystery.$caseId'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
 import { Route as AuthenticatedCallKindUserIdRouteImport } from './routes/_authenticated/call.$kind.$userId'
 
@@ -113,6 +114,12 @@ const AuthenticatedRoomsIdRoute = AuthenticatedRoomsIdRouteImport.update({
   path: '/rooms/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMysteryCaseIdRoute =
+  AuthenticatedMysteryCaseIdRouteImport.update({
+    id: '/mystery/$caseId',
+    path: '/mystery/$caseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedChatConversationIdRoute =
   AuthenticatedChatConversationIdRouteImport.update({
     id: '/$conversationId',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/_authenticated/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/wallet'
     | '/chat/$conversationId'
+    | '/mystery/$caseId'
     | '/rooms/$id'
     | '/rooms/new'
     | '/admin/'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/wallet'
     | '/chat/$conversationId'
+    | '/mystery/$caseId'
     | '/rooms/$id'
     | '/rooms/new'
     | '/admin'
@@ -241,6 +253,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
     | '/_authenticated/chat/$conversationId'
+    | '/_authenticated/mystery/$caseId'
     | '/_authenticated/rooms/$id'
     | '/_authenticated/rooms/new'
     | '/_authenticated/admin/'
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRoomsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mystery/$caseId': {
+      id: '/_authenticated/mystery/$caseId'
+      path: '/mystery/$caseId'
+      fullPath: '/mystery/$caseId'
+      preLoaderRoute: typeof AuthenticatedMysteryCaseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat/$conversationId': {
       id: '/_authenticated/chat/$conversationId'
       path: '/$conversationId'
@@ -427,6 +447,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedMysteryCaseIdRoute: typeof AuthenticatedMysteryCaseIdRoute
   AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
   AuthenticatedRoomsNewRoute: typeof AuthenticatedRoomsNewRoute
   AuthenticatedCallKindUserIdRoute: typeof AuthenticatedCallKindUserIdRoute
@@ -442,6 +463,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedMysteryCaseIdRoute: AuthenticatedMysteryCaseIdRoute,
   AuthenticatedRoomsIdRoute: AuthenticatedRoomsIdRoute,
   AuthenticatedRoomsNewRoute: AuthenticatedRoomsNewRoute,
   AuthenticatedCallKindUserIdRoute: AuthenticatedCallKindUserIdRoute,
