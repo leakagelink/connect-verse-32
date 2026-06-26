@@ -215,7 +215,7 @@ function CallScreen() {
         },
       }).catch(() => {});
     }
-    navigate({ to: rechargeAfterEndRef.current ? "/recharge" : "/recents" });
+    navigate({ to: "/recents" });
   }
 
 
