@@ -455,14 +455,24 @@ function CallScreen() {
       <InCallRecharge
         open={rechargeOpen}
         onOpenChange={setRechargeOpen}
-        requiredCoins={CASE_GENERATION_COIN_COST}
+        // Highlight plans that at minimum cover the next minute of this call
+        // (or the mystery case cost, whichever is larger).
+        requiredCoins={Math.max(perMin, CASE_GENERATION_COIN_COST)}
         onRecharged={(newBalance) => {
+          // Re-baseline the live ledger so the user keeps talking with the
+          // newly added coins (without resetting elapsed time).
+          setCoinStart(newBalance + coinsConsumed);
+          outOfFundsTriggeredRef.current = false;
+          qc.invalidateQueries({ queryKey: ["me"] });
           if (newBalance >= CASE_GENERATION_COIN_COST) {
-            toast.success("You're set! Tap Host Mystery Case to start.");
+            toast.success("Coins added — call continues. Tap Host Mystery Case anytime.");
+          } else {
+            toast.success("Coins added — call continues.");
           }
         }}
       />
     </AppShell>
+
 
 
   );
