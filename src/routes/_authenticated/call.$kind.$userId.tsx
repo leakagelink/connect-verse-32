@@ -287,11 +287,11 @@ function CallScreen() {
               <Coins className="size-3" /> {perMin} / min
             </div>
           </div>
-          {/* Live free-time / coin-balance HUD */}
-          {connected && (
+          {/* Live free-time / coin-balance HUD — visible from call start */}
+          {freeStart !== null && (
             <div className="absolute bottom-12 left-3 right-3 flex items-center justify-between gap-2 text-white">
               <div
-                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur transition-colors ${
                   usingFree ? "bg-emerald-500/80" : "bg-black/50"
                 }`}
               >
@@ -301,7 +301,7 @@ function CallScreen() {
               </div>
               <div
                 className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
-                  coinsLeft < perMin ? "bg-destructive/80" : "bg-black/50"
+                  !usingFree && coinsLeft < perMin ? "bg-destructive/80" : "bg-black/50"
                 }`}
               >
                 <Coins className="inline size-3 -mt-0.5 mr-1" />
@@ -310,6 +310,7 @@ function CallScreen() {
               </div>
             </div>
           )}
+
           <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
             to {userId.slice(0, 8)}
           </div>
