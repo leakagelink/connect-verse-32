@@ -148,9 +148,14 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
               </div>
             )}
 
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Radio className={`size-3 ${onlineRecent ? "text-emerald-500 animate-pulse" : "text-muted-foreground"}`} />
+              {presenceQuery.isFetching ? "Checking availability…" : onlineRecent ? "Available now · live" : "Currently unavailable"}
+            </div>
+
             <DialogFooter className="gap-2 sm:gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={checking}>Cancel</Button>
-              {offline ? (
+              {offline || liveOnline === false ? (
                 <Button
                   className="brand-gradient"
                   onClick={() => { setOffline(false); onFindAnother?.(); }}
@@ -159,7 +164,7 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
                   <RefreshCw className="size-4 mr-1" />Find another
                 </Button>
               ) : (
-                <Button className="brand-gradient" onClick={handleConfirm} disabled={checking}>
+                <Button className="brand-gradient" onClick={handleConfirm} disabled={checking || !onlineRecent}>
                   {checking ? (
                     <><Loader2 className="size-4 mr-1 animate-spin" />Checking…</>
                   ) : kind === "video" ? (
