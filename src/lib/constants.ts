@@ -1,5 +1,6 @@
 export const APP_NAME = "ConnectVerse";
 export const CHAT_COINS_PER_MINUTE = 2;
+export const MESSAGE_COIN_COST_MALE = 1; // coins charged per text message from male senders (females free)
 export const FREE_SECONDS_ON_SIGNUP = 300;
 export const BONUS_TIERS = [0.5, 0.4, 0.3]; // 1st, 2nd, 3rd deposit
 export const MIN_AGE = 18;
