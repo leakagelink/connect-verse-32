@@ -89,11 +89,30 @@ function Home() {
           <Sparkles className="size-5 text-primary" />
           <div className="flex-1">
             <p className="text-sm font-medium">{Math.floor(me.profile.free_seconds_remaining/60)} free min left</p>
-            <p className="text-xs text-muted-foreground">Use them on chat or calls.</p>
+            <p className="text-xs text-muted-foreground">Connect instantly with an available creator.</p>
           </div>
-          <Link to="/recharge"><Button size="sm" variant="outline">Recharge</Button></Link>
+          <Button
+            size="sm"
+            onClick={() => {
+              const candidates = (onlineUsers ?? []).filter(
+                (u: any) => u.gender === "female" && u.id !== me?.profile?.id,
+              );
+              if (candidates.length === 0) {
+                toast.info("No female creators are online right now. Try again in a moment.");
+                return;
+              }
+              const pick = candidates[Math.floor(Math.random() * candidates.length)];
+              navigate({
+                to: "/call/$kind/$userId",
+                params: { kind: "voice", userId: pick.id },
+              });
+            }}
+          >
+            Use now
+          </Button>
         </Card>
       )}
+
 
       <Tabs defaultValue="online" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
