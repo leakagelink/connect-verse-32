@@ -346,6 +346,43 @@ function CallScreen() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={lowBalanceOpen} onOpenChange={setLowBalanceOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Coins className="size-5 text-coin" />
+              Not enough coins
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Hosting a Mystery Case costs{" "}
+                  <span className="font-semibold text-foreground">{CASE_GENERATION_COIN_COST} coins</span>,
+                  but your wallet has only{" "}
+                  <span className="font-semibold text-foreground">{myBalance} coins</span>.
+                </p>
+                <div className="rounded-lg border bg-muted/40 p-3 text-xs">
+                  You need <span className="font-semibold">{Math.max(0, CASE_GENERATION_COIN_COST - myBalance)} more coins</span>.
+                  To recharge, please end the call first — the back button is locked during an active call to protect both players.
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep playing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setLowBalanceOpen(false);
+                setConfirmEnd(true);
+              }}
+            >
+              End call & recharge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
+
   );
 }
