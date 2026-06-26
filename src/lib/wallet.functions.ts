@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bonusForDeposit } from "./constants";
+import { makeRechargeError } from "./recharge-errors";
 
 const RechargeInput = z.object({ planId: z.string().uuid() });
 
@@ -13,25 +14,43 @@ export const mockRecharge = createServerFn({ method: "POST" })
 
     const { data: plan, error: planErr } = await supabase
       .from("coin_plans")
-      .select("id, price_inr, coins")
+      .select("id, price_inr, coins, is_active")
       .eq("id", data.planId)
-      .eq("is_active", true)
       .maybeSingle();
-    if (planErr || !plan) throw new Error("Plan not found");
+    if (planErr) throw makeRechargeError("DB_UPDATE_FAILED", planErr.message);
+    if (!plan) throw makeRechargeError("PLAN_NOT_FOUND", "Plan not found");
+    if (!plan.is_active) throw makeRechargeError("PLAN_INACTIVE", "Plan is inactive");
 
     const { data: wallet, error: walletErr } = await supabase
       .from("wallets")
       .select("coin_balance, deposit_count, total_recharged_inr")
       .eq("user_id", userId)
       .maybeSingle();
-    if (walletErr || !wallet) throw new Error("Wallet missing");
+    if (walletErr) throw makeRechargeError("DB_UPDATE_FAILED", walletErr.message);
+    if (!wallet) throw makeRechargeError("WALLET_MISSING", "Wallet missing");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Idempotency guard — block accidental double-tap (same plan within 5s)
+    const fiveSecAgo = new Date(Date.now() - 5000).toISOString();
+    const { data: recent } = await supabaseAdmin
+      .from("transactions")
+      .select("id, created_at")
+      .eq("user_id", userId)
+      .eq("plan_id", plan.id)
+      .eq("type", "recharge")
+      .gte("created_at", fiveSecAgo)
+      .limit(1);
+    if (recent && recent.length > 0) {
+      throw makeRechargeError(
+        "ALREADY_PURCHASED",
+        "This plan was credited a moment ago",
+      );
+    }
 
     const baseCoins = Number(plan.coins);
     const bonusPct = bonusForDeposit(wallet.deposit_count);
     const bonusCoins = Math.floor(baseCoins * bonusPct);
-
-    // Use admin client to mutate wallet atomically (bypass RLS, server already auth'd user)
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const newBalance = Number(wallet.coin_balance) + baseCoins + bonusCoins;
     const newTotal = Number(wallet.total_recharged_inr) + Number(plan.price_inr);
@@ -46,9 +65,8 @@ export const mockRecharge = createServerFn({ method: "POST" })
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
-    if (upErr) throw new Error(upErr.message);
+    if (upErr) throw makeRechargeError("DB_UPDATE_FAILED", upErr.message);
 
-    // log transactions
     await supabaseAdmin.from("transactions").insert({
       user_id: userId,
       type: "recharge",
