@@ -17,6 +17,7 @@ import { generateMysteryCase, CASE_GENERATION_COIN_COST } from "@/lib/mystery.fu
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MysteryPanel } from "@/components/mystery-panel";
+import { InCallRecharge } from "@/components/in-call-recharge";
 import { supabase } from "@/integrations/supabase/client";
 
 
