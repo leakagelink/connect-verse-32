@@ -17,8 +17,9 @@ type Props = {
   onFindAnother?: () => void;
 };
 
-export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: Props) {
+export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, onFindAnother }: Props) {
   const fetchProfile = useServerFn(getPartnerProfile);
+  const checkOnline = useServerFn(checkUserOnline);
   const { data, isLoading } = useQuery({
     queryKey: ["partner-preview", userId],
     queryFn: () => fetchProfile({ data: { userId: userId! } }),
@@ -26,9 +27,29 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: 
     staleTime: 30_000,
   });
 
+  const [checking, setChecking] = useState(false);
+  const [offline, setOffline] = useState(false);
+
   const p = data?.profile;
   const onlineRecent =
-    !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000;
+    !offline && !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000;
+
+  async function handleConfirm() {
+    if (!p) return;
+    setChecking(true);
+    try {
+      const res = await checkOnline({ data: { userId: p.id } });
+      if (!res.online) {
+        setOffline(true);
+        return;
+      }
+      onConfirm(p.id);
+    } catch {
+      setOffline(true);
+    } finally {
+      setChecking(false);
+    }
+  }
 
   return (
     <Dialog open={!!userId} onOpenChange={onOpenChange}>
