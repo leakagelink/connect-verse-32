@@ -374,6 +374,7 @@ function CallScreen() {
             <AlertDialogCancel>Keep playing</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
+                rechargeAfterEndRef.current = true;
                 setLowBalanceOpen(false);
                 setConfirmEnd(true);
               }}
