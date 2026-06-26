@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CreatorPreviewDialog } from "@/components/creator-preview-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile } from "@/lib/onboarding.functions";
@@ -46,6 +47,8 @@ function Home() {
     if (me?.profile?.is_banned) navigate({ to: "/banned", replace: true });
     else if (me?.profile && !me.profile.onboarded) navigate({ to: "/onboarding", replace: true });
   }, [me, navigate]);
+
+  const [preview, setPreview] = useState<{ userId: string; kind: "voice" | "video" } | null>(null);
 
   async function openChat(otherId: string) {
     try {
@@ -102,10 +105,7 @@ function Home() {
                 return;
               }
               const pick = candidates[Math.floor(Math.random() * candidates.length)];
-              navigate({
-                to: "/call/$kind/$userId",
-                params: { kind: "voice", userId: pick.id },
-              });
+              setPreview({ userId: pick.id, kind: "voice" });
             }}
           >
             Use now
@@ -140,7 +140,7 @@ function Home() {
             users={onlineUsers ?? []}
             loading={loadingOnline}
             renderActions={(u) => (
-              <Button size="sm" className="brand-gradient" onClick={() => navigate({ to: "/call/$kind/$userId", params: { kind: "voice", userId: u.id } })}>
+              <Button size="sm" className="brand-gradient" onClick={() => setPreview({ userId: u.id, kind: "voice" })}>
                 <Phone className="size-4 mr-1" /> Call
               </Button>
             )}
@@ -153,7 +153,7 @@ function Home() {
             users={onlineUsers ?? []}
             loading={loadingOnline}
             renderActions={(u) => (
-              <Button size="sm" className="brand-gradient" onClick={() => navigate({ to: "/call/$kind/$userId", params: { kind: "video", userId: u.id } })}>
+              <Button size="sm" className="brand-gradient" onClick={() => setPreview({ userId: u.id, kind: "video" })}>
                 <Video className="size-4 mr-1" /> Video
               </Button>
             )}
@@ -198,6 +198,17 @@ function Home() {
           )}
         </TabsContent>
       </Tabs>
+
+      <CreatorPreviewDialog
+        userId={preview?.userId ?? null}
+        kind={preview?.kind ?? "voice"}
+        onOpenChange={(v) => { if (!v) setPreview(null); }}
+        onConfirm={(uid) => {
+          const kind = preview?.kind ?? "voice";
+          setPreview(null);
+          navigate({ to: "/call/$kind/$userId", params: { kind, userId: uid } });
+        }}
+      />
     </AppShell>
   );
 }
