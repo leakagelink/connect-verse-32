@@ -208,6 +208,21 @@ function Home() {
           setPreview(null);
           navigate({ to: "/call/$kind/$userId", params: { kind, userId: uid } });
         }}
+        onFindAnother={async () => {
+          const kind = preview?.kind ?? "voice";
+          const prevId = preview?.userId;
+          const fresh = await refetchOnline();
+          const candidates = (fresh.data ?? []).filter(
+            (u: any) => u.gender === "female" && u.id !== me?.profile?.id && u.id !== prevId,
+          );
+          if (candidates.length === 0) {
+            toast.info("No other female creators are online right now.");
+            setPreview(null);
+            return;
+          }
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          setPreview({ userId: pick.id, kind });
+        }}
       />
     </AppShell>
   );
