@@ -177,6 +177,36 @@ function CallScreen() {
     return () => clearInterval(i);
   }, [connected]);
 
+  // ---- Live billing ledger (free seconds first, then coins) ----
+  const freeAvail = freeStart ?? 0;
+  const coinsAvail = coinStart ?? 0;
+  const freeUsed = Math.min(freeAvail, elapsed);
+  const freeLeftSec = Math.max(0, freeAvail - freeUsed);
+  const coinSecondsUsed = Math.max(0, elapsed - freeAvail);
+  const coinsConsumed = Math.ceil((coinSecondsUsed * perMin) / 60);
+  const coinsLeft = Math.max(0, coinsAvail - coinsConsumed);
+  // Seconds the remaining coin balance can still buy after free time ends.
+  const coinSecondsLeft = Math.floor((coinsLeft * 60) / perMin);
+  const totalSecondsLeft = freeLeftSec + coinSecondsLeft;
+  const usingFree = freeLeftSec > 0;
+  const outOfFunds = connected && totalSecondsLeft <= 0;
+
+  // When the user runs out of free time AND can't afford the next minute,
+  // auto-open the recharge sheet with all offers. Call stays connected.
+  useEffect(() => {
+    if (!connected) return;
+    if (outOfFunds && !outOfFundsTriggeredRef.current && !rechargeOpen) {
+      outOfFundsTriggeredRef.current = true;
+      toast.error("You're out of free minutes & coins — recharge to keep talking.", {
+        duration: 8000,
+      });
+      setRechargeOpen(true);
+    }
+  }, [connected, outOfFunds, rechargeOpen]);
+
+
+
+
 
   // Block back navigation while on the call screen — show confirm dialog instead.
   useEffect(() => {
