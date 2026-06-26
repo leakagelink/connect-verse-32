@@ -43,6 +43,94 @@ export const endCallLog = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Periodic heartbeat from the active call screen: persist the seconds-of-free-time
+// and coins consumed so far. Lets the "5:00 free" countdown / coin balance survive
+// reconnects, refresh, accidental tab close, or app restart.
+export const applyCallUsage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: {
+    callLogId?: string | null;
+    deltaFreeSeconds: number;
+    deltaCoins: number;
+    elapsedSeconds?: number;
+  }) => input)
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const deltaFree = Math.max(0, Math.floor(data.deltaFreeSeconds || 0));
+    const deltaCoins = Math.max(0, Math.floor(data.deltaCoins || 0));
+    if (deltaFree === 0 && deltaCoins === 0) {
+      return { ok: true, freeSeconds: null, balance: null };
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let freeSeconds: number | null = null;
+    if (deltaFree > 0) {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("free_seconds_remaining")
+        .eq("id", userId)
+        .maybeSingle();
+      const current = Number(prof?.free_seconds_remaining ?? 0);
+      const next = Math.max(0, current - deltaFree);
+      await supabaseAdmin
+        .from("profiles")
+        .update({ free_seconds_remaining: next })
+        .eq("id", userId);
+      freeSeconds = next;
+    }
+
+    let balance: number | null = null;
+    if (deltaCoins > 0) {
+      const { data: wallet } = await supabaseAdmin
+        .from("wallets")
+        .select("coin_balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const current = Number(wallet?.coin_balance ?? 0);
+      const next = Math.max(0, current - deltaCoins);
+      await supabaseAdmin
+        .from("wallets")
+        .update({ coin_balance: next, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      balance = next;
+
+      await supabaseAdmin.from("transactions").insert({
+        user_id: userId,
+        type: "chat_spend",
+        coins_delta: -deltaCoins,
+        inr_amount: 0,
+        metadata: {
+          call_log_id: data.callLogId ?? null,
+          seconds: data.elapsedSeconds ?? null,
+        },
+      });
+    }
+
+    if (data.callLogId) {
+      // Best-effort: keep running totals on the call log row so /recents is accurate
+      // even if the user never explicitly ends the call.
+      const { data: log } = await supabaseAdmin
+        .from("call_logs")
+        .select("duration_seconds, coins_spent")
+        .eq("id", data.callLogId)
+        .maybeSingle();
+      if (log) {
+        await supabaseAdmin
+          .from("call_logs")
+          .update({
+            duration_seconds: Math.max(
+              Number(log.duration_seconds ?? 0),
+              data.elapsedSeconds ?? 0,
+            ),
+            coins_spent: Number(log.coins_spent ?? 0) + deltaCoins,
+          })
+          .eq("id", data.callLogId);
+      }
+    }
+
+    return { ok: true, freeSeconds, balance };
+  });
+
 export type RecentCall = {
   id: string;
   kind: "voice" | "video";
