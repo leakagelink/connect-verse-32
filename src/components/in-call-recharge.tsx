@@ -9,6 +9,7 @@ import { Coins, Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { listPlans, mockRecharge, getWallet } from "@/lib/wallet.functions";
 import { bonusForDeposit } from "@/lib/constants";
+import { parseRechargeError } from "@/lib/recharge-errors";
 
 type Props = {
   open: boolean;
