@@ -244,10 +244,49 @@ function CallScreen() {
             <PhoneOff className="size-5" />
           </Button>
         </div>
+
+        {/* Mystery game controls */}
+        <div className="px-4 pb-3">
+          {isMale ? (
+            <Button
+              variant="secondary"
+              className="w-full gap-2"
+              disabled={generating || !connected}
+              onClick={hostMysteryCase}
+            >
+              <Search className="size-4" />
+              {generating
+                ? "Generating case…"
+                : caseId
+                ? "Open mystery case"
+                : `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`}
+            </Button>
+          ) : caseId ? (
+            <Button variant="secondary" className="w-full gap-2" onClick={() => setCasePanelOpen(true)}>
+              <Search className="size-4" /> Open mystery case
+            </Button>
+          ) : (
+            <p className="text-[11px] text-center text-muted-foreground">
+              Your partner can host a Mystery Case · free for you to play 🕵️
+            </p>
+          )}
+          {caseId && isMale && !casePanelOpen && (
+            <button
+              className="mt-1 w-full text-[11px] text-primary hover:underline"
+              onClick={() => setCasePanelOpen(true)}
+            >
+              Re-open current case
+            </button>
+          )}
+        </div>
+
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
           Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
         </p>
       </Card>
+
+      <MysteryPanel caseId={caseId} open={casePanelOpen} onOpenChange={setCasePanelOpen} />
+
 
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent>
