@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles } from "lucide-react";
+import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";

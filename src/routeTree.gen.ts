@@ -18,6 +18,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticated/recharge'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedConnectRouteImport } from './routes/_authenticated/connect'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
@@ -71,6 +72,11 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConnectRoute = AuthenticatedConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/banned': typeof BannedRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
+  '/connect': typeof AuthenticatedConnectRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recharge': typeof AuthenticatedRechargeRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
+  '/connect': typeof AuthenticatedConnectRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recharge': typeof AuthenticatedRechargeRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/banned': typeof BannedRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
+  '/_authenticated/connect': typeof AuthenticatedConnectRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/recharge': typeof AuthenticatedRechargeRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/banned'
     | '/admin'
     | '/chat'
+    | '/connect'
     | '/home'
     | '/onboarding'
     | '/recharge'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/banned'
+    | '/connect'
     | '/home'
     | '/onboarding'
     | '/recharge'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/banned'
     | '/_authenticated/admin'
     | '/_authenticated/chat'
+    | '/_authenticated/connect'
     | '/_authenticated/home'
     | '/_authenticated/onboarding'
     | '/_authenticated/recharge'
@@ -294,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/connect': {
+      id: '/_authenticated/connect'
+      path: '/connect'
+      fullPath: '/connect'
+      preLoaderRoute: typeof AuthenticatedConnectRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/chat': {
@@ -382,6 +401,7 @@ const AuthenticatedChatRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
+  AuthenticatedConnectRoute: typeof AuthenticatedConnectRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
@@ -395,6 +415,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
+  AuthenticatedConnectRoute: AuthenticatedConnectRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
