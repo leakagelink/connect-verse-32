@@ -89,6 +89,45 @@ export type Database = {
         }
         Relationships: []
       }
+      call_logs: {
+        Row: {
+          callee_id: string
+          caller_id: string
+          coins_spent: number
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          callee_id: string
+          caller_id: string
+          coins_spent?: number
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          kind: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          callee_id?: string
+          caller_id?: string
+          coins_spent?: number
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       chat_sessions: {
         Row: {
           coins_spent: number

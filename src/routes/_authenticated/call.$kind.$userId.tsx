@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -10,6 +12,8 @@ import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins } from "luci
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
+import { startCallLog, endCallLog } from "@/lib/calls.functions";
+
 
 export const Route = createFileRoute("/_authenticated/call/$kind/$userId")({
   component: CallScreen,
@@ -21,6 +25,8 @@ function CallScreen() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const endedRef = useRef(false);
+  const callLogIdRef = useRef<string | null>(null);
+  const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -28,6 +34,9 @@ function CallScreen() {
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
+  const startLogFn = useServerFn(startCallLog);
+  const endLogFn = useServerFn(endCallLog);
+
 
   useEffect(() => {
     let mounted = true;
@@ -43,7 +52,15 @@ function CallScreen() {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
         }
-        setTimeout(() => setConnected(true), 1200);
+        setTimeout(async () => {
+          if (!mounted) return;
+          setConnected(true);
+          try {
+            const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
+            callLogIdRef.current = res.id;
+          } catch { /* ignore log start failure */ }
+        }, 1200);
+
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
         navigate({ to: "/connect" });
@@ -58,9 +75,16 @@ function CallScreen() {
 
   useEffect(() => {
     if (!connected) return;
-    const i = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const i = setInterval(() => {
+      setElapsed((e) => {
+        const next = e + 1;
+        elapsedRef.current = next;
+        return next;
+      });
+    }, 1000);
     return () => clearInterval(i);
   }, [connected]);
+
 
   // Block back navigation while on the call screen — show confirm dialog instead.
   useEffect(() => {
@@ -96,8 +120,23 @@ function CallScreen() {
     endedRef.current = true;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setConfirmEnd(false);
-    navigate({ to: "/connect" });
+    const id = callLogIdRef.current;
+    const seconds = elapsedRef.current;
+    const minutes = Math.max(1, Math.ceil(seconds / 60));
+    const coins = seconds > 0 ? minutes * perMin : 0;
+    if (id) {
+      endLogFn({
+        data: {
+          id,
+          durationSeconds: seconds,
+          coinsSpent: coins,
+          status: seconds > 0 ? "completed" : "cancelled",
+        },
+      }).catch(() => {});
+    }
+    navigate({ to: "/recents" });
   }
+
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");

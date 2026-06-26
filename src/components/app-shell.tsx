@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap } from "lucide-react";
+import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
@@ -55,6 +55,17 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
                 </span>
               )}
             </Link>
+            <Link
+              to="/recents"
+              className={cn(
+                "inline-flex size-9 items-center justify-center rounded-full transition",
+                pathname.startsWith("/recents") ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground/80"
+              )}
+              title="Recents · call history"
+            >
+              <History className="size-4.5" />
+            </Link>
+
             <Link
               to="/settings"
               className={cn(
