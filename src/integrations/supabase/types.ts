@@ -236,6 +236,7 @@ export type Database = {
           is_banned: boolean
           is_creator: boolean
           language: string | null
+          last_seen_at: string | null
           onboarded: boolean
           updated_at: string
           username: string | null
@@ -253,6 +254,7 @@ export type Database = {
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
+          last_seen_at?: string | null
           onboarded?: boolean
           updated_at?: string
           username?: string | null
@@ -270,6 +272,7 @@ export type Database = {
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
+          last_seen_at?: string | null
           onboarded?: boolean
           updated_at?: string
           username?: string | null
@@ -325,6 +328,74 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      room_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          host_id: string
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["room_kind"]
+          max_seats: number
+          title: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          host_id: string
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["room_kind"]
+          max_seats?: number
+          title: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          host_id?: string
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["room_kind"]
+          max_seats?: number
+          title?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -443,6 +514,7 @@ export type Database = {
         | "underage"
         | "other"
       report_status: "open" | "reviewed" | "actioned" | "dismissed"
+      room_kind: "voice" | "video" | "game" | "live"
       txn_type: "recharge" | "bonus" | "chat_spend" | "refund" | "signup_bonus"
     }
     CompositeTypes: {
@@ -586,6 +658,7 @@ export const Constants = {
         "other",
       ],
       report_status: ["open", "reviewed", "actioned", "dismissed"],
+      room_kind: ["voice", "video", "game", "live"],
       txn_type: ["recharge", "bonus", "chat_spend", "refund", "signup_bonus"],
     },
   },
