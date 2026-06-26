@@ -198,6 +198,18 @@ function Home() {
           )}
         </TabsContent>
       </Tabs>
+      </Tabs>
+
+      <CreatorPreviewDialog
+        userId={preview?.userId ?? null}
+        kind={preview?.kind ?? "voice"}
+        onOpenChange={(v) => { if (!v) setPreview(null); }}
+        onConfirm={(uid) => {
+          const kind = preview?.kind ?? "voice";
+          setPreview(null);
+          navigate({ to: "/call/$kind/$userId", params: { kind, userId: uid } });
+        }}
+      />
     </AppShell>
   );
 }
