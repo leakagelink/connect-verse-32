@@ -1,5 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export const checkUserOnline = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const cutoff = new Date(Date.now() - 60 * 1000).toISOString();
+    const { data: row } = await supabase
+      .from("profiles")
+      .select("id, last_seen_at, is_banned, onboarded")
+      .eq("id", data.userId)
+      .maybeSingle();
+    const online =
+      !!row &&
+      !row.is_banned &&
+      row.onboarded &&
+      !!row.last_seen_at &&
+      row.last_seen_at >= cutoff;
+    return { online, last_seen_at: row?.last_seen_at ?? null };
+  });
 
 export const ONLINE_WINDOW_SECONDS = 60;
 

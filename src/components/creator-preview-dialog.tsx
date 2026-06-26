@@ -1,21 +1,25 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPartnerProfile } from "@/lib/follows.functions";
+import { checkUserOnline } from "@/lib/presence.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock } from "lucide-react";
+import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
 type Props = {
   userId: string | null;
   kind: "voice" | "video";
   onOpenChange: (v: boolean) => void;
   onConfirm: (userId: string) => void;
+  onFindAnother?: () => void;
 };
 
-export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: Props) {
+export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, onFindAnother }: Props) {
   const fetchProfile = useServerFn(getPartnerProfile);
+  const checkOnline = useServerFn(checkUserOnline);
   const { data, isLoading } = useQuery({
     queryKey: ["partner-preview", userId],
     queryFn: () => fetchProfile({ data: { userId: userId! } }),
@@ -23,9 +27,29 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: 
     staleTime: 30_000,
   });
 
+  const [checking, setChecking] = useState(false);
+  const [offline, setOffline] = useState(false);
+
   const p = data?.profile;
   const onlineRecent =
-    !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000;
+    !offline && !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000;
+
+  async function handleConfirm() {
+    if (!p) return;
+    setChecking(true);
+    try {
+      const res = await checkOnline({ data: { userId: p.id } });
+      if (!res.online) {
+        setOffline(true);
+        return;
+      }
+      onConfirm(p.id);
+    } catch {
+      setOffline(true);
+    } finally {
+      setChecking(false);
+    }
+  }
 
   return (
     <Dialog open={!!userId} onOpenChange={onOpenChange}>
@@ -91,11 +115,37 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: 
               </p>
             </div>
 
+            {offline && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-start gap-2">
+                <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-amber-700 dark:text-amber-300">Creator just went offline</p>
+                  <p className="text-muted-foreground mt-0.5">Pick another available creator to start your call.</p>
+                </div>
+              </div>
+            )}
+
             <DialogFooter className="gap-2 sm:gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button className="brand-gradient" onClick={() => onConfirm(p.id)}>
-                {kind === "video" ? <><Video className="size-4 mr-1" />Start video call</> : <><Phone className="size-4 mr-1" />Start voice call</>}
-              </Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={checking}>Cancel</Button>
+              {offline ? (
+                <Button
+                  className="brand-gradient"
+                  onClick={() => { setOffline(false); onFindAnother?.(); }}
+                  disabled={!onFindAnother}
+                >
+                  <RefreshCw className="size-4 mr-1" />Find another
+                </Button>
+              ) : (
+                <Button className="brand-gradient" onClick={handleConfirm} disabled={checking}>
+                  {checking ? (
+                    <><Loader2 className="size-4 mr-1 animate-spin" />Checking…</>
+                  ) : kind === "video" ? (
+                    <><Video className="size-4 mr-1" />Start video call</>
+                  ) : (
+                    <><Phone className="size-4 mr-1" />Start voice call</>
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         )}
