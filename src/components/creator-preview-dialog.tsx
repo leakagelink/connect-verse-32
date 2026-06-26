@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPartnerProfile } from "@/lib/follows.functions";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw, Radio } from "lucide-react";
 
 type Props = {
   userId: string | null;
@@ -30,9 +30,32 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
   const [checking, setChecking] = useState(false);
   const [offline, setOffline] = useState(false);
 
+  // Live availability polling while dialog is open
+  const presenceQuery = useQuery({
+    queryKey: ["partner-presence", userId],
+    queryFn: () => checkOnline({ data: { userId: userId! } }),
+    enabled: !!userId,
+    refetchInterval: 4000,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
+  });
+
+  useEffect(() => {
+    if (!userId) return;
+    if (presenceQuery.data && !presenceQuery.data.online) setOffline(true);
+    else if (presenceQuery.data?.online) setOffline(false);
+  }, [presenceQuery.data, userId]);
+
+  useEffect(() => {
+    // reset on creator change
+    setOffline(false);
+  }, [userId]);
+
   const p = data?.profile;
+  const liveOnline = presenceQuery.data?.online ?? null;
   const onlineRecent =
-    !offline && !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000;
+    !offline && (liveOnline === true ||
+      (liveOnline === null && !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000));
 
   async function handleConfirm() {
     if (!p) return;
