@@ -566,6 +566,7 @@ function CallScreen() {
           <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
             to {userId.slice(0, 8)}
           </div>
+          <GiftFloater callLogId={callLogIdRef.current} myUserId={myId || null} />
         </div>
         <div className="p-4 flex items-center justify-center gap-3">
           <Button size="icon" variant={muted ? "destructive" : "secondary"} onClick={toggleMic}>
@@ -576,10 +577,21 @@ function CallScreen() {
               {camOff ? <VideoOff className="size-5" /> : <VideoIcon className="size-5" />}
             </Button>
           )}
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={() => setGiftOpen(true)}
+            disabled={!connected}
+            aria-label="Send gift"
+            className="relative"
+          >
+            <Gift className="size-5 text-pink-500" />
+          </Button>
           <Button size="icon" variant="destructive" onClick={() => setConfirmEnd(true)}>
             <PhoneOff className="size-5" />
           </Button>
         </div>
+
 
         {/* Mystery game controls */}
         <div className="px-4 pb-3">
