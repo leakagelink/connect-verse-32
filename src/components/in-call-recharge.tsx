@@ -31,9 +31,25 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
   const { data: plans } = useQuery({ queryKey: ["plans"], queryFn: () => plansFn(), enabled: open });
   const { data: wallet } = useQuery({ queryKey: ["wallet"], queryFn: () => walletFn(), enabled: open });
   const [busy, setBusy] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpError, setHelpError] = useState<ParsedRechargeError | null>(null);
+  const [helpPlanId, setHelpPlanId] = useState<string | null>(null);
 
   const bonusPct = bonusForDeposit(wallet?.depositCount ?? 0);
   const balance = wallet?.balance ?? 0;
+
+  const refreshBalance = async () => {
+    await qc.invalidateQueries({ queryKey: ["wallet"] });
+    const fresh = await walletFn().catch(() => null);
+    if (fresh) onRecharged?.(fresh.balance ?? 0);
+  };
+
+  function openHelp(err: ParsedRechargeError, planId: string) {
+    setHelpError(err);
+    setHelpPlanId(planId);
+    setHelpOpen(true);
+  }
+
 
   async function buy(planId: string) {
     setBusy(planId);
