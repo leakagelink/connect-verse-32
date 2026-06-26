@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPartnerProfile } from "@/lib/follows.functions";
+import { checkUserOnline } from "@/lib/presence.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock } from "lucide-react";
+import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
 type Props = {
   userId: string | null;
   kind: "voice" | "video";
   onOpenChange: (v: boolean) => void;
   onConfirm: (userId: string) => void;
+  onFindAnother?: () => void;
 };
 
 export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm }: Props) {
