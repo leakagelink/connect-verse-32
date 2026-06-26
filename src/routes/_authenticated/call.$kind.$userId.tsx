@@ -401,7 +401,11 @@ function CallScreen() {
         try {
           localStorage.setItem(
             `active_call:${userId}:${kind}`,
-            JSON.stringify({ id: callLogId, lastFlushedAt: new Date().toISOString() }),
+            JSON.stringify({
+              id: callLogId,
+              lastFlushedAt: new Date().toISOString(),
+              sessionToken: sessionTokenRef.current,
+            }),
           );
         } catch { /* ignore */ }
       })
