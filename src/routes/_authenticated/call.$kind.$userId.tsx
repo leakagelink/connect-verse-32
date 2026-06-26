@@ -511,7 +511,13 @@ function CallScreen() {
   return (
     <AppShell>
       <Card className="glass overflow-hidden p-0">
+        {paused && (
+          <div className="bg-amber-500/90 text-black text-xs font-semibold text-center px-3 py-2">
+            Paused — another call window is now active. Close this tab or reload to take over.
+          </div>
+        )}
         <div className="relative aspect-[3/4] sm:aspect-video bg-black flex items-center justify-center">
+
           {kind === "video" ? (
             <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
           ) : (
