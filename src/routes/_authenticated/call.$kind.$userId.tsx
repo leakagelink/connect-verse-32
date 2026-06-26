@@ -364,8 +364,8 @@ function CallScreen() {
                   <span className="font-semibold text-foreground">{myBalance} coins</span>.
                 </p>
                 <div className="rounded-lg border bg-muted/40 p-3 text-xs">
-                  You need <span className="font-semibold">{Math.max(0, CASE_GENERATION_COIN_COST - myBalance)} more coins</span>.
-                  To recharge, please end the call first — the back button is locked during an active call to protect both players.
+                  Recharge right here — your call stays connected and the Host button
+                  refreshes automatically when payment completes.
                 </div>
               </div>
             </AlertDialogDescription>
@@ -374,17 +374,28 @@ function CallScreen() {
             <AlertDialogCancel>Keep playing</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                rechargeAfterEndRef.current = true;
                 setLowBalanceOpen(false);
-                setConfirmEnd(true);
+                setRechargeOpen(true);
               }}
             >
-              End call & recharge
+              Recharge now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <InCallRecharge
+        open={rechargeOpen}
+        onOpenChange={setRechargeOpen}
+        requiredCoins={CASE_GENERATION_COIN_COST}
+        onRecharged={(newBalance) => {
+          if (newBalance >= CASE_GENERATION_COIN_COST) {
+            toast.success("You're set! Tap Host Mystery Case to start.");
+          }
+        }}
+      />
     </AppShell>
+
 
   );
 }
