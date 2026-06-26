@@ -195,7 +195,8 @@ function ConnectScreen() {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Filters (admin-controlled visibility) */}
+      {filtersVisible && (
       <Card className="glass p-3 mb-5">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
@@ -295,6 +296,8 @@ function ConnectScreen() {
           </p>
         </div>
       </Card>
+      )}
+
 
       {/* Sliding featured creators */}
       <div className="mb-5">
