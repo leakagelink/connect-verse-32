@@ -73,6 +73,7 @@ function ConnectScreen() {
   const [language, setLanguage] = useState<string>("auto");
   const [country, setCountry] = useState<string>("auto");
   const [state, setState] = useState<string>("any");
+  const [activeOnly, setActiveOnly] = useState<boolean>(false);
 
   // Initialize defaults from my profile once data arrives
   useEffect(() => {
@@ -92,11 +93,16 @@ function ConnectScreen() {
     const langFilter = language === "any" ? null : language;
     const countryFilter = country === "any" ? null : country;
     const stateFilter = state === "any" ? null : state;
+    const activeCutoff = Date.now() - 30_000; // last 30s = "active now"
 
     const filtered = all.filter((u) => {
       if (langFilter && u.language !== langFilter) return false;
       if (countryFilter && u.country !== countryFilter) return false;
       if (stateFilter && u.state !== stateFilter) return false;
+      if (activeOnly) {
+        const t = u.last_seen_at ? new Date(u.last_seen_at).getTime() : 0;
+        if (t < activeCutoff) return false;
+      }
       return true;
     });
 
@@ -114,7 +120,7 @@ function ConnectScreen() {
       // tiebreak: more recently seen first
       return (b.last_seen_at ?? "").localeCompare(a.last_seen_at ?? "");
     });
-  }, [all, me, language, country, state]);
+  }, [all, me, language, country, state, activeOnly]);
 
   function autoConnect(kind: "voice" | "video") {
     if (!sorted.length) {
@@ -257,9 +263,29 @@ function ConnectScreen() {
             </SelectContent>
           </Select>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
-          Creators matching your language & region are prioritised automatically.
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveOnly((v) => !v)}
+            className={
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition border " +
+              (activeOnly
+                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                : "bg-muted/40 border-border text-muted-foreground hover:text-foreground")
+            }
+          >
+            <span
+              className={
+                "size-1.5 rounded-full " +
+                (activeOnly ? "bg-emerald-400 animate-pulse" : "bg-muted-foreground")
+              }
+            />
+            Active now only
+          </button>
+          <p className="text-[10px] text-muted-foreground text-right">
+            Matching language & region prioritised.
+          </p>
+        </div>
       </Card>
 
       {/* Sliding featured creators */}
