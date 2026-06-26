@@ -168,8 +168,41 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
 
         <p className="pb-4 text-[11px] text-muted-foreground flex items-center gap-1">
           <Sparkles className="size-3" /> Mock recharge — real payments in Phase 3.
+          <button
+            type="button"
+            className="ml-auto inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+            onClick={() =>
+              openHelp(
+                {
+                  code: "UNKNOWN",
+                  title: "Recharge help",
+                  description: "Common recharge issues and how to resolve them while staying in your call.",
+                  nextStepLabel: "Close",
+                  nextStep: "retry",
+                },
+                "",
+              )
+            }
+          >
+            <HelpCircle className="size-3" /> Need help?
+          </button>
         </p>
       </SheetContent>
+
+      <RechargeHelpDialog
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        error={helpError}
+        planId={helpPlanId}
+        onRetry={(pid) => void buy(pid)}
+        onRefreshBalance={() => void refreshBalance()}
+        onPickAnotherPlan={() => {
+          /* sheet is already open with plan grid; just close dialog */
+        }}
+        onReauth={() => {
+          window.location.href = "/auth";
+        }}
+      />
     </Sheet>
   );
 }
