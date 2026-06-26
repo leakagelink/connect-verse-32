@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { getPartnerProfile } from "@/lib/follows.functions";
 import { checkUserOnline } from "@/lib/presence.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -17,6 +18,15 @@ type Props = {
   onFindAnother?: () => void;
 };
 
+function formatAgo(ts: number | null) {
+  if (!ts) return "just now";
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  return `${m}m ago`;
+}
+
 export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, onFindAnother }: Props) {
   const fetchProfile = useServerFn(getPartnerProfile);
   const checkOnline = useServerFn(checkUserOnline);
@@ -29,6 +39,9 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
 
   const [checking, setChecking] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+  const prevOnlineRef = useRef<boolean | null>(null);
 
   // Live availability polling while dialog is open
   const presenceQuery = useQuery({
@@ -41,14 +54,35 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
   });
 
   useEffect(() => {
-    if (!userId) return;
-    if (presenceQuery.data && !presenceQuery.data.online) setOffline(true);
-    else if (presenceQuery.data?.online) setOffline(false);
+    if (!userId || !presenceQuery.data) return;
+    const isOnline = presenceQuery.data.online;
+    setLastUpdated(Date.now());
+    if (isOnline) setOffline(false);
+    else setOffline(true);
+
+    const prev = prevOnlineRef.current;
+    if (prev !== null && prev !== isOnline) {
+      if (isOnline) {
+        toast.success("Creator is back online", { description: "You can start the call now." });
+      } else {
+        toast.warning("Creator just went offline", { description: "Pick another available creator." });
+      }
+    }
+    prevOnlineRef.current = isOnline;
   }, [presenceQuery.data, userId]);
 
   useEffect(() => {
     // reset on creator change
     setOffline(false);
+    setLastUpdated(null);
+    prevOnlineRef.current = null;
+  }, [userId]);
+
+  // tick every 10s so "x ago" stays fresh
+  useEffect(() => {
+    if (!userId) return;
+    const id = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(id);
   }, [userId]);
 
   const p = data?.profile;
@@ -148,9 +182,33 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Radio className={`size-3 ${onlineRecent ? "text-emerald-500 animate-pulse" : "text-muted-foreground"}`} />
-              {presenceQuery.isFetching ? "Checking availability…" : onlineRecent ? "Available now · live" : "Currently unavailable"}
+            <div
+              className={`flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-[11px] transition-colors duration-300 ${
+                onlineRecent
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-muted bg-muted/40 text-muted-foreground"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="relative inline-flex size-2">
+                  <span
+                    className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      onlineRecent ? "bg-emerald-500 animate-ping" : "bg-muted-foreground/40"
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex size-2 rounded-full ${
+                      onlineRecent ? "bg-emerald-500" : "bg-muted-foreground/60"
+                    }`}
+                  />
+                </span>
+                {presenceQuery.isFetching
+                  ? "Checking availability…"
+                  : onlineRecent
+                    ? "Available now · live"
+                    : "Currently unavailable"}
+              </span>
+              <span className="text-[10px] opacity-70">Updated {formatAgo(lastUpdated)}</span>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2">
