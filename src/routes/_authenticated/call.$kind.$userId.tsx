@@ -389,27 +389,27 @@ function CallScreen() {
     // even if endCallLog races or the network blips.
     flushUsage.current();
     const id = callLogIdRef.current;
-    const seconds = elapsedRef.current;
-    // Bill only the portion not covered by free time, rounded up to whole minutes.
-    const billableSec = Math.max(0, seconds - freeAvail);
-    const billableMin = billableSec > 0 ? Math.ceil(billableSec / 60) : 0;
-    const coins = Math.min(coinsAvail, billableMin * perMin);
+    const totalSeconds = sessionStartElapsedRef.current + elapsedRef.current;
+    const totalCoins = syncedCoinsRef.current;
     if (id) {
       endLogFn({
         data: {
           id,
-          durationSeconds: seconds,
-          coinsSpent: coins,
-          status: seconds > 0 ? "completed" : "cancelled",
+          durationSeconds: totalSeconds,
+          coinsSpent: totalCoins,
+          status: totalSeconds > 0 ? "completed" : "cancelled",
         },
       }).catch(() => {});
     }
+    try { localStorage.removeItem(`active_call:${userId}:${kind}`); } catch { /* ignore */ }
     navigate({ to: "/recents" });
   }
 
 
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
+  const totalElapsed = sessionStartElapsedRef.current + elapsed;
+  const mm = String(Math.floor(totalElapsed / 60)).padStart(2, "0");
+  const ss = String(totalElapsed % 60).padStart(2, "0");
+
 
   return (
     <AppShell>
