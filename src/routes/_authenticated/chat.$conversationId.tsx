@@ -122,6 +122,33 @@ function ChatRoom() {
   const myId = me?.profile?.id;
   const freeSec = me?.profile?.free_seconds_remaining ?? 0;
   const coinBal = wallet?.balance ?? 0;
+  const myGender = me?.profile?.gender;
+  const messageCost = myGender === "male" ? MESSAGE_COIN_COST_MALE : 0;
+
+  const { data: partner, refetch: refetchPartner } = useQuery({
+    queryKey: ["partner", otherUserId],
+    queryFn: () => partnerFn({ data: { userId: otherUserId! } }),
+    enabled: !!otherUserId,
+  });
+
+  async function doFollow() {
+    if (!otherUserId) return;
+    try { await followFn({ data: { userId: otherUserId } }); toast.success("Follow request sent"); refetchPartner(); }
+    catch (e: any) { toast.error(e.message); }
+  }
+  async function doUnfollow() {
+    if (!otherUserId) return;
+    try { await unfollowFn({ data: { userId: otherUserId } }); refetchPartner(); }
+    catch (e: any) { toast.error(e.message); }
+  }
+  async function respond(action: "accept" | "reject") {
+    if (!otherUserId) return;
+    try { await respondFn({ data: { userId: otherUserId, action } }); refetchPartner(); }
+    catch (e: any) { toast.error(e.message); }
+  }
+
+  const p = partner?.profile;
+  const initials = (p?.username ?? "U").slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -130,15 +157,53 @@ function ChatRoom() {
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/chat" })}>
             <ArrowLeft className="size-5" />
           </Button>
-          <div className="flex-1">
-            <p className="text-sm font-medium">Chat</p>
-            <p className="text-xs text-muted-foreground">
-              {freeSec > 0 ? `${Math.floor(freeSec/60)}m free left · ` : ""}
-              {CHAT_COINS_PER_MINUTE} coins/min
+          <Avatar className="size-10">
+            {p?.avatar_url ? <AvatarImage src={p.avatar_url} /> : null}
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold truncate">{p?.username ?? "User"}</p>
+              {p?.gender && <Badge variant="secondary" className="capitalize text-[10px]">{p.gender}</Badge>}
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {[p?.state, p?.country].filter(Boolean).join(", ") || "—"}
+              {" · "}
+              <span><strong className="text-foreground">{partner?.followers ?? 0}</strong> followers · <strong className="text-foreground">{partner?.following ?? 0}</strong> following</span>
             </p>
           </div>
           <CoinBadge value={coinBal} />
           {otherUserId && <ReportDialog targetUserId={otherUserId} conversationId={conversationId} />}
+        </div>
+        <div className="mx-auto max-w-3xl flex items-center justify-between gap-2 px-3 pb-2">
+          <p className="text-[11px] text-muted-foreground">
+            {freeSec > 0 ? `${Math.floor(freeSec/60)}m free · ` : ""}
+            {CHAT_COINS_PER_MINUTE} coins/min{messageCost > 0 ? ` · ${messageCost} coin/message` : " · messages free"}
+          </p>
+          <div className="flex items-center gap-2">
+            {partner?.incoming === "pending" ? (
+              <>
+                <Button size="sm" variant="secondary" onClick={() => respond("accept")}>
+                  <Check className="size-3.5 mr-1" /> Accept
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => respond("reject")}>
+                  <X className="size-3.5 mr-1" /> Reject
+                </Button>
+              </>
+            ) : partner?.outgoing === "accepted" ? (
+              <Button size="sm" variant="secondary" onClick={doUnfollow}>
+                <UserCheck className="size-3.5 mr-1" /> Following
+              </Button>
+            ) : partner?.outgoing === "pending" ? (
+              <Button size="sm" variant="ghost" onClick={doUnfollow}>
+                <UserX className="size-3.5 mr-1" /> Cancel request
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={doFollow}>
+                <UserPlus className="size-3.5 mr-1" /> Follow
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
