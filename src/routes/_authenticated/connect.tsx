@@ -8,19 +8,53 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Video, Coins, Sparkles, Languages, MapPin, Zap } from "lucide-react";
-import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Phone,
+  Video,
+  Coins,
+  Sparkles,
+  Languages,
+  MapPin,
+  Zap,
+  Star,
+  Filter,
+} from "lucide-react";
+import {
+  VOICE_CALL_COINS_PER_MINUTE,
+  VIDEO_CALL_COINS_PER_MINUTE,
+  APP_LANGUAGES,
+} from "@/lib/constants";
+import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/connect")({
   component: ConnectScreen,
 });
 
+type Creator = {
+  id: string;
+  username: string | null;
+  gender: string | null;
+  country: string | null;
+  state: string | null;
+  language: string | null;
+  avatar_url: string | null;
+  is_creator: boolean;
+  last_seen_at: string | null;
+};
+
 function ConnectScreen() {
   const navigate = useNavigate();
   const beat = useServerFn(heartbeat);
   const creatorsFn = useServerFn(listOnlineCreators);
-  const { data: creators } = useQuery({
+  const { data } = useQuery({
     queryKey: ["online-creators"],
     queryFn: () => creatorsFn(),
     refetchInterval: 15_000,
@@ -32,16 +66,70 @@ function ConnectScreen() {
     return () => clearInterval(i);
   }, [beat]);
 
-  const list = creators ?? [];
+  const all: Creator[] = (data && "creators" in data ? data.creators : []) as Creator[];
+  const me = data && "me" in data ? data.me : { language: null, country: null, state: null };
+
+  const [language, setLanguage] = useState<string>("auto");
+  const [country, setCountry] = useState<string>("auto");
+  const [state, setState] = useState<string>("any");
+
+  // Initialize defaults from my profile once data arrives
+  useEffect(() => {
+    if (!data) return;
+    if (language === "auto" && me.language) setLanguage(me.language);
+    if (country === "auto" && me.country) setCountry(me.country);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const stateOptions = useMemo(() => {
+    if (country === "any" || country === "auto") return [];
+    return STATES_BY_COUNTRY[country] ?? [];
+  }, [country]);
+
+  // Filter + priority sorting
+  const sorted = useMemo(() => {
+    const langFilter = language === "any" ? null : language;
+    const countryFilter = country === "any" ? null : country;
+    const stateFilter = state === "any" ? null : state;
+
+    const filtered = all.filter((u) => {
+      if (langFilter && u.language !== langFilter) return false;
+      if (countryFilter && u.country !== countryFilter) return false;
+      if (stateFilter && u.state !== stateFilter) return false;
+      return true;
+    });
+
+    // priority score: language match (4) + state match (2) + country match (1)
+    const score = (u: Creator) => {
+      let s = 0;
+      if (me.language && u.language === me.language) s += 4;
+      if (me.state && u.state === me.state) s += 2;
+      if (me.country && u.country === me.country) s += 1;
+      return s;
+    };
+    return [...filtered].sort((a, b) => {
+      const d = score(b) - score(a);
+      if (d !== 0) return d;
+      // tiebreak: more recently seen first
+      return (b.last_seen_at ?? "").localeCompare(a.last_seen_at ?? "");
+    });
+  }, [all, me, language, country, state]);
 
   function autoConnect(kind: "voice" | "video") {
-    if (!list.length) {
-      toast.error("No creators online right now. Try again in a moment.");
+    if (!sorted.length) {
+      toast.error("No creators match your filters right now.");
       return;
     }
-    const pick = list[Math.floor(Math.random() * Math.min(list.length, 5))];
+    // pick from top 5 priority creators
+    const pool = sorted.slice(0, Math.min(sorted.length, 5));
+    const pick = pool[Math.floor(Math.random() * pool.length)];
     navigate({ to: "/call/$kind/$userId", params: { kind, userId: pick.id } });
   }
+
+  const hasFilters =
+    (language !== "any" && language !== "auto") ||
+    (country !== "any" && country !== "auto") ||
+    state !== "any";
 
   return (
     <AppShell>
@@ -92,6 +180,84 @@ function ConnectScreen() {
         </button>
       </div>
 
+      {/* Filters */}
+      <Card className="glass p-3 mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Filter className="size-4 text-primary" />
+            <h2 className="font-semibold text-sm">Filter creators</h2>
+          </div>
+          {hasFilters && (
+            <button
+              onClick={() => {
+                setLanguage("any");
+                setCountry("any");
+                setState("any");
+              }}
+              className="text-[11px] text-primary hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any language</SelectItem>
+              {APP_LANGUAGES.map((l) => (
+                <SelectItem key={l.code} value={l.code}>
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={country}
+            onValueChange={(v) => {
+              setCountry(v);
+              setState("any");
+            }}
+          >
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any country</SelectItem>
+              {COUNTRIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={state}
+            onValueChange={setState}
+            disabled={!stateOptions.length}
+          >
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder={stateOptions.length ? "State" : "—"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any state</SelectItem>
+              {stateOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Creators matching your language & region are prioritised automatically.
+        </p>
+      </Card>
+
       {/* Sliding featured creators */}
       <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
@@ -99,65 +265,100 @@ function ConnectScreen() {
             <Zap className="size-4 text-primary" />
             <h2 className="font-semibold">Featured Live</h2>
           </div>
-          <span className="text-xs text-muted-foreground">{list.length} online</span>
+          <span className="text-xs text-muted-foreground">{sorted.length} online</span>
         </div>
-        <CreatorMarquee creators={list.slice(0, 12)} />
+        <CreatorMarquee creators={sorted.slice(0, 12)} />
       </div>
 
       {/* All online creators grid */}
       <div className="mb-2 flex items-center justify-between">
         <h2 className="font-semibold">All online creators</h2>
       </div>
-      {!list.length ? (
+      {!sorted.length ? (
         <Card className="glass p-8 text-center text-muted-foreground">
-          No creators online right now. Pull down to refresh in a few seconds.
+          No creators match your filters. Try widening your search.
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {list.map((u: any) => (
-            <Card key={u.id} className="glass p-3 flex items-center gap-3">
-              <div className="relative">
-                <Avatar className="size-12">
-                  {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                  <AvatarFallback className="brand-gradient text-primary-foreground font-semibold">
-                    {(u.username ?? "?").slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-emerald-500 border-2 border-background" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="font-medium truncate">{u.username ?? "anon"}</p>
-                  <Badge variant="secondary" className="text-[10px]">Creator</Badge>
+          {sorted.map((u) => {
+            const priority =
+              (me.language && u.language === me.language) ||
+              (me.country && u.country === me.country);
+            return (
+              <Card
+                key={u.id}
+                className={
+                  "glass p-3 flex items-center gap-3 " +
+                  (priority ? "ring-1 ring-primary/40" : "")
+                }
+              >
+                <div className="relative">
+                  <Avatar className="size-12">
+                    {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                    <AvatarFallback className="brand-gradient text-primary-foreground font-semibold">
+                      {(u.username ?? "?").slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-emerald-500 border-2 border-background" />
                 </div>
-                <p className="text-[11px] text-muted-foreground flex items-center gap-2 truncate">
-                  {u.language && <span className="inline-flex items-center gap-0.5"><Languages className="size-3" />{u.language}</span>}
-                  {u.country && <span className="inline-flex items-center gap-0.5"><MapPin className="size-3" />{u.country}</span>}
-                </p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Link to="/call/$kind/$userId" params={{ kind: "voice", userId: u.id }}>
-                  <Button size="sm" variant="secondary" className="h-7 px-2">
-                    <Phone className="size-3.5" />
-                  </Button>
-                </Link>
-                <Link to="/call/$kind/$userId" params={{ kind: "video", userId: u.id }}>
-                  <Button size="sm" className="h-7 px-2 brand-gradient">
-                    <Video className="size-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium truncate">{u.username ?? "anon"}</p>
+                    <Badge variant="secondary" className="text-[10px]">
+                      Creator
+                    </Badge>
+                    {priority && (
+                      <Star className="size-3 text-primary fill-primary shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-2 truncate">
+                    {u.language && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <Languages className="size-3" />
+                        {u.language}
+                      </span>
+                    )}
+                    {u.country && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <MapPin className="size-3" />
+                        {u.state ? `${u.state}, ${u.country}` : u.country}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Link
+                    to="/call/$kind/$userId"
+                    params={{ kind: "voice", userId: u.id }}
+                  >
+                    <Button size="sm" variant="secondary" className="h-7 px-2">
+                      <Phone className="size-3.5" />
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/call/$kind/$userId"
+                    params={{ kind: "video", userId: u.id }}
+                  >
+                    <Button size="sm" className="h-7 px-2 brand-gradient">
+                      <Video className="size-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </AppShell>
   );
 }
 
-function CreatorMarquee({ creators }: { creators: any[] }) {
+function CreatorMarquee({ creators }: { creators: Creator[] }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const items = useMemo(() => (creators.length ? [...creators, ...creators] : []), [creators]);
+  const items = useMemo(
+    () => (creators.length ? [...creators, ...creators] : []),
+    [creators],
+  );
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -217,7 +418,9 @@ function CreatorMarquee({ creators }: { creators: any[] }) {
               <span className="absolute bottom-0 right-1 size-3 rounded-full bg-emerald-500 border-2 border-background" />
             </div>
             <p className="mt-2 text-sm font-medium truncate">{u.username ?? "anon"}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{u.language ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground truncate">
+              {u.language ?? "—"}
+            </p>
             <div className="mt-1.5 inline-flex items-center gap-0.5 rounded-full bg-coin/15 px-1.5 py-0.5 text-[10px] font-semibold text-coin">
               <Coins className="size-2.5" /> {VIDEO_CALL_COINS_PER_MINUTE}/m
             </div>
