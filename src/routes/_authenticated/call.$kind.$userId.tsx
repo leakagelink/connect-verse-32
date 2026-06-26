@@ -32,12 +32,15 @@ function CallScreen() {
   const streamRef = useRef<MediaStream | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
+  const rechargeAfterEndRef = useRef(false);
   const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [connected, setConnected] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
+
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
   const startLogFn = useServerFn(startCallLog);
@@ -72,9 +75,16 @@ function CallScreen() {
     };
   }, [myId, userId]);
 
+  const myBalance = me?.walletBalance ?? 0;
+  const canAfford = myBalance >= CASE_GENERATION_COIN_COST;
+
   async function hostMysteryCase() {
     if (!isMale) {
       toast.error("Only male players can host a mystery case.");
+      return;
+    }
+    if (!canAfford) {
+      setLowBalanceOpen(true);
       return;
     }
     setGenerating(true);
@@ -86,7 +96,6 @@ function CallScreen() {
       setCasePanelOpen(true);
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
-      // Broadcast to the partner
       const pair = [myId, userId].sort().join(":");
       await supabase.channel(`mystery:${pair}`).send({
         type: "broadcast",
@@ -95,11 +104,17 @@ function CallScreen() {
       });
       toast.success(`Case generated! -${CASE_GENERATION_COIN_COST} coins`);
     } catch (e: any) {
-      toast.error(e.message ?? "Could not generate case");
+      const msg = String(e?.message ?? "");
+      if (/insufficient|not enough|balance/i.test(msg)) {
+        setLowBalanceOpen(true);
+      } else {
+        toast.error(msg || "Could not generate case");
+      }
     } finally {
       setGenerating(false);
     }
   }
+
 
   useEffect(() => {
     let mounted = true;
@@ -198,7 +213,7 @@ function CallScreen() {
         },
       }).catch(() => {});
     }
-    navigate({ to: "/recents" });
+    navigate({ to: rechargeAfterEndRef.current ? "/recharge" : "/recents" });
   }
 
 
@@ -248,19 +263,45 @@ function CallScreen() {
         {/* Mystery game controls */}
         <div className="px-4 pb-3">
           {isMale ? (
-            <Button
-              variant="secondary"
-              className="w-full gap-2"
-              disabled={generating || !connected}
-              onClick={hostMysteryCase}
-            >
-              <Search className="size-4" />
-              {generating
-                ? "Generating case…"
-                : caseId
-                ? "Open mystery case"
-                : `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`}
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                className="w-full gap-2"
+                disabled={generating || !connected}
+                onClick={hostMysteryCase}
+              >
+                <Search className="size-4" />
+                {generating
+                  ? "Generating case…"
+                  : caseId
+                  ? "Open mystery case"
+                  : canAfford
+                  ? `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`
+                  : `Low balance · need ${CASE_GENERATION_COIN_COST} coins`}
+              </Button>
+              {!caseId && (
+                <p
+                  className={`mt-1 text-center text-[11px] ${
+                    canAfford ? "text-muted-foreground" : "text-destructive"
+                  }`}
+                >
+                  <Coins className="inline size-3 -mt-0.5 mr-1" />
+                  Your balance: {myBalance} coins
+                  {!canAfford && (
+                    <>
+                      {" · "}
+                      <button
+                        type="button"
+                        className="underline font-medium"
+                        onClick={() => setLowBalanceOpen(true)}
+                      >
+                        Recharge
+                      </button>
+                    </>
+                  )}
+                </p>
+              )}
+            </>
           ) : caseId ? (
             <Button variant="secondary" className="w-full gap-2" onClick={() => setCasePanelOpen(true)}>
               <Search className="size-4" /> Open mystery case
@@ -279,6 +320,7 @@ function CallScreen() {
             </button>
           )}
         </div>
+
 
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
           Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
@@ -305,6 +347,44 @@ function CallScreen() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={lowBalanceOpen} onOpenChange={setLowBalanceOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Coins className="size-5 text-coin" />
+              Not enough coins
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Hosting a Mystery Case costs{" "}
+                  <span className="font-semibold text-foreground">{CASE_GENERATION_COIN_COST} coins</span>,
+                  but your wallet has only{" "}
+                  <span className="font-semibold text-foreground">{myBalance} coins</span>.
+                </p>
+                <div className="rounded-lg border bg-muted/40 p-3 text-xs">
+                  You need <span className="font-semibold">{Math.max(0, CASE_GENERATION_COIN_COST - myBalance)} more coins</span>.
+                  To recharge, please end the call first — the back button is locked during an active call to protect both players.
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep playing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                rechargeAfterEndRef.current = true;
+                setLowBalanceOpen(false);
+                setConfirmEnd(true);
+              }}
+            >
+              End call & recharge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
+
   );
 }
