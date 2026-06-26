@@ -47,6 +47,16 @@ function CallScreen() {
   const [freeStart, setFreeStart] = useState<number | null>(null);
   const [coinStart, setCoinStart] = useState<number | null>(null);
   const outOfFundsTriggeredRef = useRef(false);
+  // Single-active-session enforcement: every mount mints a unique token and
+  // writes it into the active_call localStorage slot. A newer tab claiming
+  // ownership overwrites the token; older tabs notice via the `storage` event
+  // and pause (no usage flushes, no elapsed counter, no recharge prompts).
+  const sessionTokenRef = useRef<string>(
+    (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID?.()) ||
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
 
 
@@ -183,7 +193,11 @@ function CallScreen() {
             try {
               localStorage.setItem(
                 resumeKey,
-                JSON.stringify({ id: res.id, lastFlushedAt: new Date().toISOString() }),
+                JSON.stringify({
+                  id: res.id,
+                  lastFlushedAt: new Date().toISOString(),
+                  sessionToken: sessionTokenRef.current,
+                }),
               );
             } catch { /* ignore */ }
             // Authoritative re-sync: pull the latest profile so the free
@@ -226,6 +240,9 @@ function CallScreen() {
   useEffect(() => {
     if (!connected) return;
     const i = setInterval(() => {
+      // Paused tabs (a newer session has claimed ownership) freeze the timer
+      // so no double-counting happens against the authoritative session.
+      if (pausedRef.current) return;
       setElapsed((e) => {
         const next = e + 1;
         elapsedRef.current = next;
@@ -234,6 +251,37 @@ function CallScreen() {
     }, 1000);
     return () => clearInterval(i);
   }, [connected]);
+
+  // Listen for ownership changes from other tabs. If another mount of the
+  // call screen overwrites the active_call slot with a different
+  // sessionToken, this tab pauses: no flushes, no elapsed tick, no recharge
+  // prompts. Resuming requires reload of this tab (which mints a fresh token).
+  useEffect(() => {
+    const resumeKey = `active_call:${userId}:${kind}`;
+    function evaluate(raw: string | null) {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        const token = parsed?.sessionToken as string | undefined;
+        if (token && token !== sessionTokenRef.current && !pausedRef.current) {
+          pausedRef.current = true;
+          setPaused(true);
+          toast.warning(
+            "Another call window took over — this tab is paused to avoid double billing.",
+            { duration: 8000 },
+          );
+        }
+      } catch { /* ignore */ }
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== resumeKey) return;
+      evaluate(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    // Initial check in case another tab claimed ownership before this one mounted.
+    try { evaluate(localStorage.getItem(resumeKey)); } catch { /* ignore */ }
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId, kind]);
 
   // ---- Live billing ledger (free seconds first, then coins) ----
   const freeAvail = freeStart ?? 0;
@@ -273,6 +321,7 @@ function CallScreen() {
   // auto-open the recharge sheet with all offers. Call stays connected.
   useEffect(() => {
     if (!connected) return;
+    if (pausedRef.current) return;
     if (outOfFunds && !outOfFundsTriggeredRef.current && !rechargeOpen) {
       outOfFundsTriggeredRef.current = true;
       toast.error("You're out of free minutes & coins — recharge to keep talking.", {
@@ -280,7 +329,7 @@ function CallScreen() {
       });
       setRechargeOpen(true);
     }
-  }, [connected, outOfFunds, rechargeOpen]);
+  }, [connected, outOfFunds, rechargeOpen, paused]);
 
   // ---- Persistence: keep server-side free_seconds_remaining and coin balance
   // in sync so the countdown / "Free minutes used" state survives refresh,
@@ -294,6 +343,22 @@ function CallScreen() {
     const callLogId = callLogIdRef.current;
     if (!callLogId) return;
     if (flushInFlightRef.current) return;
+    // Paused (another tab took ownership) → don't push usage from this tab,
+    // the authoritative tab is now responsible for billing.
+    if (pausedRef.current) return;
+    // Also bail if the localStorage slot now belongs to a different session
+    // token (e.g. storage event was missed in this tab).
+    try {
+      const raw = localStorage.getItem(`active_call:${userId}:${kind}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.sessionToken && parsed.sessionToken !== sessionTokenRef.current) {
+          pausedRef.current = true;
+          setPaused(true);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
     // This-session usage so far (live counters).
     const sessionFreeUsed = Math.min(freeAvail, elapsedRef.current);
     const sessionCoinsUsed = Math.ceil(
@@ -337,7 +402,11 @@ function CallScreen() {
         try {
           localStorage.setItem(
             `active_call:${userId}:${kind}`,
-            JSON.stringify({ id: callLogId, lastFlushedAt: new Date().toISOString() }),
+            JSON.stringify({
+              id: callLogId,
+              lastFlushedAt: new Date().toISOString(),
+              sessionToken: sessionTokenRef.current,
+            }),
           );
         } catch { /* ignore */ }
       })
@@ -442,7 +511,13 @@ function CallScreen() {
   return (
     <AppShell>
       <Card className="glass overflow-hidden p-0">
+        {paused && (
+          <div className="bg-amber-500/90 text-black text-xs font-semibold text-center px-3 py-2">
+            Paused — another call window is now active. Close this tab or reload to take over.
+          </div>
+        )}
         <div className="relative aspect-[3/4] sm:aspect-video bg-black flex items-center justify-center">
+
           {kind === "video" ? (
             <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
           ) : (
