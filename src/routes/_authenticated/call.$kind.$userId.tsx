@@ -275,31 +275,51 @@ function CallScreen() {
   // reconnect, accidental tab close, or app restart. -----------------------
   const flushUsage = useRef<(opts?: { keepalive?: boolean }) => void>(() => {});
   flushUsage.current = () => {
-    const freeUsedNow = Math.min(freeAvail, elapsedRef.current);
-    const coinsUsedNow = Math.ceil(
+    const callLogId = callLogIdRef.current;
+    if (!callLogId) return;
+    // This-session usage so far (live counters).
+    const sessionFreeUsed = Math.min(freeAvail, elapsedRef.current);
+    const sessionCoinsUsed = Math.ceil(
       (Math.max(0, elapsedRef.current - freeAvail) * perMin) / 60,
     );
-    const deltaFree = Math.max(0, freeUsedNow - syncedFreeRef.current);
-    const deltaCoins = Math.max(
-      0,
-      Math.min(coinsAvail - syncedCoinsRef.current, coinsUsedNow - syncedCoinsRef.current),
-    );
-    if (deltaFree === 0 && deltaCoins === 0) return;
-    syncedFreeRef.current = freeUsedNow;
-    syncedCoinsRef.current = coinsUsedNow;
+    const cappedSessionCoinsUsed = Math.min(coinsAvail, sessionCoinsUsed);
+    // Cumulative totals for the entire call_log (carries over reconnects).
+    const totalFree = syncedFreeRef.current + sessionFreeUsed;
+    const totalCoins = syncedCoinsRef.current + cappedSessionCoinsUsed;
+    const totalElapsed = sessionStartElapsedRef.current + elapsedRef.current;
+    // Nothing new to report → no-op (server is idempotent anyway).
+    if (
+      sessionFreeUsed === 0 &&
+      cappedSessionCoinsUsed === 0 &&
+      totalElapsed === sessionStartElapsedRef.current
+    ) {
+      return;
+    }
     applyUsageFn({
       data: {
-        callLogId: callLogIdRef.current,
-        deltaFreeSeconds: deltaFree,
-        deltaCoins: deltaCoins,
-        elapsedSeconds: elapsedRef.current,
+        callLogId,
+        totalFreeSeconds: totalFree,
+        totalCoins: totalCoins,
+        elapsedSeconds: totalElapsed,
       },
-    }).catch(() => {
-      // Roll back local sync counters so the next flush retries this delta.
-      syncedFreeRef.current = Math.max(0, syncedFreeRef.current - deltaFree);
-      syncedCoinsRef.current = Math.max(0, syncedCoinsRef.current - deltaCoins);
-    });
+    })
+      .then(() => {
+        // Server accepted these totals → fold them into the baseline so the
+        // next flush only sends the new portion.
+        syncedFreeRef.current = totalFree;
+        syncedCoinsRef.current = totalCoins;
+        sessionStartElapsedRef.current = totalElapsed;
+        elapsedRef.current = 0;
+        try {
+          localStorage.setItem(
+            `active_call:${userId}:${kind}`,
+            JSON.stringify({ id: callLogId, lastFlushedAt: new Date().toISOString() }),
+          );
+        } catch { /* ignore */ }
+      })
+      .catch(() => { /* will retry next tick */ });
   };
+
 
   // Periodic flush every 10s while connected.
   useEffect(() => {
