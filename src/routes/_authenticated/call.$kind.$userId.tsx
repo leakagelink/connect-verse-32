@@ -273,21 +273,24 @@ function CallScreen() {
   // ---- Persistence: keep server-side free_seconds_remaining and coin balance
   // in sync so the countdown / "Free minutes used" state survives refresh,
   // reconnect, accidental tab close, or app restart. -----------------------
+  // Idempotency key for the in-flight flush. Reused across retries so the
+  // server can dedupe duplicate attempts; cleared after a successful flush.
+  const pendingFlushKeyRef = useRef<string | null>(null);
+  const flushInFlightRef = useRef(false);
   const flushUsage = useRef<(opts?: { keepalive?: boolean }) => void>(() => {});
   flushUsage.current = () => {
     const callLogId = callLogIdRef.current;
     if (!callLogId) return;
+    if (flushInFlightRef.current) return;
     // This-session usage so far (live counters).
     const sessionFreeUsed = Math.min(freeAvail, elapsedRef.current);
     const sessionCoinsUsed = Math.ceil(
       (Math.max(0, elapsedRef.current - freeAvail) * perMin) / 60,
     );
     const cappedSessionCoinsUsed = Math.min(coinsAvail, sessionCoinsUsed);
-    // Cumulative totals for the entire call_log (carries over reconnects).
     const totalFree = syncedFreeRef.current + sessionFreeUsed;
     const totalCoins = syncedCoinsRef.current + cappedSessionCoinsUsed;
     const totalElapsed = sessionStartElapsedRef.current + elapsedRef.current;
-    // Nothing new to report → no-op (server is idempotent anyway).
     if (
       sessionFreeUsed === 0 &&
       cappedSessionCoinsUsed === 0 &&
@@ -295,21 +298,30 @@ function CallScreen() {
     ) {
       return;
     }
+    // Mint a stable idempotency key for this attempt; keep it until the
+    // server confirms so any retry sends the same key and gets deduped.
+    if (!pendingFlushKeyRef.current) {
+      pendingFlushKeyRef.current =
+        (globalThis.crypto?.randomUUID?.() ??
+          `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    }
+    const idemKey = pendingFlushKeyRef.current;
+    flushInFlightRef.current = true;
     applyUsageFn({
       data: {
         callLogId,
+        idempotencyKey: idemKey,
         totalFreeSeconds: totalFree,
         totalCoins: totalCoins,
         elapsedSeconds: totalElapsed,
       },
     })
       .then(() => {
-        // Server accepted these totals → fold them into the baseline so the
-        // next flush only sends the new portion.
         syncedFreeRef.current = totalFree;
         syncedCoinsRef.current = totalCoins;
         sessionStartElapsedRef.current = totalElapsed;
         elapsedRef.current = 0;
+        pendingFlushKeyRef.current = null;
         try {
           localStorage.setItem(
             `active_call:${userId}:${kind}`,
@@ -317,8 +329,12 @@ function CallScreen() {
           );
         } catch { /* ignore */ }
       })
-      .catch(() => { /* will retry next tick */ });
+      .catch(() => { /* keep pendingFlushKeyRef so retry reuses same key */ })
+      .finally(() => {
+        flushInFlightRef.current = false;
+      });
   };
+
 
 
   // Periodic flush every 10s while connected.

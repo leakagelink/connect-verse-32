@@ -105,6 +105,7 @@ export const applyCallUsage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: {
     callLogId: string;
+    idempotencyKey: string;
     totalFreeSeconds: number;
     totalCoins: number;
     elapsedSeconds: number;
@@ -114,10 +115,33 @@ export const applyCallUsage = createServerFn({ method: "POST" })
     const sentFree = Math.max(0, Math.floor(data.totalFreeSeconds || 0));
     const sentCoins = Math.max(0, Math.floor(data.totalCoins || 0));
     const sentElapsed = Math.max(0, Math.floor(data.elapsedSeconds || 0));
+    const idemKey = String(data.idempotencyKey || "").slice(0, 80);
+    if (!idemKey) {
+      return { ok: false, freeSeconds: null, balance: null, reason: "missing-key" };
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Load the call log + verify ownership.
+    // Idempotency: if we've already seen this (call_log_id, idempotency_key)
+    // pair, return the original outcome and apply nothing again.
+    const { data: existingFlush } = await supabaseAdmin
+      .from("call_usage_flushes")
+      .select("applied_free_delta, applied_coins_delta")
+      .eq("call_log_id", data.callLogId)
+      .eq("idempotency_key", idemKey)
+      .maybeSingle();
+    if (existingFlush) {
+      return {
+        ok: true,
+        freeSeconds: null,
+        balance: null,
+        deltaFree: Number(existingFlush.applied_free_delta ?? 0),
+        deltaCoins: Number(existingFlush.applied_coins_delta ?? 0),
+        deduped: true,
+      };
+    }
+
+    // Verify ownership of the call.
     const { data: log, error: logErr } = await supabaseAdmin
       .from("call_logs")
       .select("id, caller_id, duration_seconds, coins_spent, free_seconds_used, ended_at")
@@ -125,7 +149,6 @@ export const applyCallUsage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (logErr) throw logErr;
     if (!log || log.caller_id !== userId) {
-      // Don't bill if caller mismatch or row missing.
       return { ok: false, freeSeconds: null, balance: null, reason: "no-log" };
     }
 
@@ -135,6 +158,33 @@ export const applyCallUsage = createServerFn({ method: "POST" })
 
     const deltaFree = Math.max(0, sentFree - storedFree);
     const deltaCoins = Math.max(0, sentCoins - storedCoins);
+
+    // Reserve the idempotency slot BEFORE touching wallets/profile. A unique
+    // constraint on (call_log_id, idempotency_key) makes concurrent retries
+    // collide here, so only one wins and gets to apply the delta.
+    const { error: reserveErr } = await supabaseAdmin
+      .from("call_usage_flushes")
+      .insert({
+        call_log_id: data.callLogId,
+        idempotency_key: idemKey,
+        total_free_seconds: sentFree,
+        total_coins: sentCoins,
+        elapsed_seconds: sentElapsed,
+        applied_free_delta: deltaFree,
+        applied_coins_delta: deltaCoins,
+      });
+    if (reserveErr) {
+      // Lost the race: another concurrent flush with the same key already won.
+      // Treat as a successful dedupe rather than failing the request.
+      return {
+        ok: true,
+        freeSeconds: null,
+        balance: null,
+        deltaFree: 0,
+        deltaCoins: 0,
+        deduped: true,
+      };
+    }
 
     let freeSeconds: number | null = null;
     if (deltaFree > 0) {
@@ -175,13 +225,12 @@ export const applyCallUsage = createServerFn({ method: "POST" })
         metadata: {
           call_log_id: data.callLogId,
           seconds: sentElapsed,
+          idempotency_key: idemKey,
           reconciled: true,
         },
       });
     }
 
-    // Persist new cumulative totals + last_flushed_at on the call_log so the
-    // next flush / reconnect can reconcile against them.
     await supabaseAdmin
       .from("call_logs")
       .update({
@@ -192,8 +241,9 @@ export const applyCallUsage = createServerFn({ method: "POST" })
       })
       .eq("id", data.callLogId);
 
-    return { ok: true, freeSeconds, balance, deltaFree, deltaCoins };
+    return { ok: true, freeSeconds, balance, deltaFree, deltaCoins, deduped: false };
   });
+
 
 
 export type RecentCall = {

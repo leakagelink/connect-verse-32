@@ -134,6 +134,50 @@ export type Database = {
         }
         Relationships: []
       }
+      call_usage_flushes: {
+        Row: {
+          applied_coins_delta: number
+          applied_free_delta: number
+          call_log_id: string
+          created_at: string
+          elapsed_seconds: number
+          id: string
+          idempotency_key: string
+          total_coins: number
+          total_free_seconds: number
+        }
+        Insert: {
+          applied_coins_delta?: number
+          applied_free_delta?: number
+          call_log_id: string
+          created_at?: string
+          elapsed_seconds?: number
+          id?: string
+          idempotency_key: string
+          total_coins?: number
+          total_free_seconds?: number
+        }
+        Update: {
+          applied_coins_delta?: number
+          applied_free_delta?: number
+          call_log_id?: string
+          created_at?: string
+          elapsed_seconds?: number
+          id?: string
+          idempotency_key?: string
+          total_coins?: number
+          total_free_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_usage_flushes_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_guesses: {
         Row: {
           case_id: string
