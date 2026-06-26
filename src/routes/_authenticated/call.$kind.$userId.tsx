@@ -212,7 +212,7 @@ function CallScreen() {
         },
       }).catch(() => {});
     }
-    navigate({ to: "/recents" });
+    navigate({ to: rechargeAfterEndRef.current ? "/recharge" : "/recents" });
   }
 
 
