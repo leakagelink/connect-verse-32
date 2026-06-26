@@ -101,8 +101,10 @@ function CallScreen() {
     }
   }
 
-
+  useEffect(() => {
+    let mounted = true;
     async function start() {
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
