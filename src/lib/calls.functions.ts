@@ -96,7 +96,7 @@ export const applyCallUsage = createServerFn({ method: "POST" })
 
       await supabaseAdmin.from("transactions").insert({
         user_id: userId,
-        type: "call_spend",
+        type: "chat_spend",
         coins_delta: -deltaCoins,
         inr_amount: 0,
         metadata: {
