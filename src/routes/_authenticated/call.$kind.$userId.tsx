@@ -229,6 +229,63 @@ function CallScreen() {
     }
   }, [connected, outOfFunds, rechargeOpen]);
 
+  // ---- Persistence: keep server-side free_seconds_remaining and coin balance
+  // in sync so the countdown / "Free minutes used" state survives refresh,
+  // reconnect, accidental tab close, or app restart. -----------------------
+  const flushUsage = useRef<(opts?: { keepalive?: boolean }) => void>(() => {});
+  flushUsage.current = () => {
+    const freeUsedNow = Math.min(freeAvail, elapsedRef.current);
+    const coinsUsedNow = Math.ceil(
+      (Math.max(0, elapsedRef.current - freeAvail) * perMin) / 60,
+    );
+    const deltaFree = Math.max(0, freeUsedNow - syncedFreeRef.current);
+    const deltaCoins = Math.max(
+      0,
+      Math.min(coinsAvail - syncedCoinsRef.current, coinsUsedNow - syncedCoinsRef.current),
+    );
+    if (deltaFree === 0 && deltaCoins === 0) return;
+    syncedFreeRef.current = freeUsedNow;
+    syncedCoinsRef.current = coinsUsedNow;
+    applyUsageFn({
+      data: {
+        callLogId: callLogIdRef.current,
+        deltaFreeSeconds: deltaFree,
+        deltaCoins: deltaCoins,
+        elapsedSeconds: elapsedRef.current,
+      },
+    }).catch(() => {
+      // Roll back local sync counters so the next flush retries this delta.
+      syncedFreeRef.current = Math.max(0, syncedFreeRef.current - deltaFree);
+      syncedCoinsRef.current = Math.max(0, syncedCoinsRef.current - deltaCoins);
+    });
+  };
+
+  // Periodic flush every 10s while connected.
+  useEffect(() => {
+    if (!connected) return;
+    const i = setInterval(() => flushUsage.current(), 10000);
+    return () => clearInterval(i);
+  }, [connected]);
+
+  // Flush when the tab is hidden / about to unload so a refresh keeps state.
+  useEffect(() => {
+    const onHide = () => flushUsage.current();
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+    };
+  }, []);
+
+  // After mount, re-fetch the profile so any usage persisted by a previous
+  // call session (before refresh) is reflected in the countdown immediately.
+  useEffect(() => {
+    qc.invalidateQueries({ queryKey: ["me"] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
 
 
 
