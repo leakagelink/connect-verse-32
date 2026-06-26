@@ -240,6 +240,9 @@ function CallScreen() {
   useEffect(() => {
     if (!connected) return;
     const i = setInterval(() => {
+      // Paused tabs (a newer session has claimed ownership) freeze the timer
+      // so no double-counting happens against the authoritative session.
+      if (pausedRef.current) return;
       setElapsed((e) => {
         const next = e + 1;
         elapsedRef.current = next;
@@ -248,6 +251,37 @@ function CallScreen() {
     }, 1000);
     return () => clearInterval(i);
   }, [connected]);
+
+  // Listen for ownership changes from other tabs. If another mount of the
+  // call screen overwrites the active_call slot with a different
+  // sessionToken, this tab pauses: no flushes, no elapsed tick, no recharge
+  // prompts. Resuming requires reload of this tab (which mints a fresh token).
+  useEffect(() => {
+    const resumeKey = `active_call:${userId}:${kind}`;
+    function evaluate(raw: string | null) {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        const token = parsed?.sessionToken as string | undefined;
+        if (token && token !== sessionTokenRef.current && !pausedRef.current) {
+          pausedRef.current = true;
+          setPaused(true);
+          toast.warning(
+            "Another call window took over — this tab is paused to avoid double billing.",
+            { duration: 8000 },
+          );
+        }
+      } catch { /* ignore */ }
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== resumeKey) return;
+      evaluate(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    // Initial check in case another tab claimed ownership before this one mounted.
+    try { evaluate(localStorage.getItem(resumeKey)); } catch { /* ignore */ }
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId, kind]);
 
   // ---- Live billing ledger (free seconds first, then coins) ----
   const freeAvail = freeStart ?? 0;
