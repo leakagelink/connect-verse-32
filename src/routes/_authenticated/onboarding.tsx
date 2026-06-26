@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
