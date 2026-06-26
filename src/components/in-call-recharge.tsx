@@ -49,7 +49,24 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
         setTimeout(() => onOpenChange(false), 600);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Recharge failed");
+      // Keep the sheet (and call) intact. Surface a clear error with Retry / Cancel.
+      const msg = e?.message ?? "Please try again.";
+      toast.error(`Recharge failed: ${msg}`, {
+        description: "Your call is still connected. Retry the same plan or cancel.",
+        duration: 10000,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            void buy(planId);
+          },
+        },
+        cancel: {
+          label: "Cancel",
+          onClick: () => {
+            /* dismiss only — call stays connected, sheet stays open */
+          },
+        },
+      });
     } finally {
       setBusy(null);
     }
