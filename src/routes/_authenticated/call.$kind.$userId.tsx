@@ -157,8 +157,6 @@ function CallScreen() {
           setFreeStart(me?.profile?.free_seconds_remaining ?? 0);
           setCoinStart(me?.walletBalance ?? 0);
           try {
-            // Try to resume an in-flight call_log for the same partner/kind
-            // (reconnect or refresh) instead of creating a duplicate row.
             const resumeKey = `active_call:${userId}:${kind}`;
             let resumeId: string | null = null;
             try {
@@ -179,9 +177,6 @@ function CallScreen() {
               data: { calleeId: userId, kind: kind as "voice" | "video", resumeId },
             });
             callLogIdRef.current = res.id;
-            // Seed local cumulative trackers from server-side baseline so the
-            // first flush after a reconnect doesn't re-bill what was already
-            // persisted.
             syncedFreeRef.current = res.baselineFreeSecondsUsed ?? 0;
             syncedCoinsRef.current = res.baselineCoinsSpent ?? 0;
             sessionStartElapsedRef.current = res.baselineDurationSeconds ?? 0;
@@ -191,6 +186,23 @@ function CallScreen() {
                 JSON.stringify({ id: res.id, lastFlushedAt: new Date().toISOString() }),
               );
             } catch { /* ignore */ }
+            // Authoritative re-sync: pull the latest profile so the free
+            // countdown + "Free minutes used" label reflect what the server
+            // actually has (after any prior session's flushes).
+            try {
+              const fresh = await profileFn();
+              if (mounted && fresh?.profile) {
+                qc.setQueryData(["me"], fresh);
+                setFreeStart(fresh.profile.free_seconds_remaining ?? 0);
+                setCoinStart(fresh.walletBalance ?? 0);
+                // This session's elapsed restarts at 0; baseline already
+                // accounts for whatever the previous session burned.
+                elapsedRef.current = 0;
+                setElapsed(0);
+                freeExhaustedRef.current =
+                  (fresh.profile.free_seconds_remaining ?? 0) === 0;
+              }
+            } catch { /* ignore profile refresh failure */ }
             if (res.resumed) {
               toast.info("Reconnected to your previous call — no duplicate charges.");
             }
