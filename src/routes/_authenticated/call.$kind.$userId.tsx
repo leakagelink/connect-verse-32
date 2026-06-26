@@ -191,6 +191,26 @@ function CallScreen() {
   const usingFree = freeLeftSec > 0;
   const outOfFunds = connected && totalSecondsLeft <= 0;
 
+  // Seed live ledger snapshots the moment the profile is available — so the
+  // "5:00 free" countdown is visible from the very start of the call screen.
+  useEffect(() => {
+    if (freeStart === null && me?.profile) {
+      setFreeStart(me.profile.free_seconds_remaining ?? 0);
+      setCoinStart(me.walletBalance ?? 0);
+    }
+  }, [me, freeStart]);
+
+  // Notify the user exactly when free minutes finish and coin billing kicks in.
+  const freeExhaustedRef = useRef(false);
+  useEffect(() => {
+    if (!connected || freeStart === null) return;
+    if (freeAvail > 0 && freeLeftSec === 0 && !freeExhaustedRef.current) {
+      freeExhaustedRef.current = true;
+      toast.info("Free minutes finished — coins are now being used.");
+    }
+  }, [connected, freeStart, freeAvail, freeLeftSec]);
+
+
   // When the user runs out of free time AND can't afford the next minute,
   // auto-open the recharge sheet with all offers. Call stays connected.
   useEffect(() => {
