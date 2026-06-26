@@ -244,8 +244,10 @@ function CallScreen() {
     setConfirmEnd(false);
     const id = callLogIdRef.current;
     const seconds = elapsedRef.current;
-    const minutes = Math.max(1, Math.ceil(seconds / 60));
-    const coins = seconds > 0 ? minutes * perMin : 0;
+    // Bill only the portion not covered by free time, rounded up to whole minutes.
+    const billableSec = Math.max(0, seconds - freeAvail);
+    const billableMin = billableSec > 0 ? Math.ceil(billableSec / 60) : 0;
+    const coins = Math.min(coinsAvail, billableMin * perMin);
     if (id) {
       endLogFn({
         data: {
