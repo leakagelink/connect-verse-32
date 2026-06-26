@@ -193,7 +193,11 @@ function CallScreen() {
             try {
               localStorage.setItem(
                 resumeKey,
-                JSON.stringify({ id: res.id, lastFlushedAt: new Date().toISOString() }),
+                JSON.stringify({
+                  id: res.id,
+                  lastFlushedAt: new Date().toISOString(),
+                  sessionToken: sessionTokenRef.current,
+                }),
               );
             } catch { /* ignore */ }
             // Authoritative re-sync: pull the latest profile so the free
