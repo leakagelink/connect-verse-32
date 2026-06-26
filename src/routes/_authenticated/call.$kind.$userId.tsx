@@ -662,6 +662,21 @@ function CallScreen() {
 
       <MysteryPanel caseId={caseId} open={casePanelOpen} onOpenChange={setCasePanelOpen} />
 
+      <GiftPanel
+        open={giftOpen}
+        onOpenChange={setGiftOpen}
+        receiverId={userId}
+        callLogId={callLogIdRef.current}
+        balance={myBalance}
+        onSent={() => {
+          qc.invalidateQueries({ queryKey: ["me"] });
+        }}
+        onLowBalance={() => {
+          setGiftOpen(false);
+          setRechargeOpen(true);
+        }}
+      />
+
 
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent>
