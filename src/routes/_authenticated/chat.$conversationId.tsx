@@ -115,7 +115,7 @@ function ChatRoom() {
     const body = text.trim();
     if (!body || sessionEnded) return;
     setText("");
-    try { await sendFn({ data: { conversationId, body } }); }
+    try { await sendFn({ data: { conversationId, body } }); refetchWallet(); }
     catch (e: any) { toast.error(e.message); }
   }
 
