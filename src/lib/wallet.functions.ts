@@ -49,27 +49,24 @@ export const mockRecharge = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
 
     // log transactions
-    const rows = [
-      {
-        user_id: userId,
-        type: "recharge" as const,
-        coins_delta: baseCoins,
-        inr_amount: plan.price_inr,
-        plan_id: plan.id,
-        metadata: { mock: true },
-      },
-    ];
+    await supabaseAdmin.from("transactions").insert({
+      user_id: userId,
+      type: "recharge",
+      coins_delta: baseCoins,
+      inr_amount: plan.price_inr,
+      plan_id: plan.id,
+      metadata: { mock: true },
+    });
     if (bonusCoins > 0) {
-      rows.push({
+      await supabaseAdmin.from("transactions").insert({
         user_id: userId,
-        type: "bonus" as const,
+        type: "bonus",
         coins_delta: bonusCoins,
-        inr_amount: 0 as never,
+        inr_amount: 0,
         plan_id: plan.id,
         metadata: { bonus_pct: bonusPct, deposit_no: newCount },
       });
     }
-    await supabaseAdmin.from("transactions").insert(rows);
 
     return {
       ok: true,
