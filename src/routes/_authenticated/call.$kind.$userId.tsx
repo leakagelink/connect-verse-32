@@ -58,6 +58,11 @@ function CallScreen() {
   // source of truth across refresh / reconnect).
   const syncedFreeRef = useRef(0);
   const syncedCoinsRef = useRef(0);
+  // Baseline elapsed seconds already recorded on the call_log from prior
+  // sessions of the same call (after a reconnect / refresh). The wall-clock
+  // total we report to the server is this baseline + the current session's
+  // elapsed counter.
+  const sessionStartElapsedRef = useRef(0);
   const generateCaseFn = useServerFn(generateMysteryCase);
   const profileFn = useServerFn(getMyProfile);
   const qc = useQueryClient();
