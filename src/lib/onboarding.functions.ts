@@ -9,6 +9,7 @@ const OnboardingInput = z.object({
   gender: z.enum(["male", "female", "other"]),
   dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
   country: z.string().min(2).max(60),
+  state: z.string().min(2).max(80).optional().nullable(),
   language: z.string().min(2).max(40),
   acceptGuidelines: z.literal(true),
   asCreator: z.boolean().optional(),
