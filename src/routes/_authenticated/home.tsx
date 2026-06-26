@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic } from "lucide-react";
+import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, Gift, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -63,6 +63,26 @@ function Home() {
         </div>
         <Button size="sm" variant="outline" onClick={() => refetchOnline()}>Refresh</Button>
       </div>
+
+      <Link to="/recharge" className="block mb-4">
+        <Card className="relative overflow-hidden p-4 border-primary/40 brand-gradient text-primary-foreground hover:opacity-95 transition">
+          <div className="absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -left-4 -bottom-8 size-24 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <div className="size-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <Gift className="size-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-base">First Recharge Offer</p>
+                <Badge className="bg-white/25 text-primary-foreground border-0 text-[10px]">LIMITED</Badge>
+              </div>
+              <p className="text-xs opacity-90">Get <span className="font-semibold">+50% bonus</span> on 1st · +40% on 2nd · +30% on 3rd deposit</p>
+            </div>
+            <ChevronRight className="size-5 opacity-90" />
+          </div>
+        </Card>
+      </Link>
 
       {me?.profile?.free_seconds_remaining && me.profile.free_seconds_remaining > 0 && (
         <Card className="glass mb-4 p-4 flex items-center gap-3 border-primary/30">
