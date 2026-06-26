@@ -753,7 +753,14 @@ export type Database = {
         | "other"
       report_status: "open" | "reviewed" | "actioned" | "dismissed"
       room_kind: "voice" | "video" | "game" | "live"
-      txn_type: "recharge" | "bonus" | "chat_spend" | "refund" | "signup_bonus"
+      txn_type:
+        | "recharge"
+        | "bonus"
+        | "chat_spend"
+        | "refund"
+        | "signup_bonus"
+        | "gift_spend"
+        | "gift_received"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -898,7 +905,15 @@ export const Constants = {
       ],
       report_status: ["open", "reviewed", "actioned", "dismissed"],
       room_kind: ["voice", "video", "game", "live"],
-      txn_type: ["recharge", "bonus", "chat_spend", "refund", "signup_bonus"],
+      txn_type: [
+        "recharge",
+        "bonus",
+        "chat_spend",
+        "refund",
+        "signup_bonus",
+        "gift_spend",
+        "gift_received",
+      ],
     },
   },
 } as const
