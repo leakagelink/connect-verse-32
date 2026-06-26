@@ -98,16 +98,18 @@ function ConnectScreen() {
 
   // Filter + priority sorting
   const sorted = useMemo(() => {
-    const langFilter = language === "any" ? null : language;
-    const countryFilter = country === "any" ? null : country;
-    const stateFilter = state === "any" ? null : state;
+    // If admin has hidden the filter UI, ignore the filter state entirely.
+    const langFilter = !filtersVisible || language === "any" ? null : language;
+    const countryFilter = !filtersVisible || country === "any" ? null : country;
+    const stateFilter = !filtersVisible || state === "any" ? null : state;
+    const useActiveOnly = filtersVisible && activeOnly;
     const activeCutoff = Date.now() - 30_000; // last 30s = "active now"
 
     const filtered = all.filter((u) => {
       if (langFilter && u.language !== langFilter) return false;
       if (countryFilter && u.country !== countryFilter) return false;
       if (stateFilter && u.state !== stateFilter) return false;
-      if (activeOnly) {
+      if (useActiveOnly) {
         const t = u.last_seen_at ? new Date(u.last_seen_at).getTime() : 0;
         if (t < activeCutoff) return false;
       }
