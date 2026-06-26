@@ -128,6 +128,41 @@ export type Database = {
         }
         Relationships: []
       }
+      case_guesses: {
+        Row: {
+          case_id: string
+          created_at: string
+          guessed_person_id: string
+          id: string
+          is_correct: boolean
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          guessed_person_id: string
+          id?: string
+          is_correct: boolean
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          guessed_person_id?: string
+          id?: string
+          is_correct?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_guesses_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "mystery_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_sessions: {
         Row: {
           coins_spent: number
@@ -305,6 +340,68 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mystery_cases: {
+        Row: {
+          brief: string
+          call_log_id: string | null
+          coins_spent: number
+          created_at: string
+          created_by: string
+          culprit_id: string
+          evidence: Json
+          id: string
+          partner_id: string
+          persons: Json
+          setting: string | null
+          solution_explanation: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brief: string
+          call_log_id?: string | null
+          coins_spent?: number
+          created_at?: string
+          created_by: string
+          culprit_id: string
+          evidence?: Json
+          id?: string
+          partner_id: string
+          persons?: Json
+          setting?: string | null
+          solution_explanation: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brief?: string
+          call_log_id?: string | null
+          coins_spent?: number
+          created_at?: string
+          created_by?: string
+          culprit_id?: string
+          evidence?: Json
+          id?: string
+          partner_id?: string
+          persons?: Json
+          setting?: string | null
+          solution_explanation?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mystery_cases_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_logs"
             referencedColumns: ["id"]
           },
         ]

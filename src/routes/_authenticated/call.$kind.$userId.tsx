@@ -8,11 +8,17 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
 import { startCallLog, endCallLog } from "@/lib/calls.functions";
+import { generateMysteryCase, CASE_GENERATION_COIN_COST } from "@/lib/mystery.functions";
+import { getMyProfile } from "@/lib/onboarding.functions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { MysteryPanel } from "@/components/mystery-panel";
+import { supabase } from "@/integrations/supabase/client";
+
 
 
 export const Route = createFileRoute("/_authenticated/call/$kind/$userId")({
@@ -36,11 +42,69 @@ function CallScreen() {
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
   const startLogFn = useServerFn(startCallLog);
   const endLogFn = useServerFn(endCallLog);
+  const generateCaseFn = useServerFn(generateMysteryCase);
+  const profileFn = useServerFn(getMyProfile);
+  const qc = useQueryClient();
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
+  const isMale = me?.profile?.gender === "male";
+  const myId = me?.profile?.id ?? "";
+  const [caseId, setCaseId] = useState<string | null>(null);
+  const [casePanelOpen, setCasePanelOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
+  // Realtime: share generated case_id between caller & callee using a deterministic channel
+  useEffect(() => {
+    if (!myId) return;
+    const pair = [myId, userId].sort().join(":");
+    const channel = supabase.channel(`mystery:${pair}`, { config: { broadcast: { self: false } } });
+    channel
+      .on("broadcast", { event: "new_case" }, (payload) => {
+        const id = (payload.payload as any)?.caseId as string | undefined;
+        if (id) {
+          setCaseId(id);
+          setCasePanelOpen(true);
+          toast.info("Your partner started a mystery case!");
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [myId, userId]);
+
+  async function hostMysteryCase() {
+    if (!isMale) {
+      toast.error("Only male players can host a mystery case.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generateCaseFn({
+        data: { partnerId: userId, callLogId: callLogIdRef.current ?? undefined },
+      });
+      setCaseId(res.id);
+      setCasePanelOpen(true);
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+      // Broadcast to the partner
+      const pair = [myId, userId].sort().join(":");
+      await supabase.channel(`mystery:${pair}`).send({
+        type: "broadcast",
+        event: "new_case",
+        payload: { caseId: res.id },
+      });
+      toast.success(`Case generated! -${CASE_GENERATION_COIN_COST} coins`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not generate case");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
     async function start() {
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -180,10 +244,49 @@ function CallScreen() {
             <PhoneOff className="size-5" />
           </Button>
         </div>
+
+        {/* Mystery game controls */}
+        <div className="px-4 pb-3">
+          {isMale ? (
+            <Button
+              variant="secondary"
+              className="w-full gap-2"
+              disabled={generating || !connected}
+              onClick={hostMysteryCase}
+            >
+              <Search className="size-4" />
+              {generating
+                ? "Generating case…"
+                : caseId
+                ? "Open mystery case"
+                : `Host Mystery Case · ${CASE_GENERATION_COIN_COST} coins`}
+            </Button>
+          ) : caseId ? (
+            <Button variant="secondary" className="w-full gap-2" onClick={() => setCasePanelOpen(true)}>
+              <Search className="size-4" /> Open mystery case
+            </Button>
+          ) : (
+            <p className="text-[11px] text-center text-muted-foreground">
+              Your partner can host a Mystery Case · free for you to play 🕵️
+            </p>
+          )}
+          {caseId && isMale && !casePanelOpen && (
+            <button
+              className="mt-1 w-full text-[11px] text-primary hover:underline"
+              onClick={() => setCasePanelOpen(true)}
+            >
+              Re-open current case
+            </button>
+          )}
+        </div>
+
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
           Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
         </p>
       </Card>
+
+      <MysteryPanel caseId={caseId} open={casePanelOpen} onOpenChange={setCasePanelOpen} />
+
 
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent>
