@@ -140,7 +140,7 @@ function Home() {
             users={onlineUsers ?? []}
             loading={loadingOnline}
             renderActions={(u) => (
-              <Button size="sm" className="brand-gradient" onClick={() => navigate({ to: "/call/$kind/$userId", params: { kind: "voice", userId: u.id } })}>
+              <Button size="sm" className="brand-gradient" onClick={() => setPreview({ userId: u.id, kind: "voice" })}>
                 <Phone className="size-4 mr-1" /> Call
               </Button>
             )}
