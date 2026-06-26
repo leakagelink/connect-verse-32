@@ -39,6 +39,10 @@ function ChatRoom() {
   const endFn = useServerFn(endChatSession);
   const profileFn = useServerFn(getMyProfile);
   const walletFn = useServerFn(getWallet);
+  const partnerFn = useServerFn(getPartnerProfile);
+  const followFn = useServerFn(sendFollowRequest);
+  const respondFn = useServerFn(respondFollowRequest);
+  const unfollowFn = useServerFn(unfollowUser);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
   const { data: wallet, refetch: refetchWallet } = useQuery({ queryKey: ["wallet"], queryFn: () => walletFn() });
