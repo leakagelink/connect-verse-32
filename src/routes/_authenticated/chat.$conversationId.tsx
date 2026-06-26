@@ -7,14 +7,19 @@ import {
 } from "@/lib/chat.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { getWallet } from "@/lib/wallet.functions";
+import {
+  getPartnerProfile, sendFollowRequest, respondFollowRequest, unfollowUser,
+} from "@/lib/follows.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { CoinBadge } from "@/components/coin-badge";
 import { ReportDialog } from "@/components/report-dialog";
-import { ArrowLeft, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, UserPlus, UserCheck, UserX, Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { CHAT_COINS_PER_MINUTE } from "@/lib/constants";
+import { CHAT_COINS_PER_MINUTE, MESSAGE_COIN_COST_MALE } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/chat/$conversationId")({
   component: ChatRoom,
