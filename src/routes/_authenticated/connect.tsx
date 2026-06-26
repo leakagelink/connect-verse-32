@@ -25,6 +25,7 @@ import {
   Zap,
   Star,
   Filter,
+  RotateCcw,
 } from "lucide-react";
 import {
   VOICE_CALL_COINS_PER_MINUTE,
@@ -187,18 +188,21 @@ function ConnectScreen() {
             <Filter className="size-4 text-primary" />
             <h2 className="font-semibold text-sm">Filter creators</h2>
           </div>
-          {hasFilters && (
-            <button
-              onClick={() => {
-                setLanguage("any");
-                setCountry("any");
-                setState("any");
-              }}
-              className="text-[11px] text-primary hover:underline"
-            >
-              Clear
-            </button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!hasFilters}
+            onClick={() => {
+              setLanguage("any");
+              setCountry("any");
+              setState("any");
+            }}
+            className="h-7 px-2 text-[11px] text-primary hover:text-primary"
+          >
+            <RotateCcw className="size-3 mr-1" />
+            Clear / Reset
+          </Button>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <Select value={language} onValueChange={setLanguage}>
