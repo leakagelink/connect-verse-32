@@ -42,6 +42,12 @@ function CallScreen() {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
   const [rechargeOpen, setRechargeOpen] = useState(false);
+  // Snapshots of free seconds + coin balance captured when the call connects.
+  // Used to live-display remaining free time / coin time during the call.
+  const [freeStart, setFreeStart] = useState<number | null>(null);
+  const [coinStart, setCoinStart] = useState<number | null>(null);
+  const outOfFundsTriggeredRef = useRef(false);
+
 
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
@@ -136,11 +142,16 @@ function CallScreen() {
         setTimeout(async () => {
           if (!mounted) return;
           setConnected(true);
+          // Snapshot the free seconds + coin balance at connect time so the
+          // live counter shows exactly what the user has to spend.
+          setFreeStart(me?.profile?.free_seconds_remaining ?? 0);
+          setCoinStart(me?.walletBalance ?? 0);
           try {
             const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
             callLogIdRef.current = res.id;
           } catch { /* ignore log start failure */ }
         }, 1200);
+
 
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
@@ -165,6 +176,36 @@ function CallScreen() {
     }, 1000);
     return () => clearInterval(i);
   }, [connected]);
+
+  // ---- Live billing ledger (free seconds first, then coins) ----
+  const freeAvail = freeStart ?? 0;
+  const coinsAvail = coinStart ?? 0;
+  const freeUsed = Math.min(freeAvail, elapsed);
+  const freeLeftSec = Math.max(0, freeAvail - freeUsed);
+  const coinSecondsUsed = Math.max(0, elapsed - freeAvail);
+  const coinsConsumed = Math.ceil((coinSecondsUsed * perMin) / 60);
+  const coinsLeft = Math.max(0, coinsAvail - coinsConsumed);
+  // Seconds the remaining coin balance can still buy after free time ends.
+  const coinSecondsLeft = Math.floor((coinsLeft * 60) / perMin);
+  const totalSecondsLeft = freeLeftSec + coinSecondsLeft;
+  const usingFree = freeLeftSec > 0;
+  const outOfFunds = connected && totalSecondsLeft <= 0;
+
+  // When the user runs out of free time AND can't afford the next minute,
+  // auto-open the recharge sheet with all offers. Call stays connected.
+  useEffect(() => {
+    if (!connected) return;
+    if (outOfFunds && !outOfFundsTriggeredRef.current && !rechargeOpen) {
+      outOfFundsTriggeredRef.current = true;
+      toast.error("You're out of free minutes & coins — recharge to keep talking.", {
+        duration: 8000,
+      });
+      setRechargeOpen(true);
+    }
+  }, [connected, outOfFunds, rechargeOpen]);
+
+
+
 
 
   // Block back navigation while on the call screen — show confirm dialog instead.
@@ -203,8 +244,10 @@ function CallScreen() {
     setConfirmEnd(false);
     const id = callLogIdRef.current;
     const seconds = elapsedRef.current;
-    const minutes = Math.max(1, Math.ceil(seconds / 60));
-    const coins = seconds > 0 ? minutes * perMin : 0;
+    // Bill only the portion not covered by free time, rounded up to whole minutes.
+    const billableSec = Math.max(0, seconds - freeAvail);
+    const billableMin = billableSec > 0 ? Math.ceil(billableSec / 60) : 0;
+    const coins = Math.min(coinsAvail, billableMin * perMin);
     if (id) {
       endLogFn({
         data: {
@@ -244,6 +287,29 @@ function CallScreen() {
               <Coins className="size-3" /> {perMin} / min
             </div>
           </div>
+          {/* Live free-time / coin-balance HUD */}
+          {connected && (
+            <div className="absolute bottom-12 left-3 right-3 flex items-center justify-between gap-2 text-white">
+              <div
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
+                  usingFree ? "bg-emerald-500/80" : "bg-black/50"
+                }`}
+              >
+                {usingFree
+                  ? `Free ${String(Math.floor(freeLeftSec / 60)).padStart(2, "0")}:${String(freeLeftSec % 60).padStart(2, "0")} left`
+                  : "Free minutes used"}
+              </div>
+              <div
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
+                  coinsLeft < perMin ? "bg-destructive/80" : "bg-black/50"
+                }`}
+              >
+                <Coins className="inline size-3 -mt-0.5 mr-1" />
+                {coinsLeft} coins · ≈{Math.floor(coinSecondsLeft / 60)}:
+                {String(coinSecondsLeft % 60).padStart(2, "0")}
+              </div>
+            </div>
+          )}
           <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
             to {userId.slice(0, 8)}
           </div>
@@ -389,14 +455,24 @@ function CallScreen() {
       <InCallRecharge
         open={rechargeOpen}
         onOpenChange={setRechargeOpen}
-        requiredCoins={CASE_GENERATION_COIN_COST}
+        // Highlight plans that at minimum cover the next minute of this call
+        // (or the mystery case cost, whichever is larger).
+        requiredCoins={Math.max(perMin, CASE_GENERATION_COIN_COST)}
         onRecharged={(newBalance) => {
+          // Re-baseline the live ledger so the user keeps talking with the
+          // newly added coins (without resetting elapsed time).
+          setCoinStart(newBalance + coinsConsumed);
+          outOfFundsTriggeredRef.current = false;
+          qc.invalidateQueries({ queryKey: ["me"] });
           if (newBalance >= CASE_GENERATION_COIN_COST) {
-            toast.success("You're set! Tap Host Mystery Case to start.");
+            toast.success("Coins added — call continues. Tap Host Mystery Case anytime.");
+          } else {
+            toast.success("Coins added — call continues.");
           }
         }}
       />
     </AppShell>
+
 
 
   );
