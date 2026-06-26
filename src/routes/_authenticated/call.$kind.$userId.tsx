@@ -74,9 +74,16 @@ function CallScreen() {
     };
   }, [myId, userId]);
 
+  const myBalance = me?.walletBalance ?? 0;
+  const canAfford = myBalance >= CASE_GENERATION_COIN_COST;
+
   async function hostMysteryCase() {
     if (!isMale) {
       toast.error("Only male players can host a mystery case.");
+      return;
+    }
+    if (!canAfford) {
+      setLowBalanceOpen(true);
       return;
     }
     setGenerating(true);
@@ -88,7 +95,6 @@ function CallScreen() {
       setCasePanelOpen(true);
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
-      // Broadcast to the partner
       const pair = [myId, userId].sort().join(":");
       await supabase.channel(`mystery:${pair}`).send({
         type: "broadcast",
@@ -97,11 +103,17 @@ function CallScreen() {
       });
       toast.success(`Case generated! -${CASE_GENERATION_COIN_COST} coins`);
     } catch (e: any) {
-      toast.error(e.message ?? "Could not generate case");
+      const msg = String(e?.message ?? "");
+      if (/insufficient|not enough|balance/i.test(msg)) {
+        setLowBalanceOpen(true);
+      } else {
+        toast.error(msg || "Could not generate case");
+      }
     } finally {
       setGenerating(false);
     }
   }
+
 
   useEffect(() => {
     let mounted = true;
