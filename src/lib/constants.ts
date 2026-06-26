@@ -6,6 +6,25 @@ export const BONUS_TIERS = [0.5, 0.4, 0.3]; // 1st, 2nd, 3rd deposit
 export const MIN_AGE = 18;
 export const GUIDELINES_VERSION = "v1";
 
+export const APP_LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "हिन्दी (Hindi)" },
+  { code: "bn", name: "বাংলা (Bengali)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "mr", name: "मराठी (Marathi)" },
+  { code: "ta", name: "தமிழ் (Tamil)" },
+  { code: "gu", name: "ગુજરાતી (Gujarati)" },
+  { code: "kn", name: "ಕನ್ನಡ (Kannada)" },
+  { code: "ml", name: "മലയാളം (Malayalam)" },
+  { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)" },
+  { code: "ur", name: "اردو (Urdu)" },
+  { code: "or", name: "ଓଡ଼ିଆ (Odia)" },
+  { code: "as", name: "অসমীয়া (Assamese)" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+  { code: "ar", name: "العربية" },
+];
+
 // Basic profanity / safety list (Phase 1 — AI moderation in Phase 2)
 export const BLOCKED_WORDS = [
   "fuck", "shit", "bitch", "asshole", "cunt", "dick", "pussy",
