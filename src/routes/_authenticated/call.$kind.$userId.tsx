@@ -191,6 +191,26 @@ function CallScreen() {
   const usingFree = freeLeftSec > 0;
   const outOfFunds = connected && totalSecondsLeft <= 0;
 
+  // Seed live ledger snapshots the moment the profile is available — so the
+  // "5:00 free" countdown is visible from the very start of the call screen.
+  useEffect(() => {
+    if (freeStart === null && me?.profile) {
+      setFreeStart(me.profile.free_seconds_remaining ?? 0);
+      setCoinStart(me.walletBalance ?? 0);
+    }
+  }, [me, freeStart]);
+
+  // Notify the user exactly when free minutes finish and coin billing kicks in.
+  const freeExhaustedRef = useRef(false);
+  useEffect(() => {
+    if (!connected || freeStart === null) return;
+    if (freeAvail > 0 && freeLeftSec === 0 && !freeExhaustedRef.current) {
+      freeExhaustedRef.current = true;
+      toast.info("Free minutes finished — coins are now being used.");
+    }
+  }, [connected, freeStart, freeAvail, freeLeftSec]);
+
+
   // When the user runs out of free time AND can't afford the next minute,
   // auto-open the recharge sheet with all offers. Call stays connected.
   useEffect(() => {
@@ -287,11 +307,11 @@ function CallScreen() {
               <Coins className="size-3" /> {perMin} / min
             </div>
           </div>
-          {/* Live free-time / coin-balance HUD */}
-          {connected && (
+          {/* Live free-time / coin-balance HUD — visible from call start */}
+          {freeStart !== null && (
             <div className="absolute bottom-12 left-3 right-3 flex items-center justify-between gap-2 text-white">
               <div
-                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur transition-colors ${
                   usingFree ? "bg-emerald-500/80" : "bg-black/50"
                 }`}
               >
@@ -301,7 +321,7 @@ function CallScreen() {
               </div>
               <div
                 className={`px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur ${
-                  coinsLeft < perMin ? "bg-destructive/80" : "bg-black/50"
+                  !usingFree && coinsLeft < perMin ? "bg-destructive/80" : "bg-black/50"
                 }`}
               >
                 <Coins className="inline size-3 -mt-0.5 mr-1" />
@@ -310,6 +330,7 @@ function CallScreen() {
               </div>
             </div>
           )}
+
           <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
             to {userId.slice(0, 8)}
           </div>
