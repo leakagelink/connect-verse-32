@@ -49,23 +49,40 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
         setTimeout(() => onOpenChange(false), 600);
       }
     } catch (e: any) {
-      // Keep the sheet (and call) intact. Surface a clear error with Retry / Cancel.
-      const msg = e?.message ?? "Please try again.";
-      toast.error(`Recharge failed: ${msg}`, {
-        description: "Your call is still connected. Retry the same plan or cancel.",
-        duration: 10000,
-        action: {
-          label: "Retry",
-          onClick: () => {
-            void buy(planId);
-          },
-        },
-        cancel: {
-          label: "Cancel",
-          onClick: () => {
-            /* dismiss only — call stays connected, sheet stays open */
-          },
-        },
+      const parsed = parseRechargeError(e);
+
+      // Refresh balance silently in case the charge actually went through
+      // (covers ALREADY_PURCHASED and partial-failure cases).
+      const refreshBalance = async () => {
+        await qc.invalidateQueries({ queryKey: ["wallet"] });
+        const fresh = await walletFn().catch(() => null);
+        if (fresh) onRecharged?.(fresh.balance ?? 0);
+      };
+      if (parsed.code === "ALREADY_PURCHASED") void refreshBalance();
+
+      const action =
+        parsed.nextStep === "retry"
+          ? { label: "Retry", onClick: () => void buy(planId) }
+          : parsed.nextStep === "wait"
+            ? { label: parsed.nextStepLabel, onClick: () => void refreshBalance() }
+            : parsed.nextStep === "reauth"
+              ? {
+                  label: parsed.nextStepLabel,
+                  onClick: () => {
+                    window.location.href = "/auth";
+                  },
+                }
+              : {
+                  label: parsed.nextStepLabel,
+                  // pick_other / contact_support — just dismiss; sheet stays open with plans
+                  onClick: () => {},
+                };
+
+      toast.error(`${parsed.title} (${parsed.code})`, {
+        description: `${parsed.description} Your call is still connected.`,
+        duration: 12000,
+        action,
+        cancel: { label: "Cancel", onClick: () => {} },
       });
     } finally {
       setBusy(null);
