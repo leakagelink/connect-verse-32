@@ -52,7 +52,15 @@ function CallScreen() {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
         }
-        setTimeout(() => setConnected(true), 1200);
+        setTimeout(async () => {
+          if (!mounted) return;
+          setConnected(true);
+          try {
+            const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
+            callLogIdRef.current = res.id;
+          } catch { /* ignore log start failure */ }
+        }, 1200);
+
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
         navigate({ to: "/connect" });
@@ -67,9 +75,16 @@ function CallScreen() {
 
   useEffect(() => {
     if (!connected) return;
-    const i = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const i = setInterval(() => {
+      setElapsed((e) => {
+        const next = e + 1;
+        elapsedRef.current = next;
+        return next;
+      });
+    }, 1000);
     return () => clearInterval(i);
   }, [connected]);
+
 
   // Block back navigation while on the call screen — show confirm dialog instead.
   useEffect(() => {
@@ -105,8 +120,23 @@ function CallScreen() {
     endedRef.current = true;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setConfirmEnd(false);
-    navigate({ to: "/connect" });
+    const id = callLogIdRef.current;
+    const seconds = elapsedRef.current;
+    const minutes = Math.max(1, Math.ceil(seconds / 60));
+    const coins = seconds > 0 ? minutes * perMin : 0;
+    if (id) {
+      endLogFn({
+        data: {
+          id,
+          durationSeconds: seconds,
+          coinsSpent: coins,
+          status: seconds > 0 ? "completed" : "cancelled",
+        },
+      }).catch(() => {});
+    }
+    navigate({ to: "/recents" });
   }
+
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
