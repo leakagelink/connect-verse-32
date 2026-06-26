@@ -93,9 +93,6 @@ export function InCallRecharge({ open, onOpenChange, requiredCoins, onRecharged 
     } finally {
       setBusy(null);
     }
-    } finally {
-      setBusy(null);
-    }
   }
 
   return (
