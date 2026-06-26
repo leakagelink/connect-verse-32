@@ -130,7 +130,7 @@ function ConnectScreen() {
       // tiebreak: more recently seen first
       return (b.last_seen_at ?? "").localeCompare(a.last_seen_at ?? "");
     });
-  }, [all, me, language, country, state, activeOnly]);
+  }, [all, me, language, country, state, activeOnly, filtersVisible]);
 
   function autoConnect(kind: "voice" | "video") {
     if (!sorted.length) {
