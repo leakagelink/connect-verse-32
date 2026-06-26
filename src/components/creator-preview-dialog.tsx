@@ -115,11 +115,37 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
               </p>
             </div>
 
+            {offline && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs flex items-start gap-2">
+                <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-amber-700 dark:text-amber-300">Creator just went offline</p>
+                  <p className="text-muted-foreground mt-0.5">Pick another available creator to start your call.</p>
+                </div>
+              </div>
+            )}
+
             <DialogFooter className="gap-2 sm:gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button className="brand-gradient" onClick={() => onConfirm(p.id)}>
-                {kind === "video" ? <><Video className="size-4 mr-1" />Start video call</> : <><Phone className="size-4 mr-1" />Start voice call</>}
-              </Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={checking}>Cancel</Button>
+              {offline ? (
+                <Button
+                  className="brand-gradient"
+                  onClick={() => { setOffline(false); onFindAnother?.(); }}
+                  disabled={!onFindAnother}
+                >
+                  <RefreshCw className="size-4 mr-1" />Find another
+                </Button>
+              ) : (
+                <Button className="brand-gradient" onClick={handleConfirm} disabled={checking}>
+                  {checking ? (
+                    <><Loader2 className="size-4 mr-1 animate-spin" />Checking…</>
+                  ) : kind === "video" ? (
+                    <><Video className="size-4 mr-1" />Start video call</>
+                  ) : (
+                    <><Phone className="size-4 mr-1" />Start voice call</>
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         )}
