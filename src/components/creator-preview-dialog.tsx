@@ -208,7 +208,19 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
                     ? "Available now · live"
                     : "Currently unavailable"}
               </span>
-              <span className="text-[10px] opacity-70">Updated {formatAgo(lastUpdated)}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-[10px] opacity-70">Updated {formatAgo(lastUpdated)}</span>
+                <button
+                  type="button"
+                  onClick={() => presenceQuery.refetch()}
+                  disabled={presenceQuery.isFetching}
+                  className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium hover:bg-background/60 disabled:opacity-50 transition-colors"
+                  aria-label="Refresh status"
+                >
+                  <RefreshCw className={`size-3 ${presenceQuery.isFetching ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </span>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2">
