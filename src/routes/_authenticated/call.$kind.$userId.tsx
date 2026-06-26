@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -10,6 +12,8 @@ import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins } from "luci
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
+import { startCallLog, endCallLog } from "@/lib/calls.functions";
+
 
 export const Route = createFileRoute("/_authenticated/call/$kind/$userId")({
   component: CallScreen,
@@ -21,6 +25,8 @@ function CallScreen() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const endedRef = useRef(false);
+  const callLogIdRef = useRef<string | null>(null);
+  const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -28,6 +34,9 @@ function CallScreen() {
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
+  const startLogFn = useServerFn(startCallLog);
+  const endLogFn = useServerFn(endCallLog);
+
 
   useEffect(() => {
     let mounted = true;
