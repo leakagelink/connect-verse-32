@@ -105,10 +105,7 @@ function Home() {
                 return;
               }
               const pick = candidates[Math.floor(Math.random() * candidates.length)];
-              navigate({
-                to: "/call/$kind/$userId",
-                params: { kind: "voice", userId: pick.id },
-              });
+              setPreview({ userId: pick.id, kind: "voice" });
             }}
           >
             Use now
