@@ -187,6 +187,33 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+          status: Database["public"]["Enums"]["follow_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["follow_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["follow_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -505,6 +532,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user" | "creator"
       ban_type: "temp" | "perm"
+      follow_status: "pending" | "accepted"
       gender_type: "male" | "female" | "other"
       report_reason:
         | "harassment"
@@ -648,6 +676,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user", "creator"],
       ban_type: ["temp", "perm"],
+      follow_status: ["pending", "accepted"],
       gender_type: ["male", "female", "other"],
       report_reason: [
         "harassment",
