@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { heartbeat, listOnlineCreators } from "@/lib/presence.functions";
+import { getAppSettings } from "@/lib/settings.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,11 +56,18 @@ function ConnectScreen() {
   const navigate = useNavigate();
   const beat = useServerFn(heartbeat);
   const creatorsFn = useServerFn(listOnlineCreators);
+  const settingsFn = useServerFn(getAppSettings);
   const { data } = useQuery({
     queryKey: ["online-creators"],
     queryFn: () => creatorsFn(),
     refetchInterval: 15_000,
   });
+  const { data: settings } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: () => settingsFn(),
+    staleTime: 60_000,
+  });
+  const filtersVisible = settings?.connect_filters_visible ?? true;
 
   useEffect(() => {
     beat().catch(() => {});
