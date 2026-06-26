@@ -17,6 +17,7 @@ import { generateMysteryCase, CASE_GENERATION_COIN_COST } from "@/lib/mystery.fu
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MysteryPanel } from "@/components/mystery-panel";
+import { InCallRecharge } from "@/components/in-call-recharge";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -32,7 +33,7 @@ function CallScreen() {
   const streamRef = useRef<MediaStream | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
-  const rechargeAfterEndRef = useRef(false);
+  
   const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
@@ -40,6 +41,7 @@ function CallScreen() {
   const [connected, setConnected] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
+  const [rechargeOpen, setRechargeOpen] = useState(false);
 
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
@@ -213,7 +215,7 @@ function CallScreen() {
         },
       }).catch(() => {});
     }
-    navigate({ to: rechargeAfterEndRef.current ? "/recharge" : "/recents" });
+    navigate({ to: "/recents" });
   }
 
 
@@ -364,8 +366,8 @@ function CallScreen() {
                   <span className="font-semibold text-foreground">{myBalance} coins</span>.
                 </p>
                 <div className="rounded-lg border bg-muted/40 p-3 text-xs">
-                  You need <span className="font-semibold">{Math.max(0, CASE_GENERATION_COIN_COST - myBalance)} more coins</span>.
-                  To recharge, please end the call first — the back button is locked during an active call to protect both players.
+                  Recharge right here — your call stays connected and the Host button
+                  refreshes automatically when payment completes.
                 </div>
               </div>
             </AlertDialogDescription>
@@ -374,17 +376,28 @@ function CallScreen() {
             <AlertDialogCancel>Keep playing</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                rechargeAfterEndRef.current = true;
                 setLowBalanceOpen(false);
-                setConfirmEnd(true);
+                setRechargeOpen(true);
               }}
             >
-              End call & recharge
+              Recharge now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <InCallRecharge
+        open={rechargeOpen}
+        onOpenChange={setRechargeOpen}
+        requiredCoins={CASE_GENERATION_COIN_COST}
+        onRecharged={(newBalance) => {
+          if (newBalance >= CASE_GENERATION_COIN_COST) {
+            toast.success("You're set! Tap Host Mystery Case to start.");
+          }
+        }}
+      />
     </AppShell>
+
 
   );
 }
