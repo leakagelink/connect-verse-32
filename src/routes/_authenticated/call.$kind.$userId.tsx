@@ -324,6 +324,9 @@ function CallScreen() {
     endedRef.current = true;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setConfirmEnd(false);
+    // Flush any unsynced free seconds / coins so the final state is persisted
+    // even if endCallLog races or the network blips.
+    flushUsage.current();
     const id = callLogIdRef.current;
     const seconds = elapsedRef.current;
     // Bill only the portion not covered by free time, rounded up to whole minutes.
