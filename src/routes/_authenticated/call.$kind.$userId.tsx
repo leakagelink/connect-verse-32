@@ -2,9 +2,14 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
+import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/call/$kind/$userId")({
   component: CallScreen,
@@ -15,10 +20,14 @@ function CallScreen() {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const endedRef = useRef(false);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [connected, setConnected] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+
+  const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
 
   useEffect(() => {
     let mounted = true;
@@ -37,7 +46,7 @@ function CallScreen() {
         setTimeout(() => setConnected(true), 1200);
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
-        navigate({ to: "/home" });
+        navigate({ to: "/connect" });
       }
     }
     start();
@@ -53,6 +62,28 @@ function CallScreen() {
     return () => clearInterval(i);
   }, [connected]);
 
+  // Block back navigation while on the call screen — show confirm dialog instead.
+  useEffect(() => {
+    window.history.pushState({ inCall: true }, "");
+    const onPop = () => {
+      if (endedRef.current) return;
+      // re-push so we stay on this screen
+      window.history.pushState({ inCall: true }, "");
+      setConfirmEnd(true);
+    };
+    window.addEventListener("popstate", onPop);
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (endedRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, []);
+
   function toggleMic() {
     const t = streamRef.current?.getAudioTracks()[0];
     if (t) { t.enabled = !t.enabled; setMuted(!t.enabled); }
@@ -61,9 +92,11 @@ function CallScreen() {
     const t = streamRef.current?.getVideoTracks()[0];
     if (t) { t.enabled = !t.enabled; setCamOff(!t.enabled); }
   }
-  function end() {
+  function confirmEndCall() {
+    endedRef.current = true;
     streamRef.current?.getTracks().forEach((t) => t.stop());
-    navigate({ to: "/home" });
+    setConfirmEnd(false);
+    navigate({ to: "/connect" });
   }
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
@@ -87,9 +120,12 @@ function CallScreen() {
             <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs">
               {connected ? `Connected · ${mm}:${ss}` : "Connecting…"}
             </div>
-            <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs">
-              to {userId.slice(0, 8)}
+            <div className="px-2.5 py-1 rounded-full bg-coin/80 text-xs font-semibold flex items-center gap-1">
+              <Coins className="size-3" /> {perMin} / min
             </div>
+          </div>
+          <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
+            to {userId.slice(0, 8)}
           </div>
         </div>
         <div className="p-4 flex items-center justify-center gap-3">
@@ -101,14 +137,32 @@ function CallScreen() {
               {camOff ? <VideoOff className="size-5" /> : <VideoIcon className="size-5" />}
             </Button>
           )}
-          <Button size="icon" variant="destructive" onClick={end}>
+          <Button size="icon" variant="destructive" onClick={() => setConfirmEnd(true)}>
             <PhoneOff className="size-5" />
           </Button>
         </div>
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
-          Realtime peer connection requires a media SDK (Agora / LiveKit). This screen captures your local media and shows the call UI — wire your SDK in next.
+          Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
         </p>
       </Card>
+
+      <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End this call?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to disconnect? You will be charged for {Math.max(1, Math.ceil(elapsed / 60))} minute(s)
+              at {perMin} coins/min.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay on call</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmEndCall} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, end call
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
