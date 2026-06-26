@@ -142,11 +142,16 @@ function CallScreen() {
         setTimeout(async () => {
           if (!mounted) return;
           setConnected(true);
+          // Snapshot the free seconds + coin balance at connect time so the
+          // live counter shows exactly what the user has to spend.
+          setFreeStart(me?.profile?.free_seconds_remaining ?? 0);
+          setCoinStart(me?.walletBalance ?? 0);
           try {
             const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
             callLogIdRef.current = res.id;
           } catch { /* ignore log start failure */ }
         }, 1200);
+
 
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
