@@ -152,10 +152,46 @@ function CallScreen() {
           setFreeStart(me?.profile?.free_seconds_remaining ?? 0);
           setCoinStart(me?.walletBalance ?? 0);
           try {
-            const res = await startLogFn({ data: { calleeId: userId, kind: kind as "voice" | "video" } });
+            // Try to resume an in-flight call_log for the same partner/kind
+            // (reconnect or refresh) instead of creating a duplicate row.
+            const resumeKey = `active_call:${userId}:${kind}`;
+            let resumeId: string | null = null;
+            try {
+              const raw = localStorage.getItem(resumeKey);
+              if (raw) {
+                const parsed = JSON.parse(raw);
+                if (
+                  parsed?.id &&
+                  parsed?.lastFlushedAt &&
+                  Date.now() - new Date(parsed.lastFlushedAt).getTime() < 5 * 60 * 1000
+                ) {
+                  resumeId = parsed.id as string;
+                }
+              }
+            } catch { /* ignore */ }
+
+            const res = await startLogFn({
+              data: { calleeId: userId, kind: kind as "voice" | "video", resumeId },
+            });
             callLogIdRef.current = res.id;
+            // Seed local cumulative trackers from server-side baseline so the
+            // first flush after a reconnect doesn't re-bill what was already
+            // persisted.
+            syncedFreeRef.current = res.baselineFreeSecondsUsed ?? 0;
+            syncedCoinsRef.current = res.baselineCoinsSpent ?? 0;
+            sessionStartElapsedRef.current = res.baselineDurationSeconds ?? 0;
+            try {
+              localStorage.setItem(
+                resumeKey,
+                JSON.stringify({ id: res.id, lastFlushedAt: new Date().toISOString() }),
+              );
+            } catch { /* ignore */ }
+            if (res.resumed) {
+              toast.info("Reconnected to your previous call — no duplicate charges.");
+            }
           } catch { /* ignore log start failure */ }
         }, 1200);
+
 
 
       } catch (e: any) {
