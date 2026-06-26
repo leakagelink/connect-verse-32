@@ -342,6 +342,22 @@ function CallScreen() {
     const callLogId = callLogIdRef.current;
     if (!callLogId) return;
     if (flushInFlightRef.current) return;
+    // Paused (another tab took ownership) → don't push usage from this tab,
+    // the authoritative tab is now responsible for billing.
+    if (pausedRef.current) return;
+    // Also bail if the localStorage slot now belongs to a different session
+    // token (e.g. storage event was missed in this tab).
+    try {
+      const raw = localStorage.getItem(`active_call:${userId}:${kind}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.sessionToken && parsed.sessionToken !== sessionTokenRef.current) {
+          pausedRef.current = true;
+          setPaused(true);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
     // This-session usage so far (live counters).
     const sessionFreeUsed = Math.min(freeAvail, elapsedRef.current);
     const sessionCoinsUsed = Math.ceil(
