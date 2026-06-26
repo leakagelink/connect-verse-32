@@ -153,7 +153,7 @@ function Home() {
             users={onlineUsers ?? []}
             loading={loadingOnline}
             renderActions={(u) => (
-              <Button size="sm" className="brand-gradient" onClick={() => navigate({ to: "/call/$kind/$userId", params: { kind: "video", userId: u.id } })}>
+              <Button size="sm" className="brand-gradient" onClick={() => setPreview({ userId: u.id, kind: "video" })}>
                 <Video className="size-4 mr-1" /> Video
               </Button>
             )}
