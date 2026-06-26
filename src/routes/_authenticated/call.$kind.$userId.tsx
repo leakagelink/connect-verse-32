@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search, Gift } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
@@ -18,6 +18,8 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MysteryPanel } from "@/components/mystery-panel";
 import { InCallRecharge } from "@/components/in-call-recharge";
+import { GiftPanel } from "@/components/gift-panel";
+import { GiftFloater } from "@/components/gift-floater";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -42,6 +44,7 @@ function CallScreen() {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
   const [rechargeOpen, setRechargeOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   // Snapshots of free seconds + coin balance captured when the call connects.
   // Used to live-display remaining free time / coin time during the call.
   const [freeStart, setFreeStart] = useState<number | null>(null);
@@ -563,6 +566,7 @@ function CallScreen() {
           <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/50 text-[11px] text-white">
             to {userId.slice(0, 8)}
           </div>
+          <GiftFloater callLogId={callLogIdRef.current} myUserId={myId || null} />
         </div>
         <div className="p-4 flex items-center justify-center gap-3">
           <Button size="icon" variant={muted ? "destructive" : "secondary"} onClick={toggleMic}>
@@ -573,10 +577,21 @@ function CallScreen() {
               {camOff ? <VideoOff className="size-5" /> : <VideoIcon className="size-5" />}
             </Button>
           )}
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={() => setGiftOpen(true)}
+            disabled={!connected}
+            aria-label="Send gift"
+            className="relative"
+          >
+            <Gift className="size-5 text-pink-500" />
+          </Button>
           <Button size="icon" variant="destructive" onClick={() => setConfirmEnd(true)}>
             <PhoneOff className="size-5" />
           </Button>
         </div>
+
 
         {/* Mystery game controls */}
         <div className="px-4 pb-3">
@@ -646,6 +661,21 @@ function CallScreen() {
       </Card>
 
       <MysteryPanel caseId={caseId} open={casePanelOpen} onOpenChange={setCasePanelOpen} />
+
+      <GiftPanel
+        open={giftOpen}
+        onOpenChange={setGiftOpen}
+        receiverId={userId}
+        callLogId={callLogIdRef.current}
+        balance={myBalance}
+        onSent={() => {
+          qc.invalidateQueries({ queryKey: ["me"] });
+        }}
+        onLowBalance={() => {
+          setGiftOpen(false);
+          setRechargeOpen(true);
+        }}
+      />
 
 
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>

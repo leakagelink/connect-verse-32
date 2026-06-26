@@ -359,6 +359,84 @@ export type Database = {
         }
         Relationships: []
       }
+      gift_sends: {
+        Row: {
+          call_log_id: string | null
+          coins_spent: number
+          created_at: string
+          gift_id: string
+          id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          call_log_id?: string | null
+          coins_spent: number
+          created_at?: string
+          gift_id: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          call_log_id?: string | null
+          coins_spent?: number
+          created_at?: string
+          gift_id?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_sends_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_sends_gift_id_fkey"
+            columns: ["gift_id"]
+            isOneToOne: false
+            referencedRelation: "gifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gifts: {
+        Row: {
+          code: string
+          coin_cost: number
+          created_at: string
+          emoji: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          coin_cost: number
+          created_at?: string
+          emoji: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          coin_cost?: number
+          created_at?: string
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -753,7 +831,14 @@ export type Database = {
         | "other"
       report_status: "open" | "reviewed" | "actioned" | "dismissed"
       room_kind: "voice" | "video" | "game" | "live"
-      txn_type: "recharge" | "bonus" | "chat_spend" | "refund" | "signup_bonus"
+      txn_type:
+        | "recharge"
+        | "bonus"
+        | "chat_spend"
+        | "refund"
+        | "signup_bonus"
+        | "gift_spend"
+        | "gift_received"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -898,7 +983,15 @@ export const Constants = {
       ],
       report_status: ["open", "reviewed", "actioned", "dismissed"],
       room_kind: ["voice", "video", "game", "live"],
-      txn_type: ["recharge", "bonus", "chat_spend", "refund", "signup_bonus"],
+      txn_type: [
+        "recharge",
+        "bonus",
+        "chat_spend",
+        "refund",
+        "signup_bonus",
+        "gift_spend",
+        "gift_received",
+      ],
     },
   },
 } as const
