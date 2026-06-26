@@ -22,7 +22,10 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticated/rooms.new'
+import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
+import { Route as AuthenticatedCallKindUserIdRouteImport } from './routes/_authenticated/call.$kind.$userId'
 
 const BannedRoute = BannedRouteImport.update({
   id: '/banned',
@@ -88,11 +91,27 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedRoomsNewRoute = AuthenticatedRoomsNewRouteImport.update({
+  id: '/rooms/new',
+  path: '/rooms/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRoomsIdRoute = AuthenticatedRoomsIdRouteImport.update({
+  id: '/rooms/$id',
+  path: '/rooms/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChatConversationIdRoute =
   AuthenticatedChatConversationIdRouteImport.update({
     id: '/$conversationId',
     path: '/$conversationId',
     getParentRoute: () => AuthenticatedChatRoute,
+  } as any)
+const AuthenticatedCallKindUserIdRoute =
+  AuthenticatedCallKindUserIdRouteImport.update({
+    id: '/call/$kind/$userId',
+    path: '/call/$kind/$userId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -107,8 +126,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
+  '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,8 +142,11 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
+  '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -137,8 +162,11 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
+  '/_authenticated/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
+  '/_authenticated/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -154,8 +182,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/wallet'
     | '/chat/$conversationId'
+    | '/rooms/$id'
+    | '/rooms/new'
     | '/admin/'
     | '/chat/'
+    | '/call/$kind/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -167,8 +198,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/wallet'
     | '/chat/$conversationId'
+    | '/rooms/$id'
+    | '/rooms/new'
     | '/admin'
     | '/chat'
+    | '/call/$kind/$userId'
   id:
     | '__root__'
     | '/'
@@ -183,8 +217,11 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
     | '/_authenticated/chat/$conversationId'
+    | '/_authenticated/rooms/$id'
+    | '/_authenticated/rooms/new'
     | '/_authenticated/admin/'
     | '/_authenticated/chat/'
+    | '/_authenticated/call/$kind/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,12 +324,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/rooms/new': {
+      id: '/_authenticated/rooms/new'
+      path: '/rooms/new'
+      fullPath: '/rooms/new'
+      preLoaderRoute: typeof AuthenticatedRoomsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rooms/$id': {
+      id: '/_authenticated/rooms/$id'
+      path: '/rooms/$id'
+      fullPath: '/rooms/$id'
+      preLoaderRoute: typeof AuthenticatedRoomsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat/$conversationId': {
       id: '/_authenticated/chat/$conversationId'
       path: '/$conversationId'
       fullPath: '/chat/$conversationId'
       preLoaderRoute: typeof AuthenticatedChatConversationIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
+    }
+    '/_authenticated/call/$kind/$userId': {
+      id: '/_authenticated/call/$kind/$userId'
+      path: '/call/$kind/$userId'
+      fullPath: '/call/$kind/$userId'
+      preLoaderRoute: typeof AuthenticatedCallKindUserIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -329,6 +387,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
+  AuthenticatedRoomsNewRoute: typeof AuthenticatedRoomsNewRoute
+  AuthenticatedCallKindUserIdRoute: typeof AuthenticatedCallKindUserIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -339,6 +400,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedRoomsIdRoute: AuthenticatedRoomsIdRoute,
+  AuthenticatedRoomsNewRoute: AuthenticatedRoomsNewRoute,
+  AuthenticatedCallKindUserIdRoute: AuthenticatedCallKindUserIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
