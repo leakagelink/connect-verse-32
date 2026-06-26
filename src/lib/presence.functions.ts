@@ -30,3 +30,21 @@ export const listOnlineUsers = createServerFn({ method: "GET" })
       .limit(60);
     return data ?? [];
   });
+
+export const listOnlineCreators = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const cutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at")
+      .eq("is_banned", false)
+      .eq("onboarded", true)
+      .eq("is_creator", true)
+      .neq("id", userId)
+      .gte("last_seen_at", cutoff)
+      .order("last_seen_at", { ascending: false })
+      .limit(60);
+    return data ?? [];
+  });

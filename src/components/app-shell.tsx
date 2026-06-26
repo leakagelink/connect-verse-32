@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles } from "lucide-react";
+import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
@@ -72,8 +72,39 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       <main className="mx-auto max-w-3xl px-4 pt-4">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t">
-        <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2">
-          {nav.map((n) => {
+        <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 relative">
+          {nav.slice(0, 2).map((n) => {
+            const active = pathname.startsWith(n.to);
+            const Icon = n.icon;
+            return (
+              <Link key={n.to} to={n.to} className={cn(
+                "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}>
+                <Icon className="size-5" />
+                <span>{n.label}</span>
+              </Link>
+            );
+          })}
+
+          {/* Highlighted Connect CTA */}
+          <Link
+            to="/connect"
+            className="flex flex-1 flex-col items-center justify-end py-1 text-xs"
+          >
+            <div className={cn(
+              "-mt-6 size-14 rounded-full brand-gradient shadow-lg shadow-primary/40 flex items-center justify-center ring-4 ring-background transition-transform",
+              pathname.startsWith("/connect") ? "scale-110" : "hover:scale-105 animate-pulse"
+            )}>
+              <Zap className="size-6 text-primary-foreground" fill="currentColor" />
+            </div>
+            <span className={cn(
+              "mt-1 font-semibold",
+              pathname.startsWith("/connect") ? "text-primary" : "text-foreground"
+            )}>Connect</span>
+          </Link>
+
+          {nav.slice(2).map((n) => {
             const active = pathname.startsWith(n.to);
             const Icon = n.icon;
             return (
