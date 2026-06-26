@@ -80,12 +80,55 @@ export const sendMessage = createServerFn({ method: "POST" })
     const blocked = containsBlockedContent(data.body);
     if (blocked) throw new Error(`Message blocked: contains restricted content`);
 
+    // Male senders pay coins per message; females are free
+    const { data: senderProfile } = await supabase
+      .from("profiles").select("gender").eq("id", userId).maybeSingle();
+    const isMale = senderProfile?.gender === "male";
+    let charged = 0;
+
+    if (isMale && MESSAGE_COIN_COST_MALE > 0) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: wallet } = await supabaseAdmin
+        .from("wallets").select("coin_balance").eq("user_id", userId).single();
+      const balance = Number(wallet?.coin_balance ?? 0);
+      if (balance < MESSAGE_COIN_COST_MALE) {
+        throw new Error("Not enough coins to send a message. Please recharge.");
+      }
+      const { error: wErr } = await supabaseAdmin.from("wallets").update({
+        coin_balance: balance - MESSAGE_COIN_COST_MALE,
+        updated_at: new Date().toISOString(),
+      }).eq("user_id", userId);
+      if (wErr) throw new Error(wErr.message);
+      charged = MESSAGE_COIN_COST_MALE;
+    }
+
     const { data: msg, error } = await supabase
       .from("messages")
       .insert({ conversation_id: data.conversationId, sender_id: userId, body: data.body })
       .select("id, created_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // refund if message insert failed after charge
+      if (charged > 0) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: w } = await supabaseAdmin.from("wallets").select("coin_balance").eq("user_id", userId).single();
+        await supabaseAdmin.from("wallets").update({
+          coin_balance: Number(w?.coin_balance ?? 0) + charged,
+          updated_at: new Date().toISOString(),
+        }).eq("user_id", userId);
+      }
+      throw new Error(error.message);
+    }
+
+    if (charged > 0) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("transactions").insert({
+        user_id: userId,
+        type: "chat_spend",
+        coins_delta: -charged,
+        metadata: { kind: "message", conversation_id: data.conversationId, message_id: msg.id },
+      });
+    }
 
     await supabase
       .from("conversations")
