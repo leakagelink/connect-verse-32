@@ -44,6 +44,7 @@ function CallScreen() {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [lowBalanceOpen, setLowBalanceOpen] = useState(false);
   const [rechargeOpen, setRechargeOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   // Snapshots of free seconds + coin balance captured when the call connects.
   // Used to live-display remaining free time / coin time during the call.
   const [freeStart, setFreeStart] = useState<number | null>(null);
