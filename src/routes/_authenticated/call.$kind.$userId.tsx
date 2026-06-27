@@ -607,18 +607,39 @@ function CallScreen() {
         <div className="relative aspect-[3/4] sm:aspect-video bg-black flex items-center justify-center">
 
           {kind === "video" ? (
-            <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
+            <>
+              {/* Remote peer fills the frame when joined (Agora). Local preview moves to a picture-in-picture tile. */}
+              <div
+                ref={remoteContainerRef}
+                className={`absolute inset-0 size-full ${remoteJoined ? "block" : "hidden"}`}
+              />
+              <video
+                ref={videoRef}
+                className={
+                  remoteJoined
+                    ? "absolute bottom-24 right-3 w-24 h-32 sm:w-32 sm:h-40 object-cover rounded-lg border-2 border-white/50 z-10"
+                    : "absolute inset-0 size-full object-cover"
+                }
+                muted
+                playsInline
+              />
+            </>
           ) : (
             <div className="text-center">
               <div className="mx-auto size-28 rounded-full brand-gradient flex items-center justify-center mb-4 animate-pulse">
                 <Mic className="size-12 text-primary-foreground" />
               </div>
-              <p className="text-lg font-semibold text-white">Voice call</p>
+              <p className="text-lg font-semibold text-white">
+                {provider === "agora" && !remoteJoined ? "Ringing…" : "Voice call"}
+              </p>
             </div>
           )}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-white">
-            <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs">
+            <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs flex items-center gap-1.5">
               {connected ? `Connected · ${mm}:${ss}` : "Connecting…"}
+              {provider === "agora" && networkQ > 0 && (
+                <NetworkBars q={networkQ} />
+              )}
             </div>
             <div className="px-2.5 py-1 rounded-full bg-coin/80 text-xs font-semibold flex items-center gap-1">
               <Coins className="size-3" /> {perMin} / min
