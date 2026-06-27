@@ -114,6 +114,9 @@ function Home() {
         </Card>
       )}
 
+      <EngagementStrip />
+
+
 
       <Tabs defaultValue="online" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
