@@ -99,6 +99,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
+        <SplashScreen />
         <Outlet />
         <Toaster theme="dark" position="top-center" richColors />
       </LanguageProvider>
