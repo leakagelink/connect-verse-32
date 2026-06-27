@@ -22,7 +22,9 @@ function Onboarding() {
   const navigate = useNavigate();
   const getProfile = useServerFn(getMyProfile);
   const onboard = useServerFn(completeOnboarding);
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["me"], queryFn: () => getProfile() });
+
 
   const [username, setU] = useState("");
   const [gender, setG] = useState<"male"|"female"|"other"|"">("");
