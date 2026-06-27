@@ -142,6 +142,9 @@ function Home() {
         <RechargeOfferCard depositCount={walletData?.depositCount ?? 0} />
       </div>
 
+      {/* Matchmaker Rooms */}
+      <MatchmakerRoomsSection canHost={me?.profile?.gender === "female"} />
+
       {/* Engagement (daily check-in streak) */}
       <EngagementStrip />
 
