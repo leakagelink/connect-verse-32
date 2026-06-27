@@ -94,6 +94,7 @@ function AdminPanel() {
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="calling">Calling</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
