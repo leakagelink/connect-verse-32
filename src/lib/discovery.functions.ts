@@ -16,9 +16,10 @@ export const getTrendingNow = createServerFn({ method: "GET" })
     const [{ data: gifts }, { data: rooms }, { count: newJoiners }] = await Promise.all([
       supabase
         .from("gift_sends")
-        .select("receiver_id, coins")
+        .select("receiver_id, coins_spent")
         .gte("created_at", since24h)
         .limit(500),
+
       supabase
         .from("matchmaker_rooms")
         .select("id, title, listener_count, host_id, started_at")
