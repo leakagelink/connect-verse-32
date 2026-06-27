@@ -59,7 +59,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Join voice rooms, chat & meet new friends safely on Talkora." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
-    scripts: [{ src: "https://checkout.razorpay.com/v1/checkout.js", defer: true }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
