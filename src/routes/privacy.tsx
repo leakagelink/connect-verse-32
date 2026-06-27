@@ -90,6 +90,14 @@ function PrivacyPage() {
             is required to comply with law, resolve disputes, prevent fraud, or enforce
             our agreements.
           </p>
+          <p className="text-muted-foreground mt-2">
+            <strong className="text-foreground">KYC documents (PAN, Aadhaar, selfie):</strong>{" "}
+            stored in an encrypted, access-restricted bucket and visible only to you and
+            authorised reviewers. After review, documents are automatically deleted from
+            our storage — within 7 days of approval and within 30 days of rejection.
+            Verification status and minimal audit metadata (decision, reviewer, timestamp)
+            are retained to comply with KYC/AML and tax obligations.
+          </p>
         </Section>
 
         <Section title="7. Your rights">

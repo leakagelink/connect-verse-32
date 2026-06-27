@@ -335,15 +335,22 @@ function KycTab() {
                   : `UPI • ${k.upi_id}`}
               </p>
               <p className="text-[11px] text-muted-foreground mt-1">{format(new Date(k.created_at), "dd MMM yyyy, HH:mm")}</p>
+              {k.docs_deleted_at ? (
+                <p className="text-[11px] text-amber-500 mt-1">Documents purged (retention policy) on {format(new Date(k.docs_deleted_at), "dd MMM yyyy")}</p>
+              ) : k.docs_retention_until ? (
+                <p className="text-[11px] text-muted-foreground mt-1">Docs auto-delete on {format(new Date(k.docs_retention_until), "dd MMM yyyy")}</p>
+              ) : null}
             </div>
             <Badge variant={k.status === "pending" ? "secondary" : k.status === "approved" ? "default" : "destructive"}>{k.status}</Badge>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <KycDocLink path={k.pan_doc_path} label="PAN doc" />
-            <KycDocLink path={k.aadhaar_front_path} label="Aadhaar front" />
-            <KycDocLink path={k.aadhaar_back_path} label="Aadhaar back" />
-            <KycDocLink path={k.selfie_path} label="Selfie" />
-          </div>
+          {!k.docs_deleted_at && (
+            <div className="flex flex-wrap gap-2">
+              <KycDocLink path={k.pan_doc_path} label="PAN doc" />
+              <KycDocLink path={k.aadhaar_front_path} label="Aadhaar front" />
+              <KycDocLink path={k.aadhaar_back_path} label="Aadhaar back" />
+              <KycDocLink path={k.selfie_path} label="Selfie" />
+            </div>
+          )}
           {k.status === "pending" && (
             <div className="space-y-2">
               <Textarea placeholder="Notes (required for rejection)" value={notes[k.id] ?? ""} onChange={(e) => setNotes(s => ({ ...s, [k.id]: e.target.value }))} />

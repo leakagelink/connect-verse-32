@@ -31,6 +31,7 @@ import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedMysteryCaseIdRouteImport } from './routes/_authenticated/mystery.$caseId'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
+import { Route as ApiPublicHooksKycCleanupRouteImport } from './routes/api/public/hooks/kyc-cleanup'
 import { Route as AuthenticatedCallKindUserIdRouteImport } from './routes/_authenticated/call.$kind.$userId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -144,6 +145,12 @@ const AuthenticatedChatConversationIdRoute =
     path: '/$conversationId',
     getParentRoute: () => AuthenticatedChatRoute,
   } as any)
+const ApiPublicHooksKycCleanupRoute =
+  ApiPublicHooksKycCleanupRouteImport.update({
+    id: '/api/public/hooks/kyc-cleanup',
+    path: '/api/public/hooks/kyc-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedCallKindUserIdRoute =
   AuthenticatedCallKindUserIdRouteImport.update({
     id: '/call/$kind/$userId',
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
+  '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -196,6 +204,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
+  '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -222,6 +231,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
+  '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/chat/'
     | '/call/$kind/$userId'
+    | '/api/public/hooks/kyc-cleanup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/chat'
     | '/call/$kind/$userId'
+    | '/api/public/hooks/kyc-cleanup'
   id:
     | '__root__'
     | '/'
@@ -295,6 +307,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/chat/'
     | '/_authenticated/call/$kind/$userId'
+    | '/api/public/hooks/kyc-cleanup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -304,6 +317,7 @@ export interface RootRouteChildren {
   BannedRoute: typeof BannedRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicHooksKycCleanupRoute: typeof ApiPublicHooksKycCleanupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -462,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatConversationIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/api/public/hooks/kyc-cleanup': {
+      id: '/api/public/hooks/kyc-cleanup'
+      path: '/api/public/hooks/kyc-cleanup'
+      fullPath: '/api/public/hooks/kyc-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksKycCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/call/$kind/$userId': {
       id: '/_authenticated/call/$kind/$userId'
       path: '/call/$kind/$userId'
@@ -540,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   BannedRoute: BannedRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ApiPublicHooksKycCleanupRoute: ApiPublicHooksKycCleanupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
