@@ -150,7 +150,7 @@ export const joinAsCandidate = createServerFn({ method: "POST" })
       if (error.code === "23505") throw new Error("Seat already taken");
       throw error;
     }
-    await supabase.rpc("noop").select().limit(0).then(() => {}, () => {});
+    // (no-op placeholder removed)
     // bump candidate count
     await supabase
       .from("matchmaker_rooms")
