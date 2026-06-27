@@ -19,6 +19,20 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
   const unread = me?.unreadCount ?? 0;
   const admin = isAdmin ?? me?.isAdmin;
 
+  // Phase 4 — Capacitor: status-bar colour, splash hide, push token registration.
+  useEffect(() => {
+    void applyChromeForApp();
+    if (!isNative()) return;
+    void (async () => {
+      const reg = await registerPushNotifications();
+      if (!reg) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("profiles").update({ push_token: reg.token, push_platform: reg.platform }).eq("id", user.id);
+    })();
+  }, []);
+
+
   const nav = [
     { to: "/home", label: "Discover", icon: Home },
     { to: "/chat", label: "Chats", icon: MessageCircle },
