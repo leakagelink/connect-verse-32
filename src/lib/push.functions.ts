@@ -14,6 +14,83 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+/* ------------------------------------------------------------------ */
+/* FCM service-account JSON — managed from admin panel                */
+/* ------------------------------------------------------------------ */
+
+async function assertAdmin(ctx: { supabase: any; userId: string }) {
+  const { data: isAdmin } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Forbidden");
+}
+
+export const adminGetFcmConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("app_settings").select("value").eq("key", "fcm_service_account_json").maybeSingle();
+    const raw = typeof data?.value === "string" ? data.value : "";
+    let projectId = "";
+    let clientEmail = "";
+    let valid = false;
+    if (raw) {
+      try {
+        const j = JSON.parse(raw);
+        projectId = j.project_id ?? "";
+        clientEmail = j.client_email ?? "";
+        valid = !!(projectId && clientEmail && j.private_key);
+      } catch { /* invalid json */ }
+    }
+    const envConfigured = !!process.env.FCM_SERVICE_ACCOUNT_JSON;
+    return { configured: valid || envConfigured, source: valid ? "db" : envConfigured ? "env" : "none", projectId, clientEmail };
+  });
+
+const FcmSaveSchema = z.object({ serviceAccountJson: z.string().min(20).max(20000) });
+
+export const adminSaveFcmConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: z.infer<typeof FcmSaveSchema>) => FcmSaveSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    let parsed: any;
+    try { parsed = JSON.parse(data.serviceAccountJson); }
+    catch { throw new Error("Not valid JSON — paste the entire service account file contents."); }
+    if (!parsed.project_id || !parsed.client_email || !parsed.private_key) {
+      throw new Error("Missing required fields (project_id / client_email / private_key). Use the Firebase service account JSON.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("app_settings")
+      .upsert({ key: "fcm_service_account_json", value: data.serviceAccountJson as never, updated_by: context.userId, updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) throw new Error(error.message);
+    return { ok: true, projectId: parsed.project_id };
+  });
+
+export const adminClearFcmConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("app_settings").delete().eq("key", "fcm_service_account_json");
+    return { ok: true };
+  });
+
+export const adminSendTestPush = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const res = await notifyUser({
+      userId: context.userId,
+      kind: "system",
+      title: "Test push from Talkora",
+      body: "If you see this as a system banner, FCM is wired correctly.",
+      deepLink: "/notifications",
+    });
+    return { pushed: res.pushed };
+  });
+
+
 const TokenSchema = z.object({
   token: z.string().min(10).max(4096),
   platform: z.enum(["android", "ios", "web"]),

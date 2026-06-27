@@ -20,19 +20,33 @@ type ServiceAccount = {
 
 let cached: { token: string; exp: number } | null = null;
 let svc: ServiceAccount | null | undefined; // undefined = not loaded; null = missing
+let svcLoadedAt = 0;
 
-function loadServiceAccount(): ServiceAccount | null {
-  if (svc !== undefined) return svc;
-  const raw = process.env.FCM_SERVICE_ACCOUNT_JSON;
-  if (!raw) { svc = null; return null; }
+async function loadServiceAccount(): Promise<ServiceAccount | null> {
+  // env wins (immutable per deploy)
+  if (svc !== undefined && Date.now() - svcLoadedAt < 60_000) return svc;
+  const envRaw = process.env.FCM_SERVICE_ACCOUNT_JSON;
+  let raw = envRaw || "";
+  if (!raw) {
+    // fallback: admin-managed value stored in app_settings
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data } = await supabaseAdmin
+        .from("app_settings").select("value").eq("key", "fcm_service_account_json").maybeSingle();
+      if (typeof data?.value === "string") raw = data.value;
+    } catch { /* ignore — leave raw empty */ }
+  }
+  if (!raw) { svc = null; svcLoadedAt = Date.now(); return null; }
   try {
     svc = JSON.parse(raw) as ServiceAccount;
-    return svc;
   } catch (e) {
-    console.error("[fcm] FCM_SERVICE_ACCOUNT_JSON is not valid JSON", e);
+    console.error("[fcm] FCM service account JSON is not valid JSON", e);
     svc = null;
-    return null;
   }
+  svcLoadedAt = Date.now();
+  // invalidate cached oauth token whenever the service account changes
+  cached = null;
+  return svc;
 }
 
 function b64url(buf: ArrayBuffer | Uint8Array | string): string {
@@ -57,7 +71,7 @@ function pemToPkcs8(pem: string): ArrayBuffer {
 }
 
 async function getAccessToken(): Promise<string | null> {
-  const sa = loadServiceAccount();
+  const sa = await loadServiceAccount();
   if (!sa) return null;
   const now = Math.floor(Date.now() / 1000);
   if (cached && cached.exp - 60 > now) return cached.token;
@@ -115,7 +129,7 @@ export async function sendFcmToTokens(
 ): Promise<{ sent: number; failed: number; invalidTokens: string[] }> {
   const out = { sent: 0, failed: 0, invalidTokens: [] as string[] };
   if (tokens.length === 0) return out;
-  const sa = loadServiceAccount();
+  const sa = await loadServiceAccount();
   const accessToken = await getAccessToken();
   if (!sa || !accessToken) {
     console.warn("[fcm] skipping push — FCM_SERVICE_ACCOUNT_JSON not configured");
