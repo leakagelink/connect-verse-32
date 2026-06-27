@@ -198,8 +198,6 @@ function Home() {
           </div>
           <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
         </div>
-          <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
-        </div>
         <LiveCreatorsStrip users={onlineUsers ?? []} loading={loadingOnline} onCall={startCall} />
       </div>
 
