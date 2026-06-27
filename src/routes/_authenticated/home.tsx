@@ -189,10 +189,15 @@ function Home() {
       <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`size-2 rounded-full ${rtConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
             <h2 className="text-sm font-semibold uppercase tracking-wider">Live Now</h2>
             <Badge variant="secondary" className="text-[10px]">{(onlineUsers ?? []).length}</Badge>
+            {!rtConnected && (
+              <span className="text-[10px] text-amber-500 font-medium">Reconnecting…</span>
+            )}
           </div>
+          <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
+        </div>
           <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
         </div>
         <LiveCreatorsStrip users={onlineUsers ?? []} loading={loadingOnline} onCall={startCall} />
