@@ -53,6 +53,7 @@ function Home() {
   });
 
   const queryClient = useQueryClient();
+  const [rtConnected, setRtConnected] = useState(true);
 
   // heartbeat every 60s
   useEffect(() => {
@@ -72,27 +73,49 @@ function Home() {
     return () => { supabase.removeChannel(ch); };
   }, [queryClient]);
 
-  // Realtime presence: refresh the online users list on join/leave
+  // Realtime presence: refresh the online users list on join/leave.
+  // On disconnect we keep last-known data visible (React Query cache);
+  // on reconnect we invalidate so fresh data loads instantly.
   useEffect(() => {
     const uid = me?.profile?.id;
     if (!uid) return;
     const ch = supabase.channel("presence:online", { config: { presence: { key: uid } } });
-    ch.on("presence", { event: "sync" }, () => {
-      queryClient.invalidateQueries({ queryKey: ["online"] });
-    })
-      .on("presence", { event: "join" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["online"] });
-      })
-      .on("presence", { event: "leave" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["online"] });
-      })
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ["online"] });
+    ch.on("presence", { event: "sync" }, refresh)
+      .on("presence", { event: "join" }, refresh)
+      .on("presence", { event: "leave" }, refresh)
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
+          setRtConnected(true);
           await ch.track({ uid, at: Date.now() });
+          // Reconnect → pull fresh data right away
+          queryClient.invalidateQueries({ queryKey: ["online"] });
+          queryClient.invalidateQueries({ queryKey: ["rooms"] });
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setRtConnected(false);
         }
       });
     return () => { supabase.removeChannel(ch); };
   }, [me?.profile?.id, queryClient]);
+
+  // Browser network reconnect → force refresh and re-heartbeat
+  useEffect(() => {
+    const onOnline = () => {
+      setRtConnected(true);
+      beat().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["online"] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    };
+    const onOffline = () => setRtConnected(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [beat, queryClient]);
 
   useEffect(() => {
     if (me?.profile?.is_banned) navigate({ to: "/banned", replace: true });
@@ -166,9 +189,12 @@ function Home() {
       <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`size-2 rounded-full ${rtConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
             <h2 className="text-sm font-semibold uppercase tracking-wider">Live Now</h2>
             <Badge variant="secondary" className="text-[10px]">{(onlineUsers ?? []).length}</Badge>
+            {!rtConnected && (
+              <span className="text-[10px] text-amber-500 font-medium">Reconnecting…</span>
+            )}
           </div>
           <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
         </div>
