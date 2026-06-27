@@ -108,6 +108,56 @@ export const updateMyLanguage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Save uploaded avatar — generates a long-lived signed URL and persists it.
+// Old object is deleted to avoid orphan files.
+export const setMyAvatar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ objectPath: z.string().min(3).max(300) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // path must start with the user's own folder
+    if (!data.objectPath.startsWith(`${userId}/`)) {
+      throw new Error("Invalid path");
+    }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(data.objectPath, 60 * 60 * 24 * 365);
+    if (signErr || !signed) throw new Error(signErr?.message ?? "Could not create URL");
+
+    // delete previous file (best effort)
+    const { data: old } = await supabase
+      .from("profiles").select("avatar_path").eq("id", userId).maybeSingle();
+    if (old?.avatar_path && old.avatar_path !== data.objectPath) {
+      await supabase.storage.from("avatars").remove([old.avatar_path]);
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: signed.signedUrl, avatar_path: data.objectPath })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, url: signed.signedUrl };
+  });
+
+export const clearMyAvatar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: old } = await supabase
+      .from("profiles").select("avatar_path").eq("id", userId).maybeSingle();
+    if (old?.avatar_path) {
+      await supabase.storage.from("avatars").remove([old.avatar_path]);
+    }
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null, avatar_path: null })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const discoverUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

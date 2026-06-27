@@ -15,6 +15,7 @@ import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAler
 import { APP_LANGUAGES } from "@/lib/constants";
 import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { NotificationPrefsCard } from "@/components/notification-prefs-card";
+import { AvatarUploadCard } from "@/components/avatar-upload-card";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -105,6 +106,13 @@ function Settings() {
           </div>
         </div>
       </Card>
+
+      {/* Profile photo (optional, with creator nudge for female users) */}
+      <AvatarUploadCard
+        username={p?.username}
+        avatarUrl={p?.avatar_url}
+        gender={p?.gender}
+      />
 
       {/* Profile details */}
       <Card className="glass mt-4 p-4 space-y-3 text-sm">
