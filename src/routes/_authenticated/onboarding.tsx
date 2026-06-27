@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -15,8 +15,26 @@ import { toast } from "sonner";
 import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
+  beforeLoad: async ({ context }) => {
+    const qc = (context as any)?.queryClient;
+    try {
+      const me = qc
+        ? await qc.fetchQuery({
+            queryKey: ["me"],
+            queryFn: () => getMyProfile(),
+            staleTime: 0,
+          })
+        : await getMyProfile();
+      if (me?.profile?.is_banned) throw redirect({ to: "/banned", replace: true });
+      if (me?.profile?.onboarded) throw redirect({ to: "/home", replace: true });
+    } catch (e: any) {
+      if (e && typeof e === "object" && "isRedirect" in e) throw e;
+      // network/auth hiccup — let the page render and re-check client-side
+    }
+  },
   component: Onboarding,
 });
+
 
 function Onboarding() {
   const navigate = useNavigate();
