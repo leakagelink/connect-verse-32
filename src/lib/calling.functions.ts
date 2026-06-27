@@ -163,7 +163,20 @@ export const issueAgoraToken = createServerFn({ method: "POST" })
     if (!c.app_id || !c.app_certificate) throw new Error("Agora credential incomplete");
 
     const agoraMod: any = await import("agora-token");
-    const { RtcTokenBuilder, RtcRole } = agoraMod.default ?? agoraMod;
+    const RtcTokenBuilder =
+      agoraMod.RtcTokenBuilder ??
+      agoraMod.default?.RtcTokenBuilder ??
+      agoraMod.default?.default?.RtcTokenBuilder;
+    const RtcRole =
+      agoraMod.RtcRole ??
+      agoraMod.default?.RtcRole ??
+      agoraMod.default?.default?.RtcRole;
+    if (!RtcTokenBuilder || typeof RtcTokenBuilder.buildTokenWithUserAccount !== "function") {
+      throw new Error(
+        `agora-token module shape unexpected. top=[${Object.keys(agoraMod).join(",")}] default=[${agoraMod.default ? Object.keys(agoraMod.default).join(",") : "none"}]`,
+      );
+    }
+
 
     const role = data.role === "publisher" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const privilegeExpire = Math.floor(Date.now() / 1000) + 60 * 60;
@@ -614,16 +627,26 @@ export const adminTestCredential = createServerFn({ method: "POST" })
         } catch (impErr: any) {
           throw new Error(`Failed to import 'agora-token' module: ${impErr?.message ?? impErr}`);
         }
-        const resolved = agoraMod.default ?? agoraMod;
+        const RtcTokenBuilder =
+          agoraMod.RtcTokenBuilder ??
+          agoraMod.default?.RtcTokenBuilder ??
+          agoraMod.default?.default?.RtcTokenBuilder;
+        const RtcRole =
+          agoraMod.RtcRole ??
+          agoraMod.default?.RtcRole ??
+          agoraMod.default?.default?.RtcRole;
         diagnostics.agoraModule = {
           topLevelKeys: Object.keys(agoraMod).slice(0, 20),
           hasDefault: !!agoraMod.default,
-          resolvedKeys: resolved ? Object.keys(resolved).slice(0, 20) : [],
+          defaultKeys: agoraMod.default ? Object.keys(agoraMod.default).slice(0, 20) : [],
+          resolvedRtcTokenBuilder: !!RtcTokenBuilder,
+          resolvedRtcRole: !!RtcRole,
         };
-        const { RtcTokenBuilder, RtcRole } = resolved ?? {};
+
         if (!RtcTokenBuilder) {
-          throw new Error(`RtcTokenBuilder missing from agora-token module. Resolved keys: [${diagnostics.agoraModule.resolvedKeys.join(", ")}]`);
+          throw new Error(`RtcTokenBuilder missing. top=[${diagnostics.agoraModule.topLevelKeys.join(",")}] default=[${diagnostics.agoraModule.defaultKeys.join(",")}]`);
         }
+
         if (typeof RtcTokenBuilder.buildTokenWithUserAccount !== "function") {
           throw new Error(`RtcTokenBuilder.buildTokenWithUserAccount is not a function. Available methods: [${Object.keys(RtcTokenBuilder).join(", ")}]`);
         }
