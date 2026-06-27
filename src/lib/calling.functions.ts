@@ -162,7 +162,9 @@ export const issueAgoraToken = createServerFn({ method: "POST" })
     const c = cred.credentials as Record<string, string>;
     if (!c.app_id || !c.app_certificate) throw new Error("Agora credential incomplete");
 
-    const { RtcTokenBuilder, RtcRole } = await import("agora-token");
+    const agoraMod: any = await import("agora-token");
+    const { RtcTokenBuilder, RtcRole } = agoraMod.default ?? agoraMod;
+
     const role = data.role === "publisher" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const privilegeExpire = Math.floor(Date.now() / 1000) + 60 * 60;
     const token = RtcTokenBuilder.buildTokenWithUserAccount(
@@ -576,7 +578,9 @@ export const adminTestCredential = createServerFn({ method: "POST" })
     try {
       if (cred.provider === "agora") {
         if (!c.app_id || !c.app_certificate) throw new Error("Missing app_id / app_certificate");
-        const { RtcTokenBuilder, RtcRole } = await import("agora-token");
+        const agoraMod: any = await import("agora-token");
+        const { RtcTokenBuilder, RtcRole } = agoraMod.default ?? agoraMod;
+
         const exp = Math.floor(Date.now() / 1000) + 300;
         const token = RtcTokenBuilder.buildTokenWithUserAccount(
           c.app_id, c.app_certificate, channel, "admin-test", RtcRole.PUBLISHER, exp, exp,
