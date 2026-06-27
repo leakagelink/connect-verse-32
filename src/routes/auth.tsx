@@ -11,6 +11,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: `Sign in — ${APP_NAME}` }] }),
@@ -82,9 +83,7 @@ function AuthPage() {
     <div className="min-h-screen grid place-items-center px-4">
       <Card className="glass w-full max-w-md p-8">
         <div className="flex items-center gap-2 font-bold text-lg justify-center">
-          <div className="size-8 rounded-lg brand-gradient grid place-items-center">
-            <Sparkles className="size-4 text-primary-foreground" />
-          </div>
+          <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={32} height={32} className="size-8 rounded-lg" />
           {APP_NAME}
         </div>
         <p className="mt-2 text-center text-sm text-muted-foreground">18+ verified community</p>
