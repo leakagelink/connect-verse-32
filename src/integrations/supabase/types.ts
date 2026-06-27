@@ -1177,6 +1177,45 @@ export type Database = {
         }
         Relationships: []
       }
+      perf_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          event_type: string
+          id: number
+          label: string | null
+          meta: Json | null
+          ok: boolean | null
+          route: string | null
+          status: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type: string
+          id?: number
+          label?: string | null
+          meta?: Json | null
+          ok?: boolean | null
+          route?: string | null
+          status?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type?: string
+          id?: number
+          label?: string | null
+          meta?: Json | null
+          ok?: boolean | null
+          route?: string | null
+          status?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: string
@@ -1757,6 +1796,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      purge_old_perf_events: { Args: never; Returns: number }
       report_credential_failure: {
         Args: { _error: string; _id: string }
         Returns: undefined
