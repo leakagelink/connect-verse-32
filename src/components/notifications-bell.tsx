@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listMyNotifications } from "@/lib/notifications.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Sticky-header bell with unread badge. */
 export function NotificationsBell({ active }: { active?: boolean }) {
@@ -11,10 +13,33 @@ export function NotificationsBell({ active }: { active?: boolean }) {
   const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => fn(),
-    refetchInterval: 60_000,
     staleTime: 45_000,
   });
   const unread = data?.unread ?? 0;
+
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid || cancelled) return;
+      channel = supabase
+        .channel(`rt-notifications-${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "app_notifications", filter: `user_id=eq.${uid}` },
+          () => { queryClient.invalidateQueries({ queryKey: ["notifications"] }); },
+        )
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
     <Link
       to="/notifications"
