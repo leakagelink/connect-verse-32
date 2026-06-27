@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminPerfSummary } from "@/lib/perf.functions";
+import { adminPerfSummary, adminPerfTraces } from "@/lib/perf.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, AlertTriangle, Gauge, Timer } from "lucide-react";
+import { Activity, AlertTriangle, ChevronDown, ChevronRight, Gauge, Route as RouteIcon, Timer } from "lucide-react";
+import { format } from "date-fns";
 
 function msColor(ms: number) {
   if (ms < 400) return "text-success";
