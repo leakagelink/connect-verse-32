@@ -14,6 +14,11 @@ import { LiveCreatorsStrip } from "@/components/live-creators-strip";
 import { QuickActionsGrid } from "@/components/quick-actions-grid";
 import { RechargeOfferCard } from "@/components/recharge-offer-card";
 import { MatchmakerRoomsSection } from "@/components/matchmaker-rooms-section";
+import { TrendingNowSection } from "@/components/trending-now-section";
+import { FanClubSpotlight } from "@/components/fan-club-spotlight";
+import { RecentlyPlayedSection } from "@/components/recently-played-section";
+import { ForYouSection } from "@/components/for-you-section";
+
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
