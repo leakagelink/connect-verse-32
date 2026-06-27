@@ -11,6 +11,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { applyChromeForApp, registerPushNotifications, isNative } from "@/lib/native";
 import { installDeepLinkHandler } from "@/lib/deep-links";
 import { supabase } from "@/integrations/supabase/client";
+import { registerDeviceToken } from "@/lib/push.functions";
 import { useT, syncStoredLocale, type Locale } from "@/lib/i18n";
 
 
@@ -36,7 +37,11 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       if (!reg) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from("profiles").update({ push_token: reg.token, push_platform: reg.platform }).eq("id", user.id);
+      try {
+        await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
+      } catch (e) {
+        console.warn("[push] register device token failed", e);
+      }
     })();
     return dispose;
   }, [router]);
