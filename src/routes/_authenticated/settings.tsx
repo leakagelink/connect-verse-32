@@ -24,13 +24,25 @@ function Settings() {
   const qc = useQueryClient();
   const profileFn = useServerFn(getMyProfile);
   const langFn = useServerFn(updateMyLanguage);
+  const blockedFn = useServerFn(listBlockedUsers);
+  const unblockFn = useServerFn(unblockUser);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
+  const { data: blocked = [] } = useQuery({ queryKey: ["blocked-users"], queryFn: () => blockedFn() });
 
   const langMut = useMutation({
     mutationFn: (language: string) => langFn({ data: { language } }),
     onSuccess: () => {
       toast.success("Language updated");
       qc.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const unblockMut = useMutation({
+    mutationFn: (targetUserId: string) => unblockFn({ data: { targetUserId } }),
+    onSuccess: () => {
+      toast.success("User unblocked");
+      qc.invalidateQueries({ queryKey: ["blocked-users"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
