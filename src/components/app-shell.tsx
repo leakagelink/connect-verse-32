@@ -30,22 +30,35 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
   // Phase 4 — Capacitor: status-bar colour, splash hide, push token registration.
   // Phase 10 — deep-link bridge (talkora:// → in-app route).
   useEffect(() => {
-    void applyChromeForApp();
-    const dispose = installDeepLinkHandler(router);
+    let dispose: (() => void) | undefined;
+    try {
+      void applyChromeForApp().catch((e) => console.warn("[native] chrome failed", e));
+      dispose = installDeepLinkHandler(router);
+    } catch (e) {
+      console.warn("[native] init failed", e);
+    }
     if (!isNative()) return dispose;
-    void (async () => {
-      const reg = await registerPushNotifications();
-      if (!reg) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      try {
-        await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
-      } catch (e) {
-        console.warn("[push] register device token failed", e);
-      }
-    })();
-    return dispose;
+    // Defer push registration so a missing Firebase config / plugin error
+    // never blocks first render and never crashes the splash → home transition.
+    const t = setTimeout(() => {
+      void (async () => {
+        try {
+          const reg = await registerPushNotifications();
+          if (!reg) return;
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
+        } catch (e) {
+          console.warn("[push] registration failed (non-fatal)", e);
+        }
+      })();
+    }, 4000);
+    return () => {
+      clearTimeout(t);
+      dispose?.();
+    };
   }, [router]);
+
 
   // Phase 10 — sync stored locale from profile.app_language whenever it changes.
   useEffect(() => {
