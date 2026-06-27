@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as CommunityGuidelinesRouteImport } from './routes/community-guidelines'
 import { Route as BannedRouteImport } from './routes/banned'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -57,6 +58,11 @@ const RefundPolicyRoute = RefundPolicyRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityGuidelinesRoute = CommunityGuidelinesRouteImport.update({
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/banned'
     | '/community-guidelines'
+    | '/delete-account'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/banned'
     | '/community-guidelines'
+    | '/delete-account'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/banned'
     | '/community-guidelines'
+    | '/delete-account'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -377,6 +389,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BannedRoute: typeof BannedRoute
   CommunityGuidelinesRoute: typeof CommunityGuidelinesRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   SafetyRoute: typeof SafetyRoute
@@ -412,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community-guidelines': {
@@ -663,6 +683,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BannedRoute: BannedRoute,
   CommunityGuidelinesRoute: CommunityGuidelinesRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   PrivacyRoute: PrivacyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   SafetyRoute: SafetyRoute,
