@@ -282,7 +282,7 @@ export const adminFlagCsam = createServerFn({ method: "POST" })
       reason: "CSAM escalation",
       ban_type: "permanent",
       is_active: true,
-    });
+    } as any);
 
     // 2) Sealed escalation record.
     const { data: row, error } = await supabaseAdmin
@@ -330,7 +330,7 @@ export const adminUpdateCsamReport = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = { status: data.status };
     if (data.caseRef) patch.case_ref = data.caseRef;
     if (data.status === "escalated") patch.escalated_at = new Date().toISOString();
-    const { error } = await supabaseAdmin.from("csam_reports").update(patch).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("csam_reports").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
