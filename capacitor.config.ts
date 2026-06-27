@@ -18,13 +18,17 @@ const config: CapacitorConfig = {
   appName: 'Talkora',
   webDir: '.output/public',
   server: {
-    // Comment out the next line to ship a fully self-contained APK.
-    url: 'https://talkora.lovable.app',
+    // Comment out the next line to ship a fully self-contained APK (offline bundle).
+    url: 'https://connect-verse-32.lovable.app',
     cleartext: false,
     androidScheme: 'https',
-    // Phase 10 — App Links host so https://talkora.app/<path> opens the app.
-    hostname: 'talkora.app',
-    allowNavigation: ['talkora.app', '*.talkora.app', 'talkora.lovable.app'],
+    hostname: 'connect-verse-32.lovable.app',
+    allowNavigation: [
+      'connect-verse-32.lovable.app',
+      '*.lovable.app',
+      'talkora.app',
+      '*.talkora.app',
+    ],
   },
   android: {
     allowMixedContent: false,
