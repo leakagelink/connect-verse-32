@@ -45,6 +45,7 @@ import { Route as AuthenticatedMysteryCaseIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedMatchmakerNewRouteImport } from './routes/_authenticated/matchmaker.new'
 import { Route as AuthenticatedMatchmakerIdRouteImport } from './routes/_authenticated/matchmaker.$id'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
+import { Route as ApiPublicHooksResetCallingQuotasRouteImport } from './routes/api/public/hooks/reset-calling-quotas'
 import { Route as ApiPublicHooksKycCleanupRouteImport } from './routes/api/public/hooks/kyc-cleanup'
 import { Route as AuthenticatedCallKindUserIdRouteImport } from './routes/_authenticated/call.$kind.$userId'
 
@@ -236,6 +237,12 @@ const AuthenticatedChatConversationIdRoute =
     path: '/$conversationId',
     getParentRoute: () => AuthenticatedChatRoute,
   } as any)
+const ApiPublicHooksResetCallingQuotasRoute =
+  ApiPublicHooksResetCallingQuotasRouteImport.update({
+    id: '/api/public/hooks/reset-calling-quotas',
+    path: '/api/public/hooks/reset-calling-quotas',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksKycCleanupRoute =
   ApiPublicHooksKycCleanupRouteImport.update({
     id: '/api/public/hooks/kyc-cleanup',
@@ -287,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
   '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
+  '/api/public/hooks/reset-calling-quotas': typeof ApiPublicHooksResetCallingQuotasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
   '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
+  '/api/public/hooks/reset-calling-quotas': typeof ApiPublicHooksResetCallingQuotasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -365,6 +374,7 @@ export interface FileRoutesById {
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
   '/api/public/hooks/kyc-cleanup': typeof ApiPublicHooksKycCleanupRoute
+  '/api/public/hooks/reset-calling-quotas': typeof ApiPublicHooksResetCallingQuotasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/chat/'
     | '/call/$kind/$userId'
     | '/api/public/hooks/kyc-cleanup'
+    | '/api/public/hooks/reset-calling-quotas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/call/$kind/$userId'
     | '/api/public/hooks/kyc-cleanup'
+    | '/api/public/hooks/reset-calling-quotas'
   id:
     | '__root__'
     | '/'
@@ -483,6 +495,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat/'
     | '/_authenticated/call/$kind/$userId'
     | '/api/public/hooks/kyc-cleanup'
+    | '/api/public/hooks/reset-calling-quotas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -498,6 +511,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicHooksKycCleanupRoute: typeof ApiPublicHooksKycCleanupRoute
+  ApiPublicHooksResetCallingQuotasRoute: typeof ApiPublicHooksResetCallingQuotasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -754,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatConversationIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/api/public/hooks/reset-calling-quotas': {
+      id: '/api/public/hooks/reset-calling-quotas'
+      path: '/api/public/hooks/reset-calling-quotas'
+      fullPath: '/api/public/hooks/reset-calling-quotas'
+      preLoaderRoute: typeof ApiPublicHooksResetCallingQuotasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/kyc-cleanup': {
       id: '/api/public/hooks/kyc-cleanup'
       path: '/api/public/hooks/kyc-cleanup'
@@ -863,6 +884,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicHooksKycCleanupRoute: ApiPublicHooksKycCleanupRoute,
+  ApiPublicHooksResetCallingQuotasRoute: ApiPublicHooksResetCallingQuotasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

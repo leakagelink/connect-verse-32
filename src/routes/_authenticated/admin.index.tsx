@@ -8,7 +8,7 @@ import {
 } from "@/lib/admin.functions";
 import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
 import { adminGetPaymentConfig, adminSavePaymentConfig } from "@/lib/payments.functions";
-import { adminGetCallingConfig, adminSaveCallingConfig } from "@/lib/calling.functions";
+import { adminListCredentials, adminCreateCredential, adminUpdateCredential, adminDeleteCredential, adminResetCredentialStatus } from "@/lib/calling.functions";
 import { adminBroadcast, adminListBroadcasts, adminGetFcmConfig, adminSaveFcmConfig, adminClearFcmConfig, adminSendTestPush } from "@/lib/push.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
@@ -221,7 +221,8 @@ function AdminPanel() {
         </TabsContent>
 
         <TabsContent value="calling" className="space-y-3">
-          <CallingTab />
+          <CallingCredentialsTab />
+
         </TabsContent>
 
         <TabsContent value="broadcast" className="space-y-3">
@@ -377,99 +378,325 @@ function PaymentsTab() {
   );
 }
 
-function CallingTab() {
+function CallingCredentialsTab() {
   const qc = useQueryClient();
-  const getCfg = useServerFn(adminGetCallingConfig);
-  const saveCfg = useServerFn(adminSaveCallingConfig);
-  const { data: cfg, isLoading } = useQuery({
-    queryKey: ["admin-calling-config"],
-    queryFn: () => getCfg(),
+  const listFn = useServerFn(adminListCredentials);
+  const createFn = useServerFn(adminCreateCredential);
+  const updateFn = useServerFn(adminUpdateCredential);
+  const deleteFn = useServerFn(adminDeleteCredential);
+  const resetFn = useServerFn(adminResetCredentialStatus);
+  const { data: creds = [], isLoading } = useQuery({
+    queryKey: ["admin-calling-credentials"],
+    queryFn: () => listFn(),
   });
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState<string | null>(null);
+  const [provider, setProvider] = useState<"agora" | "100ms">("agora");
+  // Add-form state
+  const [label, setLabel] = useState("");
+  const [priority, setPriority] = useState(100);
+  const [quota, setQuota] = useState<string>("");
   const [appId, setAppId] = useState("");
   const [appCert, setAppCert] = useState("");
+  const [accessKey, setAccessKey] = useState("");
+  const [appSecret, setAppSecret] = useState("");
+  const [templateId, setTemplateId] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function save(patch: { provider?: "mock" | "agora"; app_id?: string; app_certificate?: string }) {
+  function resetForm() {
+    setLabel(""); setPriority(100); setQuota("");
+    setAppId(""); setAppCert("");
+    setAccessKey(""); setAppSecret(""); setTemplateId("");
+  }
+
+  async function submitAdd() {
     setBusy(true);
     try {
-      await saveCfg({ data: patch });
-      toast.success("Saved");
-      qc.invalidateQueries({ queryKey: ["admin-calling-config"] });
-      qc.invalidateQueries({ queryKey: ["calling-config"] });
-      setAppId(""); setAppCert("");
+      await createFn({
+        data: {
+          provider,
+          label,
+          priority,
+          monthly_quota_minutes: quota ? Number(quota) : null,
+          app_id: provider === "agora" ? appId : undefined,
+          app_certificate: provider === "agora" ? appCert : undefined,
+          access_key: provider === "100ms" ? accessKey : undefined,
+          app_secret: provider === "100ms" ? appSecret : undefined,
+          template_id: provider === "100ms" ? templateId : undefined,
+        },
+      });
+      toast.success("Credential added");
+      setAddOpen(false);
+      resetForm();
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
     } catch (e: any) {
-      toast.error(e.message ?? "Save failed");
+      toast.error(e.message ?? "Add failed");
     } finally {
       setBusy(false);
     }
   }
 
-  const isAgora = cfg?.provider === "agora";
-  const ready = cfg?.has_app_id && cfg?.has_app_certificate;
+  async function toggleActive(id: string, next: boolean) {
+    try {
+      await updateFn({ data: { id, is_active: next } });
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  async function doReset(id: string) {
+    try {
+      await resetFn({ data: { id } });
+      toast.success("Credential reset to healthy");
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  async function doDelete(id: string) {
+    if (!confirm("Delete this credential? Active calls using it will failover.")) return;
+    try {
+      await deleteFn({ data: { id } });
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  const healthyCount = creds.filter((c: any) => c.is_active && c.status === "healthy").length;
+  const totalActive = creds.filter((c: any) => c.is_active).length;
+  const poolHealth = totalActive === 0 ? "empty" : healthyCount === 0 ? "down" : healthyCount < totalActive ? "degraded" : "good";
 
   return (
-    <Card className="glass p-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <Phone className="size-4 text-primary" />
-        <h2 className="font-semibold">Calling infrastructure (Agora)</h2>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">
-            Provider: <span className={isAgora ? "text-success" : "text-warning"}>{isAgora ? "AGORA" : "MOCK (P2P sim)"}</span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {isAgora
-              ? "Real Agora channels — low-latency audio/video with auto-reconnect."
-              : "Pre-production WebRTC simulation. Switch to Agora before production launch."}
-          </p>
+    <div className="space-y-3">
+      <Card className="glass p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Phone className="size-4 text-primary" />
+            <h2 className="font-semibold">Calling provider pool</h2>
+          </div>
+          <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
         </div>
-        <Switch
-          checked={isAgora}
-          disabled={isLoading || busy || (!isAgora && !ready)}
-          onCheckedChange={(v) => save({ provider: v ? "agora" : "mock" })}
-        />
-      </div>
-      {!ready && (
-        <p className="text-xs text-warning">
-          Add both App ID and App Certificate below before switching to AGORA.
+        <div className="mt-3 text-xs">
+          Pool health:{" "}
+          <Badge variant={poolHealth === "good" ? "default" : poolHealth === "degraded" ? "secondary" : "destructive"}>
+            {poolHealth.toUpperCase()}
+          </Badge>{" "}
+          <span className="text-muted-foreground">· {healthyCount}/{totalActive} healthy · auto-failover enabled</span>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          When a credential errors or hits its monthly quota, the next healthy one is used automatically — calls keep working without manual intervention.
         </p>
+      </Card>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+
+      <div className="space-y-2">
+        {creds.map((c: any) => {
+          const isAgora = c.provider === "agora";
+          const statusColor =
+            c.status === "healthy" ? "default" :
+            c.status === "degraded" ? "secondary" :
+            "destructive";
+          return (
+            <Card key={c.id} className="glass p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm truncate">{c.label}</span>
+                    <Badge variant="outline" className="text-[10px]">{c.provider.toUpperCase()}</Badge>
+                    <Badge variant={statusColor as any} className="text-[10px]">{c.status}</Badge>
+                    <span className="text-[10px] text-muted-foreground">priority {c.priority}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                    {isAgora
+                      ? `App ID: ${c.app_id_masked || "—"}`
+                      : `Access key: ${c.access_key_masked || "—"} · Template: ${c.template_id_masked || "—"}`}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Usage: {c.minutes_used_current_month} min
+                    {c.monthly_quota_minutes ? ` / ${c.monthly_quota_minutes} min` : " (no quota set)"}
+                    {c.consecutive_failures > 0 && ` · ${c.consecutive_failures} fails`}
+                  </p>
+                  {c.last_error && (
+                    <p className="text-[11px] text-destructive truncate" title={c.last_error}>
+                      Last error: {c.last_error}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <Switch checked={c.is_active} onCheckedChange={(v) => toggleActive(c.id, v)} />
+                  <div className="flex gap-1">
+                    {c.status !== "healthy" && (
+                      <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => doReset(c.id)}>
+                        Reset
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setEditOpen(c.id)}>
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-[11px] text-destructive" onClick={() => doDelete(c.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+        {!isLoading && creds.length === 0 && (
+          <Card className="glass p-6 text-center text-sm text-muted-foreground">
+            No credentials yet. Add an Agora or 100ms credential to enable real calls.
+          </Card>
+        )}
+      </div>
+
+      {/* Add dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add calling credential</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium">Provider</label>
+              <Select value={provider} onValueChange={(v) => setProvider(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="agora">Agora</SelectItem>
+                  <SelectItem value="100ms">100ms</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium">Label</label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Agora-Primary or 100ms-Backup" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-medium">Priority (lower = first)</label>
+                <Input type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="text-xs font-medium">Monthly quota (min, optional)</label>
+                <Input type="number" value={quota} onChange={(e) => setQuota(e.target.value)} placeholder="e.g. 10000" />
+              </div>
+            </div>
+            {provider === "agora" ? (
+              <>
+                <div>
+                  <label className="text-xs font-medium">Agora App ID</label>
+                  <Input value={appId} onChange={(e) => setAppId(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium">Agora App Certificate</label>
+                  <Input type="password" value={appCert} onChange={(e) => setAppCert(e.target.value)} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="text-xs font-medium">100ms Access Key</label>
+                  <Input value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium">100ms App Secret</label>
+                  <Input type="password" value={appSecret} onChange={(e) => setAppSecret(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium">100ms Template ID</label>
+                  <Input value={templateId} onChange={(e) => setTemplateId(e.target.value)} placeholder="Template must have a role named 'guest' with publish permissions" />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={submitAdd} disabled={busy || !label}>{busy ? "Adding…" : "Add"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      {editOpen && (
+        <EditCredentialDialog
+          credId={editOpen}
+          cred={creds.find((c: any) => c.id === editOpen)}
+          onClose={() => setEditOpen(null)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] })}
+        />
       )}
-
-      <div className="space-y-2">
-        <label className="text-xs font-medium">
-          Agora App ID {cfg?.has_app_id && <span className="text-muted-foreground">· current: {cfg.app_id_masked}</span>}
-        </label>
-        <div className="flex gap-2">
-          <Input placeholder="e.g. a1b2c3d4e5f6..." value={appId} onChange={(e) => setAppId(e.target.value)} />
-          <Button disabled={busy || !appId} onClick={() => save({ app_id: appId })}>Save</Button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-xs font-medium">
-          Agora App Certificate {cfg?.has_app_certificate && <span className="text-muted-foreground">· current: {cfg.app_certificate_masked}</span>}
-        </label>
-        <div className="flex gap-2">
-          <Input type="password" placeholder="••••••••" value={appCert} onChange={(e) => setAppCert(e.target.value)} />
-          <Button disabled={busy || !appCert} onClick={() => save({ app_certificate: appCert })}>Save</Button>
-        </div>
-      </div>
-
-      <div className="rounded-md border border-border/60 p-3 text-xs space-y-1">
-        <p className="font-semibold">Setup steps:</p>
-        <ol className="list-decimal pl-4 space-y-0.5 text-muted-foreground">
-          <li>Create an account at <code className="bg-muted/40 px-1 rounded">console.agora.io</code></li>
-          <li>Create a project with <b>"Secured mode: APP ID + Token"</b> (never use App ID-only mode)</li>
-          <li>Copy the <b>App ID</b> and generate the <b>Primary App Certificate</b></li>
-          <li>Paste both above and toggle Provider to AGORA</li>
-        </ol>
-        <p className="text-muted-foreground mt-1">Tokens are short-lived (1 hr) and scoped per-user per-channel.</p>
-      </div>
-    </Card>
+    </div>
   );
 }
+
+function EditCredentialDialog({ credId, cred, onClose, onSaved }: {
+  credId: string;
+  cred: any;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const updateFn = useServerFn(adminUpdateCredential);
+  const [label, setLabel] = useState(cred?.label ?? "");
+  const [priority, setPriority] = useState<number>(cred?.priority ?? 100);
+  const [quota, setQuota] = useState<string>(cred?.monthly_quota_minutes?.toString() ?? "");
+  const [secret, setSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      const payload: any = {
+        id: credId,
+        label,
+        priority,
+        monthly_quota_minutes: quota === "" ? null : Number(quota),
+      };
+      if (secret) {
+        if (cred.provider === "agora") payload.app_certificate = secret;
+        else payload.app_secret = secret;
+      }
+      await updateFn({ data: payload });
+      toast.success("Updated");
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message ?? "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Edit credential</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium">Label</label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs font-medium">Priority</label>
+              <Input type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="text-xs font-medium">Monthly quota (min)</label>
+              <Input type="number" value={quota} onChange={(e) => setQuota(e.target.value)} placeholder="empty = unlimited" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Replace {cred?.provider === "agora" ? "App Certificate" : "App Secret"} (optional)
+            </label>
+            <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="Leave blank to keep current" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 
 

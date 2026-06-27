@@ -26,8 +26,8 @@ import { ModerationSampler } from "@/components/moderation-sampler";
 import { useScreenPrivacy } from "@/hooks/use-screen-privacy";
 import { onHardwareBack } from "@/lib/native";
 import { supabase } from "@/integrations/supabase/client";
-import { getCallingConfig, issueAgoraToken, recordCallMetrics } from "@/lib/calling.functions";
-import { AgoraSession, channelForPair } from "@/lib/agora-client";
+import { recordCallMetrics } from "@/lib/calling.functions";
+import { connectCall, type AnySession } from "@/lib/call-session";
 import { Signal, SignalHigh, SignalLow, SignalMedium, SignalZero } from "lucide-react";
 
 
@@ -43,10 +43,10 @@ function CallScreen() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const remoteContainerRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const agoraRef = useRef<AgoraSession | null>(null);
+  const sessionRef = useRef<AnySession | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
-  const [provider, setProvider] = useState<"mock" | "agora">("mock");
+  const [provider, setProvider] = useState<"mock" | "agora" | "100ms">("mock");
   const [networkQ, setNetworkQ] = useState<number>(0); // 0=unknown,1=excellent..6=down
   const [remoteJoined, setRemoteJoined] = useState(false);
   
@@ -176,60 +176,60 @@ function CallScreen() {
 
   useEffect(() => {
     let mounted = true;
-    if (!myId) return; // wait for profile so Agora UID = supabase user id
+    if (!myId) return; // wait for profile so the call account = supabase user id
     async function start() {
-
       try {
-        // Determine calling provider for this user/session.
-        let cfg: { provider: "mock" | "agora"; appId: string } = { provider: "mock", appId: "" };
-        try { cfg = await getCallingConfig(); } catch { /* default mock */ }
-        if (mounted) setProvider(cfg.provider);
-
-        let stream: MediaStream;
-        if (cfg.provider === "agora" && cfg.appId) {
-          // --- Real Agora call ---
-          const channel = channelForPair(myId, userId);
-          const tok = await issueAgoraToken({ data: { channel, role: "publisher" } });
-          const session = new AgoraSession();
-          agoraRef.current = session;
-          stream = await session.join({
-            appId: tok.appId,
-            channel: tok.channel,
-            token: tok.token,
-            account: tok.account,
-            kind: kind as "voice" | "video",
-            events: {
-              onRemoteUser: (user, mediaType) => {
-                if (!mounted) return;
-                setRemoteJoined(true);
-                if (mediaType === "video" && remoteContainerRef.current) {
-                  session.attachRemoteVideo(user, remoteContainerRef.current);
-                }
-              },
-              onRemoteLeft: () => mounted && setRemoteJoined(false),
-              onQuality: (q) => mounted && setNetworkQ(Math.max(q.uplinkNetworkQuality, q.downlinkNetworkQuality)),
-              onDisconnected: () => mounted && toast.warning("Network unstable — reconnecting…"),
-              onReconnected: () => mounted && toast.success("Reconnected"),
-              onVideoFallback: () => {
-                if (!mounted) return;
-                setCamOff(true);
-                toast.warning("Switched to audio-only due to poor network.");
-              },
+        // Provider-agnostic connect with automatic failover across the
+        // calling pool (multi-Agora + multi-100ms). On every credential
+        // failure the factory reports it server-side and retries with the
+        // next healthy credential before giving up.
+        const session = await connectCall({
+          myUserId: myId,
+          partnerUserId: userId,
+          kind: kind as "voice" | "video",
+          events: {
+            onRemoteJoined: () => mounted && setRemoteJoined(true),
+            onRemoteLeft: () => mounted && setRemoteJoined(false),
+            onQuality: (q) => mounted && setNetworkQ(q),
+            onDisconnected: () => mounted && toast.warning("Network unstable — reconnecting…"),
+            onReconnected: () => mounted && toast.success("Reconnected"),
+            onVideoFallback: () => {
+              if (!mounted) return;
+              setCamOff(true);
+              toast.warning("Switched to audio-only due to poor network.");
             },
-          });
-        } else {
-          // --- Mock / pre-production P2P ---
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: kind === "video" ? { width: 640, height: 480, facingMode: "user" } : false,
-          });
+          },
+        });
+
+        if (!mounted) {
+          session.localStream?.getTracks().forEach((t) => t.stop());
+          (session.session as any)?.leave?.().catch(() => {});
+          return;
         }
-        if (!mounted) { stream.getTracks().forEach((t) => t.stop()); agoraRef.current?.leave(); return; }
-        streamRef.current = stream;
-        if (videoRef.current && kind === "video") {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
+        sessionRef.current = session;
+        setProvider(session.provider);
+
+        // Local preview wiring. Agora & mock hand back a MediaStream; 100ms
+        // manages capture internally so we attach the local <video> via SDK.
+        if (session.localStream) {
+          streamRef.current = session.localStream;
+          if (kind === "video" && videoRef.current) {
+            videoRef.current.srcObject = session.localStream;
+            await videoRef.current.play().catch(() => {});
+          }
+        } else if (session.provider === "100ms" && kind === "video" && videoRef.current) {
+          session.attachLocal(videoRef.current);
         }
+        // Remote container — both Agora & 100ms attach to the same div.
+        if (kind === "video" && remoteContainerRef.current && session.provider !== "mock") {
+          session.attachRemote(remoteContainerRef.current);
+        }
+        if (session.failoverChain.length > 0) {
+          toast.info(
+            `Switched to ${session.provider.toUpperCase()} after ${session.failoverChain.length} failover(s).`,
+          );
+        }
+
         setTimeout(async () => {
           if (!mounted) return;
           setConnected(true);
@@ -280,8 +280,6 @@ function CallScreen() {
                 qc.setQueryData(["me"], fresh);
                 setFreeStart(fresh.profile.free_seconds_remaining ?? 0);
                 setCoinStart(fresh.walletBalance ?? 0);
-                // This session's elapsed restarts at 0; baseline already
-                // accounts for whatever the previous session burned.
                 elapsedRef.current = 0;
                 setElapsed(0);
                 freeExhaustedRef.current =
@@ -293,9 +291,6 @@ function CallScreen() {
             }
           } catch { /* ignore log start failure */ }
         }, 1200);
-
-
-
       } catch (e: any) {
         toast.error("Could not access camera / mic: " + e.message);
         navigate({ to: "/connect" });
@@ -305,9 +300,13 @@ function CallScreen() {
     return () => {
       mounted = false;
       streamRef.current?.getTracks().forEach((t) => t.stop());
-      agoraRef.current?.leave().catch(() => {});
+      const s = sessionRef.current;
+      if (s && s.session) {
+        (s.session as { leave: () => Promise<void> }).leave().catch(() => {});
+      }
     };
   }, [kind, navigate, myId, userId]);
+
 
   useEffect(() => {
     if (!connected) return;
@@ -560,11 +559,12 @@ function CallScreen() {
     const id = callLogIdRef.current;
     const totalSeconds = sessionStartElapsedRef.current + elapsedRef.current;
     const totalCoins = syncedCoinsRef.current;
-    // Capture Agora stats BEFORE leave() resets them.
-    const session = agoraRef.current;
-    const stats = session?.stats();
-    session?.leave().catch(() => {});
-    agoraRef.current = null;
+    // Capture session stats BEFORE leave() resets them.
+    const cur = sessionRef.current;
+    const sess = cur?.session as { stats?: () => { channel: string; qualityAvg: number; disconnects: number }; leave?: () => Promise<void> } | null;
+    const stats = sess?.stats?.();
+    sess?.leave?.().catch(() => {});
+    sessionRef.current = null;
     if (id) {
       endLogFn({
         data: {
@@ -574,17 +574,21 @@ function CallScreen() {
           status: totalSeconds > 0 ? "completed" : "cancelled",
         },
       }).catch(() => {});
-      // Persist call quality + provider for analytics / dispute review.
+      // Persist call quality + provider + credential for analytics / quota.
       recordCallMetrics({
         data: {
           callLogId: id,
           provider,
+          credentialId: cur?.credentialId ?? undefined,
           channelName: stats?.channel,
           qualityAvg: stats?.qualityAvg,
           disconnects: stats?.disconnects,
+          failoverChain: cur?.failoverChain ?? undefined,
+          durationSeconds: totalSeconds,
         },
       }).catch(() => {});
     }
+
     try { localStorage.removeItem(`active_call:${userId}:${kind}`); } catch { /* ignore */ }
     navigate({ to: "/recents" });
   }
@@ -788,7 +792,7 @@ function CallScreen() {
         kind={kind as "voice" | "video"}
         selfUserId={myId}
         callLogId={callLogIdRef.current}
-        enabled={connected && !paused && Boolean(myId)}
+        enabled={connected && !paused && Boolean(myId) && provider !== "100ms"}
       />
 
       <GiftPanel
