@@ -302,8 +302,13 @@ async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
 
 export async function requestCallPermissions(kind: 'voice' | 'video') {
   const res = await _requestCallPermissionsImpl(kind);
-  if (!res.granted && res.reason) recordPermDenial(kind, res.reason);
-  else if (res.granted) clearLastPermDenial();
+  if (!res.granted && res.reason) {
+    recordPermDenial(kind, res.reason);
+    bumpPermFailCount();
+  } else if (res.granted) {
+    clearLastPermDenial();
+    resetPermFailCount();
+  }
   return res;
 }
 
