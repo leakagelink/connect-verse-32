@@ -217,6 +217,11 @@ function AdminPanel() {
           <PaymentsTab />
         </TabsContent>
 
+        <TabsContent value="calling" className="space-y-3">
+          <CallingTab />
+        </TabsContent>
+
+
         <TabsContent value="settings" className="space-y-3">
           <SettingsTab />
         </TabsContent>
