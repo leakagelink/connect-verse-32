@@ -30,7 +30,11 @@ function Settings() {
   const blockedFn = useServerFn(listBlockedUsers);
   const unblockFn = useServerFn(unblockUser);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
-  const { data: blocked = [] } = useQuery({ queryKey: ["blocked-users"], queryFn: () => blockedFn() });
+  const { data: blocked = [], isLoading: blockedLoading, isError: blockedError, refetch: refetchBlocked } = useQuery({
+    queryKey: ["blocked-users"],
+    queryFn: () => blockedFn(),
+    retry: 1,
+  });
 
   const langMut = useMutation({
     mutationFn: (language: string) => langFn({ data: { language } }),
