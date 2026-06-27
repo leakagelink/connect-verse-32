@@ -568,17 +568,8 @@ function CallingCredentialsTab() {
                         Reset
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={async () => {
-                      const tid = toast.loading("Testing…");
-                      try {
-                        const { adminTestCredential } = await import("@/lib/calling.functions");
-                        const r = await adminTestCredential({ data: { credentialId: c.id } });
-                        toast.dismiss(tid);
-                        if (r.ok) toast.success(`✓ ${r.latencyMs}ms — ${r.detail}`);
-                        else toast.error(`✗ ${r.error ?? "failed"}`);
-                        qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
-                      } catch (e: any) { toast.dismiss(tid); toast.error(e?.message ?? "Test failed"); }
-                    }}>Test</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => runTest(c.id)}>Test</Button>
+
                     <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setEditOpen(c.id)}>
                       Edit
                     </Button>
