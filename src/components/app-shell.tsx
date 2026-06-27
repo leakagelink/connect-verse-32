@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap, History } from "lucide-react";
@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
 import { SafetySignalsProbe } from "@/components/safety-signals-probe";
+import { applyChromeForApp, registerPushNotifications, isNative } from "@/lib/native";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -15,6 +18,20 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
   const balance = me?.walletBalance ?? 0;
   const unread = me?.unreadCount ?? 0;
   const admin = isAdmin ?? me?.isAdmin;
+
+  // Phase 4 — Capacitor: status-bar colour, splash hide, push token registration.
+  useEffect(() => {
+    void applyChromeForApp();
+    if (!isNative()) return;
+    void (async () => {
+      const reg = await registerPushNotifications();
+      if (!reg) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("profiles").update({ push_token: reg.token, push_platform: reg.platform }).eq("id", user.id);
+    })();
+  }, []);
+
 
   const nav = [
     { to: "/home", label: "Discover", icon: Home },

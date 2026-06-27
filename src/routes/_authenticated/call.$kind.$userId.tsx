@@ -23,7 +23,10 @@ import { GiftFloater } from "@/components/gift-floater";
 import { SosButton } from "@/components/sos-button";
 import { SafetyTipOverlay } from "@/components/safety-tip-overlay";
 import { ModerationSampler } from "@/components/moderation-sampler";
+import { useScreenPrivacy } from "@/hooks/use-screen-privacy";
+import { onHardwareBack } from "@/lib/native";
 import { supabase } from "@/integrations/supabase/client";
+
 
 
 
@@ -63,6 +66,19 @@ function CallScreen() {
   );
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
+
+  // Phase 4 — Native: block screenshots / screen-recording during the call,
+  // and intercept Android hardware back to surface the "End call?" prompt
+  // instead of bailing out mid-call.
+  useScreenPrivacy(true);
+  useEffect(() => {
+    const off = onHardwareBack(() => {
+      setConfirmEnd(true);
+      return true; // handled — do not exit app
+    });
+    return off;
+  }, []);
+
 
 
 
