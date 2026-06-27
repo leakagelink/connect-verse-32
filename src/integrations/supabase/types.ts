@@ -1188,6 +1188,7 @@ export type Database = {
           ok: boolean | null
           route: string | null
           status: number | null
+          trace_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -1200,6 +1201,7 @@ export type Database = {
           ok?: boolean | null
           route?: string | null
           status?: number | null
+          trace_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1212,6 +1214,7 @@ export type Database = {
           ok?: boolean | null
           route?: string | null
           status?: number | null
+          trace_id?: string | null
           user_id?: string | null
         }
         Relationships: []
