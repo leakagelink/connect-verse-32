@@ -7,14 +7,18 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 import { getOrCreateConversation } from "@/lib/chat.functions";
 import { heartbeat, listOnlineUsers } from "@/lib/presence.functions";
 import { listRooms } from "@/lib/rooms.functions";
+import { getWallet } from "@/lib/wallet.functions";
 import { AppShell } from "@/components/app-shell";
 import { EngagementStrip } from "@/components/engagement-strip";
+import { LiveCreatorsStrip } from "@/components/live-creators-strip";
+import { QuickActionsGrid } from "@/components/quick-actions-grid";
+import { RechargeOfferCard } from "@/components/recharge-offer-card";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, Gift, ChevronRight } from "lucide-react";
+import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, ChevronRight, Flame } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/home")({
