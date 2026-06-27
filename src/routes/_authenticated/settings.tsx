@@ -162,7 +162,14 @@ function Settings() {
           <p className="text-sm font-semibold">Blocked users</p>
           <Badge variant="secondary" className="ml-auto">{blocked.length}</Badge>
         </div>
-        {blocked.length === 0 ? (
+        {blockedLoading ? (
+          <p className="text-xs text-muted-foreground">Loading…</p>
+        ) : blockedError ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+            <p className="text-xs text-destructive">Couldn't load your blocked users list. Please try again.</p>
+            <Button size="sm" variant="outline" onClick={() => refetchBlocked()}>Retry</Button>
+          </div>
+        ) : blocked.length === 0 ? (
           <p className="text-xs text-muted-foreground">You haven't blocked anyone. Use the block button on any profile, chat or call.</p>
         ) : (
           <ul className="space-y-2">
