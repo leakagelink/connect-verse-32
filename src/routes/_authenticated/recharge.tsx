@@ -93,6 +93,16 @@ function Recharge() {
         <ShieldCheck className="size-3.5 text-primary" /> Secure payments via Razorpay — UPI, Cards, NetBanking, Wallets.
       </p>
 
+      {isTest && (
+        <Card className="glass mt-4 p-3 flex items-center gap-2 border-warning/40 bg-warning/5">
+          <FlaskConical className="size-4 text-warning" />
+          <div className="flex-1 text-xs">
+            <p className="font-semibold">Test mode active</p>
+            <p className="text-muted-foreground">No real money is charged. Coins credit instantly for testing. Admin can enable live payments from Admin → Payments.</p>
+          </div>
+        </Card>
+      )}
+
       {bonusPct > 0 && (
         <Card className="glass mt-4 p-4 flex items-center gap-3 border-accent/40">
           <Gift className="size-5 text-accent" />
