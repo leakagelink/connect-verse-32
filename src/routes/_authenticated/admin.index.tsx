@@ -21,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon } from "lucide-react";
-import { adminListKyc, adminReviewKyc, adminListWithdrawals, adminProcessWithdrawal, getKycDocUrl } from "@/lib/kyc.functions";
+import { adminListKyc, adminReviewKyc, adminListWithdrawals, adminProcessWithdrawal, getKycDocUrl, adminListKycPurgeLog } from "@/lib/kyc.functions";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -83,6 +83,7 @@ function AdminPanel() {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="kyc">KYC</TabsTrigger>
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -173,6 +174,10 @@ function AdminPanel() {
 
         <TabsContent value="withdrawals" className="space-y-3">
           <WithdrawalsTab />
+        </TabsContent>
+
+        <TabsContent value="purge-log" className="space-y-3">
+          <PurgeLogTab />
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-2">
@@ -434,6 +439,92 @@ function WithdrawalsTab() {
           </Card>
         );
       })}
+    </>
+  );
+}
+
+function PurgeLogTab() {
+  const listFn = useServerFn(adminListKycPurgeLog);
+  const [runId, setRunId] = useState("");
+  const [kycId, setKycId] = useState("");
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["admin", "purge-log", runId, kycId],
+    queryFn: () => listFn({ data: {
+      cron_run_id: runId.trim() || undefined,
+      kyc_request_id: kycId.trim() || undefined,
+      limit: 200,
+    } }),
+  });
+
+  const grouped = new Map<string, any[]>();
+  for (const row of data ?? []) {
+    const arr = grouped.get(row.cron_run_id) ?? [];
+    arr.push(row);
+    grouped.set(row.cron_run_id, arr);
+  }
+
+  function exportCsv() {
+    const rows = data ?? [];
+    const header = ["deleted_at","cron_run_id","kyc_request_id","user_id","username","kyc_status","doc_kind","storage_path","success","error_message"];
+    const csv = [header.join(",")].concat(
+      rows.map((r: any) => [
+        r.deleted_at, r.cron_run_id, r.kyc_request_id, r.user_id,
+        r.profile?.username ?? "", r.kyc_status, r.doc_kind,
+        r.storage_path, r.success, (r.error_message ?? "").replaceAll(",", " "),
+      ].map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(","))
+    ).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `kyc-purge-log-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 items-center">
+        <ShieldCheck className="size-4 text-primary" />
+        <Input placeholder="Filter by cron run ID" value={runId} onChange={(e) => setRunId(e.target.value)} className="w-72" />
+        <Input placeholder="Filter by KYC request ID" value={kycId} onChange={(e) => setKycId(e.target.value)} className="w-72" />
+        <Button size="sm" variant="outline" onClick={() => refetch()}>Refresh</Button>
+        <Button size="sm" variant="outline" onClick={exportCsv} disabled={!data?.length}>Export CSV</Button>
+      </div>
+
+      {isLoading && <Card className="glass p-4 text-sm text-muted-foreground">Loading…</Card>}
+      {!isLoading && !data?.length && (
+        <Card className="glass p-6 text-center text-muted-foreground text-sm">
+          No purge events yet. The daily retention job will populate this log.
+        </Card>
+      )}
+
+      {Array.from(grouped.entries()).map(([rid, rows]) => (
+        <Card key={rid} className="glass p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-xs">
+              <span className="text-muted-foreground">Cron run:</span>{" "}
+              <span className="font-mono">{rid}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {rows.length} file{rows.length === 1 ? "" : "s"} · {format(new Date(rows[0].deleted_at), "dd MMM yyyy, HH:mm")}
+            </div>
+          </div>
+          <div className="divide-y divide-border/40">
+            {rows.map((r: any) => (
+              <div key={r.id} className="py-2 flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant={r.success ? "default" : "destructive"} className="capitalize">
+                  {r.success ? "deleted" : "failed"}
+                </Badge>
+                <Badge variant={r.kyc_status === "approved" ? "default" : "secondary"} className="capitalize">{r.kyc_status}</Badge>
+                <span className="capitalize">{r.doc_kind.replace("_"," ")}</span>
+                <span className="text-muted-foreground">@{r.profile?.username ?? "—"}</span>
+                <span className="font-mono text-muted-foreground truncate max-w-full">{r.storage_path}</span>
+                <span className="text-muted-foreground">KYC: <span className="font-mono">{r.kyc_request_id.slice(0,8)}</span></span>
+                {r.error_message && <span className="text-destructive">· {r.error_message}</span>}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
     </>
   );
 }
