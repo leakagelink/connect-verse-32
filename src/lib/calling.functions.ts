@@ -163,7 +163,20 @@ export const issueAgoraToken = createServerFn({ method: "POST" })
     if (!c.app_id || !c.app_certificate) throw new Error("Agora credential incomplete");
 
     const agoraMod: any = await import("agora-token");
-    const { RtcTokenBuilder, RtcRole } = agoraMod.default ?? agoraMod;
+    const RtcTokenBuilder =
+      agoraMod.RtcTokenBuilder ??
+      agoraMod.default?.RtcTokenBuilder ??
+      agoraMod.default?.default?.RtcTokenBuilder;
+    const RtcRole =
+      agoraMod.RtcRole ??
+      agoraMod.default?.RtcRole ??
+      agoraMod.default?.default?.RtcRole;
+    if (!RtcTokenBuilder || typeof RtcTokenBuilder.buildTokenWithUserAccount !== "function") {
+      throw new Error(
+        `agora-token module shape unexpected. top=[${Object.keys(agoraMod).join(",")}] default=[${agoraMod.default ? Object.keys(agoraMod.default).join(",") : "none"}]`,
+      );
+    }
+
 
     const role = data.role === "publisher" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const privilegeExpire = Math.floor(Date.now() / 1000) + 60 * 60;
