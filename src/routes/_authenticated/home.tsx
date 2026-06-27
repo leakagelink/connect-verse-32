@@ -151,6 +151,19 @@ function Home() {
       {/* Matchmaker Rooms */}
       <MatchmakerRoomsSection canHost={me?.profile?.gender === "female"} />
 
+      {/* Trending Now — top gifted, hottest room, new joiners */}
+      <TrendingNowSection />
+
+      {/* Recently Played With — quick reconnect */}
+      <RecentlyPlayedSection onCall={startCall} />
+
+      {/* Fan Club Spotlight */}
+      <FanClubSpotlight />
+
+      {/* For You — personalized creators */}
+      <ForYouSection onCall={startCall} />
+
+
       {/* Engagement (daily check-in streak) */}
       <EngagementStrip />
 
