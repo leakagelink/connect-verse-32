@@ -141,7 +141,7 @@ export async function checkCallPermissions(): Promise<{ mic: PermState; camera: 
     let mic: PermState = 'unknown';
     let camera: PermState = 'unknown';
     try {
-      const { VoiceRecorder } = await import('capacitor-voice-recorder');
+      const { VoiceRecorder } = await import('@independo/capacitor-voice-recorder');
       const has = await VoiceRecorder.hasAudioRecordingPermission();
       mic = has.value ? 'granted' : 'prompt';
     } catch { mic = 'unknown'; }
@@ -176,12 +176,12 @@ export async function checkCallPermissions(): Promise<{ mic: PermState; camera: 
 export async function openAppSettings(): Promise<boolean> {
   if (!isNative()) return false;
   try {
-    // Use a runtime-computed specifier so Vite doesn't try to pre-resolve
-    // this optional plugin (it's only installed in the native Android build).
-    const pkg = ['@capacitor-community', 'app-settings'].join('/');
-    const mod: any = await import(/* @vite-ignore */ pkg).catch(() => null);
+    const mod = await import('capacitor-native-settings');
     if (mod?.NativeSettings?.open) {
-      await mod.NativeSettings.open({ optionAndroid: 'application_details', optionIOS: 'app' });
+      await mod.NativeSettings.open({
+        optionAndroid: mod.AndroidSettings.ApplicationDetails,
+        optionIOS: mod.IOSSettings.App,
+      });
       return true;
     }
   } catch { /* ignore */ }
@@ -266,9 +266,18 @@ async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
   try {
     // Microphone — required for both voice and video.
     try {
-      const { VoiceRecorder } = await import('capacitor-voice-recorder');
-      const has = await VoiceRecorder.hasAudioRecordingPermission();
-      if (!has.value) {
+      const { VoiceRecorder } = await import('@independo/capacitor-voice-recorder');
+      let hasValue = false;
+      try {
+        const has = await VoiceRecorder.hasAudioRecordingPermission();
+        hasValue = has.value;
+      } catch {
+        // Some Android WebView / OEM combinations cannot query status but can
+        // still show the runtime dialog when requestAudioRecordingPermission()
+        // is called from the user's tap.
+        hasValue = false;
+      }
+      if (!hasValue) {
         const req = await VoiceRecorder.requestAudioRecordingPermission();
         if (!req.value) return { granted: false, reason: 'mic-denied' };
       }
