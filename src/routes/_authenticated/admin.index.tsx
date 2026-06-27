@@ -9,7 +9,7 @@ import {
 import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
 import { adminGetPaymentConfig, adminSavePaymentConfig } from "@/lib/payments.functions";
 import { adminGetCallingConfig, adminSaveCallingConfig } from "@/lib/calling.functions";
-import { adminBroadcast, adminListBroadcasts } from "@/lib/push.functions";
+import { adminBroadcast, adminListBroadcasts, adminGetFcmConfig, adminSaveFcmConfig, adminClearFcmConfig, adminSendTestPush } from "@/lib/push.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -97,6 +97,7 @@ function AdminPanel() {
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="calling">Calling</TabsTrigger>
           <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
+          <TabsTrigger value="fcm">Push (FCM)</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
