@@ -12,7 +12,7 @@
  *   - AppShell (status-bar colour, splash hide, push registration)
  */
 
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 export const isNative = (): boolean => Capacitor.isNativePlatform();
 export const platform = (): string => Capacitor.getPlatform();
@@ -131,6 +131,22 @@ export async function registerPushNotifications(): Promise<PushRegistration | nu
  */
 export type PermState = 'granted' | 'denied' | 'prompt' | 'unknown';
 
+type NativePermissionState = 'prompt' | 'prompt-with-rationale' | 'granted' | 'denied';
+
+interface CallPermissionsPlugin {
+  check(): Promise<{ microphone?: NativePermissionState; camera?: NativePermissionState }>;
+  request(options: { kind: 'voice' | 'video' }): Promise<{ microphone?: NativePermissionState; camera?: NativePermissionState }>;
+}
+
+const CallPermissions = registerPlugin<CallPermissionsPlugin>('CallPermissions');
+
+function normalizeNativePerm(state: string | undefined): PermState {
+  if (state === 'granted') return 'granted';
+  if (state === 'denied') return 'denied';
+  if (state === 'prompt' || state === 'prompt-with-rationale') return 'prompt';
+  return 'unknown';
+}
+
 /**
  * Read current mic/camera permission status WITHOUT prompting. Used by the
  * pre-call gate so we can show the user accurate badges and tailor the
@@ -138,6 +154,17 @@ export type PermState = 'granted' | 'denied' | 'prompt' | 'unknown';
  */
 export async function checkCallPermissions(): Promise<{ mic: PermState; camera: PermState }> {
   if (isNative()) {
+    try {
+      if (Capacitor.isPluginAvailable('CallPermissions')) {
+        const status = await CallPermissions.check();
+        return {
+          mic: normalizeNativePerm(status.microphone),
+          camera: normalizeNativePerm(status.camera),
+        };
+      }
+    } catch {
+      // Fall through to plugin-specific checks for older installed builds.
+    }
     let mic: PermState = 'unknown';
     let camera: PermState = 'unknown';
     try {
@@ -264,6 +291,25 @@ async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
 
   if (!isNative()) return verifyWebRtcCapture();
   try {
+    // Preferred path for Android builds: one small native bridge owns the
+    // runtime permission dialog for RECORD_AUDIO/CAMERA. This is more reliable
+    // than depending on Camera/VoiceRecorder side-effects across OEM WebViews.
+    try {
+      if (Capacitor.isPluginAvailable('CallPermissions')) {
+        const status = await CallPermissions.request({ kind });
+        const mic = normalizeNativePerm(status.microphone);
+        const camera = normalizeNativePerm(status.camera);
+        if (mic !== 'granted') return { granted: false, reason: 'mic-denied' };
+        if (kind === 'video' && camera !== 'granted') {
+          return { granted: false, reason: 'camera-denied' };
+        }
+        return await verifyWebRtcCapture();
+      }
+    } catch (e) {
+      console.warn('[perm] native call-permissions bridge unavailable', e);
+      // Continue to the fallback bridges below.
+    }
+
     // Microphone — required for both voice and video.
     try {
       const { VoiceRecorder } = await import('@independo/capacitor-voice-recorder');
