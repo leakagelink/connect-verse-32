@@ -20,8 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon } from "lucide-react";
+import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon, Bot, Siren } from "lucide-react";
 import { adminListKyc, adminReviewKyc, adminListWithdrawals, adminProcessWithdrawal, getKycDocUrl, adminListKycPurgeLog } from "@/lib/kyc.functions";
+import {
+  adminListModerationQueue, adminReviewModerationEvent,
+  adminListCsamReports, adminFlagCsam, adminUpdateCsamReport,
+} from "@/lib/moderation.functions";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -81,6 +85,8 @@ function AdminPanel() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="moderation">AI Moderation</TabsTrigger>
+          <TabsTrigger value="csam">CSAM</TabsTrigger>
           <TabsTrigger value="kyc">KYC</TabsTrigger>
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
@@ -166,6 +172,14 @@ function AdminPanel() {
             </Card>
           ))}
           {!reports?.length && <Card className="glass p-6 text-center text-muted-foreground text-sm">No reports.</Card>}
+        </TabsContent>
+
+        <TabsContent value="moderation" className="space-y-3">
+          <ModerationTab />
+        </TabsContent>
+
+        <TabsContent value="csam" className="space-y-3">
+          <CsamTab />
         </TabsContent>
 
         <TabsContent value="kyc" className="space-y-3">
