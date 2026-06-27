@@ -86,6 +86,17 @@ export const mockRecharge = createServerFn({ method: "POST" })
       });
     }
 
+    // Phase 8: pay out referral bonus to referrer on referee's first recharge
+    try {
+      if (newCount === 1) {
+        const { creditFirstRechargeReferralBonus } = await import("./engagement.server");
+        await creditFirstRechargeReferralBonus(userId, baseCoins);
+      }
+    } catch (err) {
+      // Referral bonus failures must never block the recharge itself.
+      console.warn("referral bonus payout skipped:", err);
+    }
+
     return {
       ok: true,
       added: baseCoins,
@@ -94,6 +105,7 @@ export const mockRecharge = createServerFn({ method: "POST" })
       balance: newBalance,
     };
   });
+
 
 export const getWallet = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

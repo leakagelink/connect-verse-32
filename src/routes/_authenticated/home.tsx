@@ -8,6 +8,7 @@ import { getOrCreateConversation } from "@/lib/chat.functions";
 import { heartbeat, listOnlineUsers } from "@/lib/presence.functions";
 import { listRooms } from "@/lib/rooms.functions";
 import { AppShell } from "@/components/app-shell";
+import { EngagementStrip } from "@/components/engagement-strip";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +113,9 @@ function Home() {
           </Button>
         </Card>
       )}
+
+      <EngagementStrip />
+
 
 
       <Tabs defaultValue="online" className="w-full">
