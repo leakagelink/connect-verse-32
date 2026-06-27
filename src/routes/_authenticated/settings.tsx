@@ -16,6 +16,7 @@ import { APP_LANGUAGES } from "@/lib/constants";
 import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { NotificationPrefsCard } from "@/components/notification-prefs-card";
 import { AvatarUploadCard } from "@/components/avatar-upload-card";
+import { AiAvatarPicker } from "@/components/ai-avatar-picker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -117,6 +118,16 @@ function Settings() {
         avatarUrl={p?.avatar_url}
         gender={p?.gender}
       />
+
+      {p?.id && (
+        <AiAvatarPicker
+          userId={p.id}
+          currentStyle={p.ai_avatar_style}
+          gender={p.gender}
+          hasPhoto={!!p.avatar_path}
+        />
+      )}
+
 
       {/* Profile details */}
       <Card className="glass mt-4 p-4 space-y-3 text-sm">

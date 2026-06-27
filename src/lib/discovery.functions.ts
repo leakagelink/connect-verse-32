@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withAiAvatar, withAiAvatars } from "./ai-avatar";
+
 
 const ONLINE_WINDOW_SECONDS = 60;
 
@@ -52,9 +54,10 @@ export const getTrendingNow = createServerFn({ method: "GET" })
     if (profileIds.length) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, country, language, is_creator, gender")
+        .select("id, username, avatar_url, ai_avatar_style, country, language, is_creator, gender")
         .in("id", profileIds);
-      const map = new Map((profs ?? []).map((p) => [p.id, p]));
+      const mapped = withAiAvatars(profs ?? []);
+      const map = new Map(mapped.map((p) => [p.id, p]));
       if (topGiftedId) topGifted = { ...map.get(topGiftedId), coins_received: topGiftedCoins };
       if (hot) hotHost = map.get(hot.host_id);
     }
@@ -65,6 +68,7 @@ export const getTrendingNow = createServerFn({ method: "GET" })
       newJoinersLastHour: newJoiners ?? 0,
     };
   });
+
 
 // =============================================================
 // FEATURED FAN CLUBS — most members, open clubs
@@ -90,14 +94,14 @@ export const listFeaturedFanClubs = createServerFn({ method: "GET" })
         .gt("expires_at", now),
       supabase
         .from("profiles")
-        .select("id, username, avatar_url, country, language, gender")
+        .select("id, username, avatar_url, ai_avatar_style, country, language, gender")
         .in("id", ids),
     ]);
     const counts = new Map<string, number>();
     for (const m of members ?? []) {
       counts.set(m.creator_id, (counts.get(m.creator_id) ?? 0) + 1);
     }
-    const profMap = new Map((profs ?? []).map((p) => [p.id, p]));
+    const profMap = new Map(withAiAvatars(profs ?? []).map((p) => [p.id, p]));
     return (clubs ?? [])
       .map((c) => ({
         ...c,
@@ -107,6 +111,7 @@ export const listFeaturedFanClubs = createServerFn({ method: "GET" })
       .sort((a, b) => b.member_count - a.member_count)
       .slice(0, 8);
   });
+
 
 
 // =============================================================
@@ -136,10 +141,10 @@ export const listRecentPartners = createServerFn({ method: "GET" })
     const cutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, username, avatar_url, country, language, gender, is_creator, last_seen_at, availability")
+      .select("id, username, avatar_url, ai_avatar_style, country, language, gender, is_creator, last_seen_at, availability")
       .in("id", ids)
       .eq("is_banned", false);
-    const map = new Map((profs ?? []).map((p) => [p.id, p]));
+    const map = new Map(withAiAvatars(profs ?? []).map((p) => [p.id, p]));
     return partners
       .map((p) => {
         const prof = map.get(p.id);
@@ -153,6 +158,7 @@ export const listRecentPartners = createServerFn({ method: "GET" })
       })
       .filter(Boolean);
   });
+
 
 // =============================================================
 // FOR YOU — personalized creators by language/state
@@ -170,7 +176,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
     const cutoff = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { data: creators } = await supabase
       .from("profiles")
-      .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at")
+      .select("id, username, gender, country, state, language, avatar_url, ai_avatar_style, is_creator, last_seen_at")
       .eq("is_banned", false)
       .eq("onboarded", true)
       .eq("is_creator", true)
@@ -179,7 +185,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
       .limit(60);
 
     const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
-    const scored = (creators ?? []).map((c) => {
+    const scored = withAiAvatars(creators ?? []).map((c) => {
       let score = 0;
       if (me?.language && c.language === me.language) score += 5;
       if (me?.state && c.state === me.state) score += 3;
@@ -191,6 +197,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
     return scored.slice(0, 12);
   });
 
+
 // =============================================================
 // NEW JOINERS — recently onboarded users (last 24h)
 // =============================================================
@@ -201,7 +208,7 @@ export const listNewJoiners = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at, created_at")
+      .select("id, username, gender, country, state, language, avatar_url, ai_avatar_style, is_creator, last_seen_at, created_at")
       .eq("is_banned", false)
       .eq("onboarded", true)
       .neq("id", userId)
@@ -209,9 +216,10 @@ export const listNewJoiners = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(60);
     const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
-    return (data ?? []).map((u) => ({
+    return withAiAvatars(data ?? []).map((u) => ({
       ...u,
       online: !!u.last_seen_at && u.last_seen_at >= onlineCutoff,
     }));
+
   });
 

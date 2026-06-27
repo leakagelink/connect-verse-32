@@ -18,7 +18,7 @@ export const listBlockedUsers = createServerFn({ method: "GET" })
     if (ids.length) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, avatar_url", ai_avatar_style, gender)
         .in("id", ids);
       profilesById = new Map((profs ?? []).map((p: any) => [p.id, p]));
     }

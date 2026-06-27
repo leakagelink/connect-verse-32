@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { differenceInYears, parseISO } from "date-fns";
 import { GUIDELINES_VERSION, MIN_AGE } from "./constants";
+import { AI_AVATAR_STYLES, withAiAvatar, withAiAvatars } from "./ai-avatar";
+
+const AI_STYLE_IDS = AI_AVATAR_STYLES.map((s) => s.id) as [string, ...string[]];
+
 
 const OnboardingInput = z.object({
   username: z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
@@ -86,7 +90,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
     }
 
     return {
-      profile,
+      profile: withAiAvatar(profile as any),
       roles: (roles ?? []).map((r) => r.role),
       isAdmin: (roles ?? []).some((r) => r.role === "admin"),
       walletBalance: Number(wallet?.coin_balance ?? 0),
@@ -97,6 +101,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
   });
 
 export const updateMyLanguage = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ language: z.string().min(2).max(40) }).parse(d))
   .handler(async ({ data, context }) => {
@@ -158,16 +163,31 @@ export const clearMyAvatar = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const setMyAiAvatarStyle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ style: z.enum(AI_STYLE_IDS) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ ai_avatar_style: data.style })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, style: data.style };
+  });
+
 export const discoverUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, gender, country, language, avatar_url, is_creator")
+      .select("id, username, gender, country, language, avatar_url, ai_avatar_style, is_creator")
       .eq("is_banned", false)
       .eq("onboarded", true)
       .neq("id", userId)
       .limit(60);
-    return data ?? [];
+    return withAiAvatars(data ?? []);
   });
+
