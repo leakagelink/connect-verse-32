@@ -6,6 +6,7 @@ import { Home, MessageCircle, Wallet, User, Shield, Coins, Sparkles, Zap, Histor
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
+import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 import { SafetySignalsProbe } from "@/components/safety-signals-probe";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { applyChromeForApp, registerPushNotifications, isNative } from "@/lib/native";
@@ -68,7 +69,7 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5">
           <Link to="/home" className="flex items-center gap-1.5 font-bold">
-            <Sparkles className="size-4 text-primary" />
+            <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={28} height={28} className="size-7 rounded-md" />
             <span className="text-sm">{APP_NAME}</span>
           </Link>
           <div className="flex items-center gap-2">

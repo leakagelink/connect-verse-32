@@ -60,7 +60,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: `${APP_NAME} — Voice Chat & Live Rooms` },
       { name: "twitter:description", content: "Join voice rooms, chat & meet new friends safely on Talkora." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/85f3bb53-f992-44d4-be5d-3b667091fa41/talkora-logo.png" },
+      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/85f3bb53-f992-44d4-be5d-3b667091fa41/talkora-logo.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
