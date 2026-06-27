@@ -195,9 +195,35 @@ export async function openAppSettings(): Promise<boolean> {
 
 export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
   granted: boolean;
-  reason?: 'mic-denied' | 'camera-denied' | 'plugin-missing';
+  reason?: 'mic-denied' | 'camera-denied' | 'media-denied' | 'media-unavailable' | 'plugin-missing';
 }> {
-  if (!isNative()) return { granted: true };
+  const verifyWebRtcCapture = async (): Promise<{
+    granted: boolean;
+    reason?: 'mic-denied' | 'camera-denied' | 'media-denied' | 'media-unavailable';
+  }> => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return { granted: false, reason: 'media-unavailable' };
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: kind === 'video' ? { width: 640, height: 480, facingMode: 'user' } : false,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      return { granted: true };
+    } catch (error: unknown) {
+      const name = error instanceof DOMException ? error.name : '';
+      if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        return { granted: false, reason: 'media-unavailable' };
+      }
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        return { granted: false, reason: kind === 'video' ? 'media-denied' : 'mic-denied' };
+      }
+      return { granted: false, reason: 'media-denied' };
+    }
+  };
+
+  if (!isNative()) return verifyWebRtcCapture();
   try {
     // Microphone — required for both voice and video.
     try {
@@ -224,7 +250,11 @@ export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
         return { granted: false, reason: 'plugin-missing' };
       }
     }
-    return { granted: true };
+
+    // Final and most important check: WebRTC itself must be allowed in the
+    // Android WebView. Calling getUserMedia from the user's button tap triggers
+    // Capacitor's native WebView permission dialog for RECORD_AUDIO/CAMERA.
+    return await verifyWebRtcCapture();
   } catch (e) {
     console.warn('[perm] requestCallPermissions failed', e);
     return { granted: false, reason: 'plugin-missing' };

@@ -66,6 +66,8 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
       }
       if (res.reason === "mic-denied") toast.error("Microphone access denied.");
       else if (res.reason === "camera-denied") toast.error("Camera access denied.");
+      else if (res.reason === "media-denied") toast.error("Camera or microphone access denied.");
+      else if (res.reason === "media-unavailable") toast.error("Camera or microphone not available on this device.");
       else if (res.reason === "plugin-missing") toast.error("Permission module unavailable. Reinstall the latest app.");
       // If denied and we're native, the next CTA flips to "Open Settings".
       void s;

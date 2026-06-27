@@ -36,6 +36,8 @@ This generates the `android/` folder. Commit it.
 
 ## 3. Required `AndroidManifest.xml` additions
 
+Android does **not** show Camera/Microphone permission at install time. Only notification permission appears on install/first launch. Mic/camera permission should appear when the user taps **Allow access** on the call permission screen. If it does not appear, confirm these manifest entries exist and rebuild the APK/AAB.
+
 Open `android/app/src/main/AndroidManifest.xml` and add inside `<manifest>`:
 
 ```xml
