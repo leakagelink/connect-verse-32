@@ -507,17 +507,19 @@ function CallingCredentialsTab() {
                 qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
               } catch (e: any) { toast.error(e?.message ?? "Failed to seed"); }
             }}>Seed Agora from env</Button>
-            <Button size="sm" variant="secondary" onClick={async () => {
-              const tid = toast.loading("Testing pool…");
-              try {
-                const { adminTestCredential } = await import("@/lib/calling.functions");
-                const r = await adminTestCredential({ data: {} });
-                toast.dismiss(tid);
-                if (r.ok) toast.success(`✓ ${r.provider?.toUpperCase()} (${r.label}) — ${r.latencyMs}ms · ${r.detail}`);
-                else toast.error(`✗ ${r.label ?? "pool"}: ${r.error ?? "failed"}`);
-                qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
-              } catch (e: any) { toast.dismiss(tid); toast.error(e?.message ?? "Test failed"); }
-            }}>Test Call Connection</Button>
+            <Button size="sm" variant="secondary" onClick={() => runTest()}>Test Call Connection</Button>
+            <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
+          </div>
+
+        </div>
+        <div className="mt-3 text-xs">
+          Pool health:{" "}
+          <Badge variant={poolHealth === "good" ? "default" : poolHealth === "degraded" ? "secondary" : "destructive"}>
+            {poolHealth.toUpperCase()}
+          </Badge>{" "}
+          <span className="text-muted-foreground">· {healthyCount}/{totalActive} healthy · auto-failover enabled</span>
+        </div>
+
             <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
           </div>
 
