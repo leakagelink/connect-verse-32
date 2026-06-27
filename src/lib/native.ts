@@ -195,6 +195,7 @@ export async function openAppSettings(): Promise<boolean> {
 
 /* ---- Last denial reason (for the debug panel) ---- */
 const LAST_PERM_KEY = 'talkora.lastPermDenial';
+const PERM_FAIL_COUNT_KEY = 'talkora.permFailCount';
 export interface LastPermDenial {
   kind: 'voice' | 'video';
   reason: string;
@@ -213,6 +214,22 @@ function recordPermDenial(kind: 'voice' | 'video', reason: string): void {
   try {
     localStorage.setItem(LAST_PERM_KEY, JSON.stringify({ kind, reason, at: Date.now() }));
   } catch { /* ignore */ }
+}
+
+/* ---- Consecutive failure counter (drives auto-open of debug panel) ---- */
+export function getPermFailCount(): number {
+  try {
+    const n = parseInt(localStorage.getItem(PERM_FAIL_COUNT_KEY) ?? '0', 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch { return 0; }
+}
+export function resetPermFailCount(): void {
+  try { localStorage.removeItem(PERM_FAIL_COUNT_KEY); } catch { /* ignore */ }
+}
+function bumpPermFailCount(): number {
+  const next = getPermFailCount() + 1;
+  try { localStorage.setItem(PERM_FAIL_COUNT_KEY, String(next)); } catch { /* ignore */ }
+  return next;
 }
 
 async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
