@@ -107,6 +107,13 @@ function Settings() {
         </div>
       </Card>
 
+      {/* Profile photo (optional, with creator nudge for female users) */}
+      <AvatarUploadCard
+        username={p?.username}
+        avatarUrl={p?.avatar_url}
+        gender={p?.gender}
+      />
+
       {/* Profile details */}
       <Card className="glass mt-4 p-4 space-y-3 text-sm">
         <p className="text-xs text-muted-foreground uppercase tracking-wide">Profile details</p>
