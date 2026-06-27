@@ -23,7 +23,10 @@ import { GiftFloater } from "@/components/gift-floater";
 import { SosButton } from "@/components/sos-button";
 import { SafetyTipOverlay } from "@/components/safety-tip-overlay";
 import { ModerationSampler } from "@/components/moderation-sampler";
+import { useScreenPrivacy } from "@/hooks/use-screen-privacy";
+import { onHardwareBack } from "@/lib/native";
 import { supabase } from "@/integrations/supabase/client";
+
 
 
 
