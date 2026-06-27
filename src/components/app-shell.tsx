@@ -43,12 +43,12 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
 
   // Phase 10 — sync stored locale from profile.app_language whenever it changes.
   useEffect(() => {
-    const lang = me?.profile?.app_language as string | undefined;
+    const lang = me?.profile?.language as string | undefined;
     if (lang && lang !== locale) {
       syncStoredLocale(lang);
       setLocale(lang as Locale);
     }
-  }, [me?.profile?.app_language, locale, setLocale]);
+  }, [me?.profile?.language, locale, setLocale]);
 
   const nav = [
     { to: "/home", label: t("nav.discover"), icon: Home },
