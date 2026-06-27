@@ -78,9 +78,11 @@ function AdminPanel() {
       </div>
 
       <Tabs defaultValue="users">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="kyc">KYC</TabsTrigger>
+          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
