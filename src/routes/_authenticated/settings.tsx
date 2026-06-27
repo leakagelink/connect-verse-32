@@ -15,6 +15,7 @@ import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAler
 import { APP_LANGUAGES } from "@/lib/constants";
 import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { NotificationPrefsCard } from "@/components/notification-prefs-card";
+import { AvatarUploadCard } from "@/components/avatar-upload-card";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
