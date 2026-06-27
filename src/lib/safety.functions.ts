@@ -74,12 +74,13 @@ export const recordDeviceSignals = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => SignalsInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { getRequestHeader } = await import("@tanstack/react-start/server");
-
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const h = request?.headers;
     const rawIp =
-      getRequestHeader("cf-connecting-ip") ??
-      getRequestHeader("x-real-ip") ??
-      (getRequestHeader("x-forwarded-for") ?? "").split(",")[0]?.trim() ??
+      h?.get("cf-connecting-ip") ??
+      h?.get("x-real-ip") ??
+      (h?.get("x-forwarded-for") ?? "").split(",")[0]?.trim() ??
       null;
     const ipHash = rawIp ? await sha256(rawIp) : null;
     const deviceFp = data.deviceFp ?? null;
