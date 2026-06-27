@@ -179,6 +179,22 @@ function CallScreen() {
     if (!myId) return; // wait for profile so the call account = supabase user id
     async function start() {
       try {
+        // Native: request mic (and camera for video) up-front so Android
+        // shows the system permission dialog BEFORE the WebView attempts
+        // getUserMedia. Without this, the WebView silently denies and the
+        // call never connects.
+        const perm = await requestCallPermissions(kind as "voice" | "video");
+        if (!perm.granted) {
+          const msg =
+            perm.reason === "camera-denied"
+              ? "Camera permission denied. Enable it in Settings → Apps → Talkora → Permissions."
+              : perm.reason === "mic-denied"
+              ? "Microphone permission denied. Enable it in Settings → Apps → Talkora → Permissions."
+              : "Mic/Camera permission unavailable. Please reinstall the app or update to the latest version.";
+          toast.error(msg, { duration: 6000 });
+          if (mounted) navigate({ to: "/connect" });
+          return;
+        }
         // Provider-agnostic connect with automatic failover across the
         // calling pool (multi-Agora + multi-100ms). On every credential
         // failure the factory reports it server-side and retries with the
