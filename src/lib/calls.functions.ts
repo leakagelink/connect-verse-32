@@ -7,6 +7,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // / reconnect continue the same call_log without double-charging the user.
 const RESUME_WINDOW_SECONDS = 5 * 60;
 
+// Cooling-off: new male accounts (first 24h since signup) may only initiate
+// NEW_MALE_DAILY_CALL_CAP outbound calls in their first 24h. Drastically cuts
+// spam/harassment from disposable accounts.
+const NEW_MALE_DAILY_CALL_CAP = 10;
+const NEW_ACCOUNT_WINDOW_HOURS = 24;
+
 export const startCallLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: {
@@ -16,6 +22,64 @@ export const startCallLog = createServerFn({ method: "POST" })
   }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // ---- Pre-flight safety checks ----
+    const [{ data: caller }, { data: callee }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, gender, country, state, is_banned, created_at")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, availability, blocked_countries, blocked_states, is_banned, onboarded")
+        .eq("id", data.calleeId)
+        .maybeSingle(),
+    ]);
+
+    if (!caller || caller.is_banned) {
+      throw new Error("Your account is suspended.");
+    }
+    if (!callee || callee.is_banned || !callee.onboarded) {
+      throw new Error("This person isn't available right now.");
+    }
+
+    // Callee availability: busy = no new calls, dnd = same.
+    if (callee.availability && callee.availability !== "online") {
+      throw new Error(
+        callee.availability === "dnd"
+          ? "This creator is on Do Not Disturb."
+          : "This creator is busy right now.",
+      );
+    }
+
+    // Callee's geo blocklist
+    const blockedCountries: string[] = (callee as any).blocked_countries ?? [];
+    const blockedStates: string[] = (callee as any).blocked_states ?? [];
+    if (caller.country && blockedCountries.includes(caller.country)) {
+      throw new Error("This creator does not accept calls from your country.");
+    }
+    if (caller.state && blockedStates.includes(caller.state)) {
+      throw new Error("This creator does not accept calls from your state.");
+    }
+
+    // Cooling-off cap for brand-new male accounts
+    if (caller.gender === "male" && caller.created_at) {
+      const accountAgeHours = (Date.now() - new Date(caller.created_at).getTime()) / 3600_000;
+      if (accountAgeHours < NEW_ACCOUNT_WINDOW_HOURS) {
+        const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+        const { count } = await supabase
+          .from("call_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("caller_id", userId)
+          .gte("started_at", since);
+        if ((count ?? 0) >= NEW_MALE_DAILY_CALL_CAP) {
+          throw new Error(
+            `New accounts are limited to ${NEW_MALE_DAILY_CALL_CAP} calls in the first 24 hours. This cap lifts automatically.`,
+          );
+        }
+      }
+    }
 
     if (data.resumeId) {
       const { data: existing } = await supabase
