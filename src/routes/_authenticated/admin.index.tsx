@@ -20,8 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon } from "lucide-react";
+import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon, Bot, Siren } from "lucide-react";
 import { adminListKyc, adminReviewKyc, adminListWithdrawals, adminProcessWithdrawal, getKycDocUrl, adminListKycPurgeLog } from "@/lib/kyc.functions";
+import {
+  adminListModerationQueue, adminReviewModerationEvent,
+  adminListCsamReports, adminFlagCsam, adminUpdateCsamReport,
+} from "@/lib/moderation.functions";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -81,6 +85,8 @@ function AdminPanel() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="moderation">AI Moderation</TabsTrigger>
+          <TabsTrigger value="csam">CSAM</TabsTrigger>
           <TabsTrigger value="kyc">KYC</TabsTrigger>
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
@@ -166,6 +172,14 @@ function AdminPanel() {
             </Card>
           ))}
           {!reports?.length && <Card className="glass p-6 text-center text-muted-foreground text-sm">No reports.</Card>}
+        </TabsContent>
+
+        <TabsContent value="moderation" className="space-y-3">
+          <ModerationTab />
+        </TabsContent>
+
+        <TabsContent value="csam" className="space-y-3">
+          <CsamTab />
         </TabsContent>
 
         <TabsContent value="kyc" className="space-y-3">
@@ -525,6 +539,195 @@ function PurgeLogTab() {
           </div>
         </Card>
       ))}
+    </>
+  );
+}
+
+// ====================== Phase 3 — AI Moderation tab ======================
+function ModerationTab() {
+  const listFn = useServerFn(adminListModerationQueue);
+  const reviewFn = useServerFn(adminReviewModerationEvent);
+  const qc = useQueryClient();
+  const { data: rows } = useQuery({ queryKey: ["admin", "moderation"], queryFn: () => listFn() });
+
+  async function review(id: string, status: "confirmed" | "dismissed") {
+    try {
+      await reviewFn({ data: { id, status } });
+      toast.success(status === "confirmed" ? "Strike confirmed" : "Dismissed");
+      qc.invalidateQueries({ queryKey: ["admin", "moderation"] });
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  }
+
+  const pending = (rows ?? []).filter((r: any) => r.status === "pending_review");
+  const recent = (rows ?? []).filter((r: any) => r.status !== "pending_review").slice(0, 50);
+
+  return (
+    <>
+      <Card className="glass p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Bot className="size-4 text-primary" />
+          <p className="text-sm font-semibold">Pending review ({pending.length})</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          AI score 0.65–0.84. Confirm to register a strike (3 confirmed in 30 days = auto-ban).
+        </p>
+        {pending.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">Queue empty.</p>
+        )}
+        <div className="space-y-2">
+          {pending.map((r: any) => (
+            <div key={r.id} className="rounded-md border p-2 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="destructive" className="capitalize">{r.category}</Badge>
+                <Badge variant="secondary" className="capitalize">{r.kind}</Badge>
+                <span className="font-mono">sev {r.severity} · score {Number(r.ai_score ?? 0).toFixed(2)}</span>
+                <span className="text-muted-foreground ml-auto">{format(new Date(r.created_at), "dd MMM HH:mm")}</span>
+              </div>
+              <p className="mt-1">
+                Target: <strong>@{r.target?.username ?? "—"}</strong>
+                {r.target?.strike_count != null && <span className="text-muted-foreground"> · strikes: {r.target.strike_count}</span>}
+              </p>
+              {r.ai_label && <p className="text-muted-foreground italic">"{r.ai_label}"</p>}
+              {r.evidence?.snippet && (
+                <p className="mt-1 rounded bg-muted/40 p-1.5 font-mono text-[11px]">{r.evidence.snippet}</p>
+              )}
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="destructive" onClick={() => review(r.id, "confirmed")}>Confirm strike</Button>
+                <Button size="sm" variant="outline" onClick={() => review(r.id, "dismissed")}>Dismiss</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="glass p-3">
+        <p className="text-sm font-semibold mb-2">Recent decisions</p>
+        <div className="divide-y divide-border/40">
+          {recent.map((r: any) => (
+            <div key={r.id} className="py-1.5 flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant={r.status === "confirmed" ? "destructive" : "secondary"} className="capitalize">{r.status}</Badge>
+              <Badge variant="outline" className="capitalize">{r.category}</Badge>
+              <span className="text-muted-foreground">sev {r.severity}</span>
+              <span className="truncate">@{r.target?.username ?? "—"}</span>
+              <span className="ml-auto text-muted-foreground">{format(new Date(r.created_at), "dd MMM HH:mm")}</span>
+            </div>
+          ))}
+          {recent.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">Nothing yet.</p>}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+// ====================== Phase 3 — CSAM escalation tab ======================
+function CsamTab() {
+  const listFn = useServerFn(adminListCsamReports);
+  const updateFn = useServerFn(adminUpdateCsamReport);
+  const flagFn = useServerFn(adminFlagCsam);
+  const qc = useQueryClient();
+  const { data: rows } = useQuery({ queryKey: ["admin", "csam"], queryFn: () => listFn() });
+
+  const [open, setOpen] = useState(false);
+  const [targetUserId, setTargetUserId] = useState("");
+  const [narrative, setNarrative] = useState("");
+  const [evidenceHash, setEvidenceHash] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submitFlag() {
+    if (narrative.trim().length < 20) return toast.error("Narrative must be at least 20 characters");
+    setBusy(true);
+    try {
+      await flagFn({ data: { targetUserId, narrative, evidenceHash: evidenceHash || undefined } });
+      toast.success("Escalation queued · user permanently banned");
+      setOpen(false); setTargetUserId(""); setNarrative(""); setEvidenceHash("");
+      qc.invalidateQueries({ queryKey: ["admin", "csam"] });
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally { setBusy(false); }
+  }
+
+  async function setStatus(id: string, status: "queued" | "escalated" | "closed", caseRef?: string) {
+    try {
+      await updateFn({ data: { id, status, caseRef } });
+      qc.invalidateQueries({ queryKey: ["admin", "csam"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  return (
+    <>
+      <Card className="glass p-3 border-destructive/40">
+        <div className="flex items-center gap-2 mb-2">
+          <Siren className="size-4 text-destructive" />
+          <p className="text-sm font-semibold">CSAM escalation queue</p>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="ml-auto">New escalation</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Flag for law-enforcement escalation</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs mb-1 text-muted-foreground">Target user ID (UUID)</p>
+                  <Input value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)} placeholder="00000000-0000-…" />
+                </div>
+                <div>
+                  <p className="text-xs mb-1 text-muted-foreground">Narrative (what was observed, when, witnesses)</p>
+                  <Textarea rows={5} value={narrative} onChange={(e) => setNarrative(e.target.value)} />
+                </div>
+                <div>
+                  <p className="text-xs mb-1 text-muted-foreground">Evidence hash (SHA-256 of preserved file, optional)</p>
+                  <Input value={evidenceHash} onChange={(e) => setEvidenceHash(e.target.value)} placeholder="sha256:..." />
+                </div>
+                <p className="text-[11px] text-destructive">
+                  Submitting this immediately and permanently bans the target. Preserve evidence offline before submitting.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={submitFlag} disabled={busy}>
+                  {busy ? "Submitting…" : "Ban & escalate"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Sealed records. Update status as you coordinate with NCMEC / local law enforcement (India: cybercrime.gov.in).
+        </p>
+        {(rows ?? []).length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">No escalations on record.</p>
+        )}
+        <div className="space-y-2">
+          {(rows ?? []).map((r: any) => (
+            <div key={r.id} className="rounded-md border p-2 text-xs space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={r.status === "escalated" ? "destructive" : r.status === "closed" ? "secondary" : "default"} className="capitalize">{r.status}</Badge>
+                <span className="font-mono text-[10px]">{r.id.slice(0,8)}</span>
+                <span className="text-muted-foreground ml-auto">{format(new Date(r.created_at), "dd MMM HH:mm")}</span>
+              </div>
+              <p>Target: <span className="font-mono">{r.target_user_id.slice(0, 8)}…</span></p>
+              <p className="whitespace-pre-wrap">{r.narrative}</p>
+              {r.evidence_hash && <p className="font-mono text-[10px]">evidence: {r.evidence_hash}</p>}
+              {r.case_ref && <p className="text-muted-foreground">case ref: {r.case_ref}</p>}
+              <div className="flex gap-2 pt-1">
+                {r.status === "queued" && (
+                  <Button size="sm" variant="destructive" onClick={() => {
+                    const ref = prompt("Case reference (e.g. NCMEC ticket, FIR no.)") ?? undefined;
+                    setStatus(r.id, "escalated", ref);
+                  }}>Mark escalated</Button>
+                )}
+                {r.status !== "closed" && (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "closed")}>Close</Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </>
   );
 }

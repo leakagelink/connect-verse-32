@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.apply_moderation_strike() FROM PUBLIC, anon, authenticated;

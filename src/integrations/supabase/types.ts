@@ -359,6 +359,45 @@ export type Database = {
         }
         Relationships: []
       }
+      csam_reports: {
+        Row: {
+          call_log_id: string | null
+          case_ref: string | null
+          created_at: string
+          escalated_at: string | null
+          evidence_hash: string | null
+          id: string
+          narrative: string
+          reported_by_admin: string
+          status: string
+          target_user_id: string
+        }
+        Insert: {
+          call_log_id?: string | null
+          case_ref?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          evidence_hash?: string | null
+          id?: string
+          narrative: string
+          reported_by_admin: string
+          status?: string
+          target_user_id: string
+        }
+        Update: {
+          call_log_id?: string | null
+          case_ref?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          evidence_hash?: string | null
+          id?: string
+          narrative?: string
+          reported_by_admin?: string
+          status?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -616,6 +655,60 @@ export type Database = {
           },
         ]
       }
+      moderation_events: {
+        Row: {
+          ai_label: string | null
+          ai_model: string | null
+          ai_score: number | null
+          call_log_id: string | null
+          category: string
+          created_at: string
+          evidence: Json
+          id: string
+          kind: string
+          reporter_user_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ai_label?: string | null
+          ai_model?: string | null
+          ai_score?: number | null
+          call_log_id?: string | null
+          category: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          kind: string
+          reporter_user_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ai_label?: string | null
+          ai_model?: string | null
+          ai_score?: number | null
+          call_log_id?: string | null
+          category?: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          kind?: string
+          reporter_user_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mystery_cases: {
         Row: {
           brief: string
@@ -701,6 +794,7 @@ export type Database = {
           last_seen_at: string | null
           onboarded: boolean
           state: string | null
+          strike_count: number
           updated_at: string
           username: string | null
         }
@@ -726,6 +820,7 @@ export type Database = {
           last_seen_at?: string | null
           onboarded?: boolean
           state?: string | null
+          strike_count?: number
           updated_at?: string
           username?: string | null
         }
@@ -751,6 +846,7 @@ export type Database = {
           last_seen_at?: string | null
           onboarded?: boolean
           state?: string | null
+          strike_count?: number
           updated_at?: string
           username?: string | null
         }
