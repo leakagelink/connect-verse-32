@@ -91,12 +91,18 @@ export function PermissionDebugPanel() {
 
   function handleClear() {
     clearLastPermDenial();
+    resetPermFailCount();
     setLast(null);
+    setFailCount(0);
     toast.success("Cleared last denial record");
   }
 
   return (
-    <Card className="p-5 space-y-5">
+    <Card
+      ref={cardRef}
+      id="permission-diagnostics"
+      className={`p-5 space-y-5 scroll-mt-24 transition-shadow ${highlight ? "ring-2 ring-primary shadow-lg" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">Permission diagnostics</h3>
@@ -109,6 +115,17 @@ export function PermissionDebugPanel() {
           Refresh
         </Button>
       </div>
+
+      {failCount >= 2 && (
+        <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <p>
+            We brought you here because mic/camera permission failed{" "}
+            <span className="font-semibold">{failCount}</span> times in a row.
+            Use the actions below to grant access or open device settings.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Row icon={<Mic className="size-4" />} label="Microphone" state={mic} checking={checking} />
