@@ -54,6 +54,20 @@ function Home() {
 
   const queryClient = useQueryClient();
   const [rtConnected, setRtConnected] = useState(true);
+  const [presentIds, setPresentIds] = useState<Set<string>>(new Set());
+
+  // Intersect server-side last_seen list with live presence state.
+  // A user is considered "online" only if both:
+  //   (a) their profiles.last_seen_at is within the cutoff (server query), and
+  //   (b) they are currently tracked in the realtime presence channel.
+  // While the presence channel is reconnecting we fall back to the server list
+  // so users never see an empty screen.
+  const liveOnlineUsers = (() => {
+    const base = onlineUsers ?? [];
+    if (!rtConnected || presentIds.size === 0) return base;
+    const meId = me?.profile?.id;
+    return base.filter((u: any) => presentIds.has(u.id) || u.id === meId);
+  })();
 
   // heartbeat every 60s
   useEffect(() => {
