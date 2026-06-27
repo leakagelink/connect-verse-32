@@ -166,6 +166,11 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
               {askedOnce ? "Try again" : "Allow access"}
             </Button>
           )}
+          {showDebugCta && (
+            <Button onClick={goToDebugPanel} variant="outline" className="w-full gap-2">
+              <Wrench className="size-4" /> Open permission diagnostics
+            </Button>
+          )}
           <Button variant="ghost" onClick={onCancel} className="w-full">Cancel</Button>
         </div>
       </Card>
