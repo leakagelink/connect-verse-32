@@ -1,13 +1,38 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { aiAvatarUrl } from "@/lib/ai-avatar";
+import { aiAvatarUrl, AI_AVATAR_STYLES, pickDefaultStyle } from "@/lib/ai-avatar";
+
+const VALID_STYLES = new Set(AI_AVATAR_STYLES.map((s) => s.id));
+const VALID_GENDERS = new Set(["male", "female", "other"]);
+
+/** Coerce any DB value into a known DiceBear style id, falling back by gender. */
+function safeAvatarStyle(value: unknown, gender: string | null): string {
+  if (typeof value === "string" && VALID_STYLES.has(value)) return value;
+  return pickDefaultStyle(gender);
+}
+
+/** Coerce any DB value into a known gender bucket; unknowns become null. */
+function safeGender(value: unknown): string | null {
+  if (typeof value === "string" && VALID_GENDERS.has(value)) return value;
+  return null;
+}
+
+const ProfileRowSchema = z
+  .object({
+    id: z.string().uuid(),
+    username: z.string().nullable().optional(),
+    avatar_url: z.string().nullable().optional(),
+    ai_avatar_style: z.unknown().optional(),
+    gender: z.unknown().optional(),
+  })
+  .passthrough();
 
 type BlockedProfile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
-  ai_avatar_style: string | null;
+  ai_avatar_style: string;
   gender: string | null;
 };
 
@@ -29,13 +54,17 @@ export const listBlockedUsers = createServerFn({ method: "GET" })
         .from("profiles")
         .select("id, username, avatar_url, ai_avatar_style, gender")
         .in("id", ids);
-      for (const p of (profs ?? []) as BlockedProfile[]) {
+      for (const raw of (profs ?? []) as unknown[]) {
+        const parsed = ProfileRowSchema.safeParse(raw);
+        if (!parsed.success) continue;
+        const p = parsed.data;
+        const gender = safeGender(p.gender);
         profilesById.set(p.id, {
           id: p.id,
           username: p.username ?? null,
           avatar_url: p.avatar_url ?? null,
-          ai_avatar_style: p.ai_avatar_style ?? null,
-          gender: p.gender ?? null,
+          ai_avatar_style: safeAvatarStyle(p.ai_avatar_style, gender),
+          gender,
         });
       }
     }
