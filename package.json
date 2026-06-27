@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@100mslive/hms-video-store": "^0.14.4",
     "@capacitor-community/privacy-screen": "^8.0.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/app": "^8.1.0",
