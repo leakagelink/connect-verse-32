@@ -46,8 +46,11 @@ function Onboarding() {
     setBusy(true);
     try {
       await onboard({ data: { username, gender, dob, country, state: state || undefined, language, acceptGuidelines: true as const, asCreator: creator } });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      await queryClient.refetchQueries({ queryKey: ["me"] });
       toast.success("Welcome to Talkora! You got 5 free minutes 🎉");
       navigate({ to: "/home", replace: true });
+
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }
 
