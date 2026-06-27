@@ -25,6 +25,7 @@ import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRecentsRouteImport } from './routes/_authenticated/recents'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedDataExportRouteImport } from './routes/_authenticated/data-export'
 import { Route as AuthenticatedConnectRouteImport } from './routes/_authenticated/connect'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -117,6 +118,11 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDataExportRoute = AuthenticatedDataExportRouteImport.update({
+  id: '/data-export',
+  path: '/data-export',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConnectRoute = AuthenticatedConnectRouteImport.update({
   id: '/connect',
   path: '/connect',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/connect': typeof AuthenticatedConnectRoute
+  '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/account-delete': typeof AuthenticatedAccountDeleteRoute
   '/connect': typeof AuthenticatedConnectRoute
+  '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/connect': typeof AuthenticatedConnectRoute
+  '/_authenticated/data-export': typeof AuthenticatedDataExportRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/recents': typeof AuthenticatedRecentsRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/chat'
     | '/connect'
+    | '/data-export'
     | '/home'
     | '/onboarding'
     | '/recents'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/account-delete'
     | '/connect'
+    | '/data-export'
     | '/home'
     | '/onboarding'
     | '/recents'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/chat'
     | '/_authenticated/connect'
+    | '/_authenticated/data-export'
     | '/_authenticated/home'
     | '/_authenticated/onboarding'
     | '/_authenticated/recents'
@@ -486,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/data-export': {
+      id: '/_authenticated/data-export'
+      path: '/data-export'
+      fullPath: '/data-export'
+      preLoaderRoute: typeof AuthenticatedDataExportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/connect': {
       id: '/_authenticated/connect'
       path: '/connect'
@@ -602,6 +621,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedConnectRoute: typeof AuthenticatedConnectRoute
+  AuthenticatedDataExportRoute: typeof AuthenticatedDataExportRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedRecentsRoute: typeof AuthenticatedRecentsRoute
@@ -620,6 +640,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedConnectRoute: AuthenticatedConnectRoute,
+  AuthenticatedDataExportRoute: AuthenticatedDataExportRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedRecentsRoute: AuthenticatedRecentsRoute,
