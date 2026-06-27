@@ -792,7 +792,7 @@ function CallScreen() {
         kind={kind as "voice" | "video"}
         selfUserId={myId}
         callLogId={callLogIdRef.current}
-        enabled={connected && !paused && Boolean(myId)}
+        enabled={connected && !paused && Boolean(myId) && provider !== "100ms"}
       />
 
       <GiftPanel
