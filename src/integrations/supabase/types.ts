@@ -494,6 +494,33 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fan_club_members: {
         Row: {
           coins_paid: number
@@ -1053,6 +1080,42 @@ export type Database = {
           strike_count?: number
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      push_broadcasts: {
+        Row: {
+          audience: string
+          body: string | null
+          created_at: string
+          deep_link: string | null
+          id: string
+          push_sent_count: number
+          recipients_count: number
+          sender_id: string
+          title: string
+        }
+        Insert: {
+          audience?: string
+          body?: string | null
+          created_at?: string
+          deep_link?: string | null
+          id?: string
+          push_sent_count?: number
+          recipients_count?: number
+          sender_id: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string | null
+          created_at?: string
+          deep_link?: string | null
+          id?: string
+          push_sent_count?: number
+          recipients_count?: number
+          sender_id?: string
+          title?: string
         }
         Relationships: []
       }
