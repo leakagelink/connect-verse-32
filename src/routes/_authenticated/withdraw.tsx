@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ShieldCheck, Upload, Clock, CheckCircle2, XCircle, ArrowLeft, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useScreenPrivacy } from "@/hooks/use-screen-privacy";
+
 
 export const Route = createFileRoute("/_authenticated/withdraw")({
   component: WithdrawPage,
@@ -27,7 +29,10 @@ const RATE = 0.05;
 function WithdrawPage() {
   const router = useRouter();
   const qc = useQueryClient();
+  // Phase 4 — Native: block screenshots of bank/PAN/Aadhaar previews.
+  useScreenPrivacy(true);
   const kycFn = useServerFn(getMyKyc);
+
   const walletFn = useServerFn(getWallet);
   const listFn = useServerFn(listMyWithdrawals);
   const { data: kyc, isLoading } = useQuery({ queryKey: ["my-kyc"], queryFn: () => kycFn() });
