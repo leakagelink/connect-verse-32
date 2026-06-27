@@ -9,6 +9,7 @@ import {
 import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
 import { adminGetPaymentConfig, adminSavePaymentConfig } from "@/lib/payments.functions";
 import { adminGetCallingConfig, adminSaveCallingConfig } from "@/lib/calling.functions";
+import { adminBroadcast, adminListBroadcasts } from "@/lib/push.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -943,3 +944,74 @@ function CsamTab() {
     </>
   );
 }
+
+function BroadcastTab() {
+  const sendFn = useServerFn(adminBroadcast);
+  const listFn = useServerFn(adminListBroadcasts);
+  const qc = useQueryClient();
+  const { data: history } = useQuery({ queryKey: ["admin","broadcasts"], queryFn: () => listFn() });
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [deepLink, setDeepLink] = useState("");
+  const [audience, setAudience] = useState<"all"|"creators"|"users">("all");
+  const [sending, setSending] = useState(false);
+
+  async function send() {
+    if (!title.trim()) { toast.error("Title required"); return; }
+    if (!confirm(`Send "${title}" to ${audience}?`)) return;
+    setSending(true);
+    try {
+      const res = await sendFn({ data: { title, body: body || null, deepLink: deepLink || null, audience } });
+      toast.success(`Delivered: ${res.pushed} push / ${res.recipients} recipients`);
+      setTitle(""); setBody(""); setDeepLink("");
+      qc.invalidateQueries({ queryKey: ["admin","broadcasts"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Send failed");
+    } finally { setSending(false); }
+  }
+
+  return (
+    <>
+      <Card className="glass p-4 space-y-3">
+        <h3 className="font-semibold flex items-center gap-2"><Radio className="size-4" /> System broadcast</h3>
+        <p className="text-xs text-muted-foreground">
+          Sends an in-app notification to every selected user, and a system push to those with FCM tokens registered.
+          Configure <code>FCM_SERVICE_ACCOUNT_JSON</code> secret to enable native push delivery.
+        </p>
+        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+        <Textarea placeholder="Body (optional)" value={body} onChange={(e) => setBody(e.target.value)} maxLength={500} rows={3} />
+        <Input placeholder="Deep link (optional, e.g. /recharge)" value={deepLink} onChange={(e) => setDeepLink(e.target.value)} />
+        <div className="flex items-center gap-2">
+          <Select value={audience} onValueChange={(v) => setAudience(v as any)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Everyone</SelectItem>
+              <SelectItem value="creators">Creators (female)</SelectItem>
+              <SelectItem value="users">Non-creators</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={send} disabled={sending}>{sending ? "Sending…" : "Send broadcast"}</Button>
+        </div>
+      </Card>
+
+      <Card className="glass p-4">
+        <h3 className="font-semibold mb-2">History</h3>
+        <div className="space-y-2">
+          {(history ?? []).map((b: any) => (
+            <div key={b.id} className="rounded-md border p-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize">{b.audience}</Badge>
+                <span className="font-medium">{b.title}</span>
+                <span className="ml-auto text-muted-foreground">{format(new Date(b.created_at), "dd MMM HH:mm")}</span>
+              </div>
+              {b.body && <p className="mt-1 text-muted-foreground">{b.body}</p>}
+              <p className="mt-1 text-[10px] text-muted-foreground">push {b.push_sent_count} / {b.recipients_count}</p>
+            </div>
+          ))}
+          {(!history || history.length === 0) && <p className="text-xs text-muted-foreground">No broadcasts yet.</p>}
+        </div>
+      </Card>
+    </>
+  );
+}
+
