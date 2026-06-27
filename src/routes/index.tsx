@@ -61,8 +61,13 @@ function Landing() {
         ))}
       </section>
 
-      <footer className="border-t border-border/50 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {APP_NAME}. 18+ only. Be kind. Be safe.
+      <footer className="border-t border-border/50 py-6 text-center text-xs text-muted-foreground space-y-2">
+        <div>© {new Date().getFullYear()} {APP_NAME}. 18+ only. Be kind. Be safe.</div>
+        <div className="flex justify-center gap-4">
+          <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+          <span>·</span>
+          <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
+        </div>
       </footer>
     </div>
   );
