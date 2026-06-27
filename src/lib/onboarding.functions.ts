@@ -163,16 +163,31 @@ export const clearMyAvatar = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const setMyAiAvatarStyle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ style: z.enum(AI_STYLE_IDS) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ ai_avatar_style: data.style })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, style: data.style };
+  });
+
 export const discoverUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, gender, country, language, avatar_url, is_creator")
+      .select("id, username, gender, country, language, avatar_url, ai_avatar_style, is_creator")
       .eq("is_banned", false)
       .eq("onboarded", true)
       .neq("id", userId)
       .limit(60);
-    return data ?? [];
+    return withAiAvatars(data ?? []);
   });
+
