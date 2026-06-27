@@ -127,8 +127,9 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       <main className="mx-auto max-w-3xl px-4 pt-4">{children}</main>
       <SafetySignalsProbe />
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t">
+      <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t safe-bottom">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 relative">
+
           {nav.slice(0, 2).map((n) => {
             const active = pathname.startsWith(n.to);
             const Icon = n.icon;
