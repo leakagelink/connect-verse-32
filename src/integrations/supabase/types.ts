@@ -800,6 +800,128 @@ export type Database = {
         }
         Relationships: []
       }
+      matchmaker_candidates: {
+        Row: {
+          gift_score: number
+          id: string
+          joined_at: string
+          room_id: string
+          seat: number
+          user_id: string
+          vote_score: number
+        }
+        Insert: {
+          gift_score?: number
+          id?: string
+          joined_at?: string
+          room_id: string
+          seat: number
+          user_id: string
+          vote_score?: number
+        }
+        Update: {
+          gift_score?: number
+          id?: string
+          joined_at?: string
+          room_id?: string
+          seat?: number
+          user_id?: string
+          vote_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchmaker_candidates_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "matchmaker_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matchmaker_rooms: {
+        Row: {
+          agora_channel: string
+          candidate_count: number
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          listener_count: number
+          started_at: string
+          status: string
+          title: string
+          topic: string | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          agora_channel: string
+          candidate_count?: number
+          created_at?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          listener_count?: number
+          started_at?: string
+          status?: string
+          title: string
+          topic?: string | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          agora_channel?: string
+          candidate_count?: number
+          created_at?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          listener_count?: number
+          started_at?: string
+          status?: string
+          title?: string
+          topic?: string | null
+          winner_user_id?: string | null
+        }
+        Relationships: []
+      }
+      matchmaker_votes: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          room_id: string
+          voter_id: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          room_id: string
+          voter_id: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matchmaker_votes_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "matchmaker_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchmaker_votes_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "matchmaker_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string

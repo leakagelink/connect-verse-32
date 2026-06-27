@@ -13,6 +13,7 @@ import { EngagementStrip } from "@/components/engagement-strip";
 import { LiveCreatorsStrip } from "@/components/live-creators-strip";
 import { QuickActionsGrid } from "@/components/quick-actions-grid";
 import { RechargeOfferCard } from "@/components/recharge-offer-card";
+import { MatchmakerRoomsSection } from "@/components/matchmaker-rooms-section";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +142,9 @@ function Home() {
       <div className="mb-5">
         <RechargeOfferCard depositCount={walletData?.depositCount ?? 0} />
       </div>
+
+      {/* Matchmaker Rooms */}
+      <MatchmakerRoomsSection canHost={me?.profile?.gender === "female"} />
 
       {/* Engagement (daily check-in streak) */}
       <EngagementStrip />
