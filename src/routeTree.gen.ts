@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as CommunityGuidelinesRouteImport } from './routes/community-guidelines'
 import { Route as BannedRouteImport } from './routes/banned'
@@ -67,6 +68,11 @@ const RefundPolicyRoute = RefundPolicyRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
+  id: '/manifest.webmanifest',
+  path: '/manifest.webmanifest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeleteAccountRoute = DeleteAccountRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -342,6 +350,7 @@ export interface FileRoutesById {
   '/banned': typeof BannedRoute
   '/community-guidelines': typeof CommunityGuidelinesRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/privacy': typeof PrivacyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/banned'
     | '/community-guidelines'
     | '/delete-account'
+    | '/manifest.webmanifest'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
     | '/banned'
     | '/community-guidelines'
     | '/delete-account'
+    | '/manifest.webmanifest'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/banned'
     | '/community-guidelines'
     | '/delete-account'
+    | '/manifest.webmanifest'
     | '/privacy'
     | '/refund-policy'
     | '/safety'
@@ -505,6 +517,7 @@ export interface RootRouteChildren {
   BannedRoute: typeof BannedRoute
   CommunityGuidelinesRoute: typeof CommunityGuidelinesRoute
   DeleteAccountRoute: typeof DeleteAccountRoute
+  ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   SafetyRoute: typeof SafetyRoute
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manifest.webmanifest': {
+      id: '/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/manifest.webmanifest'
+      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/delete-account': {
@@ -878,6 +898,7 @@ const rootRouteChildren: RootRouteChildren = {
   BannedRoute: BannedRoute,
   CommunityGuidelinesRoute: CommunityGuidelinesRoute,
   DeleteAccountRoute: DeleteAccountRoute,
+  ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   PrivacyRoute: PrivacyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   SafetyRoute: SafetyRoute,
