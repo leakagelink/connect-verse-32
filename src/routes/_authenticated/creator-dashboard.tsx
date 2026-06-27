@@ -117,7 +117,7 @@ function CreatorDashboard() {
               {earnings?.summary.gift_coins_30d ?? 0}
             </Badge>
           </div>
-          <Sparkline daily={earnings?.daily ?? []} />
+          <Sparkline daily={(earnings?.daily ?? []).filter((d) => d.day !== null) as Array<{ day: string; coins: number }>} />
         </Card>
 
         <Tabs defaultValue="schedule">
