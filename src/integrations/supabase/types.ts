@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          deep_link: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          deep_link?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          deep_link?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -890,6 +923,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_prefs: {
+        Row: {
+          calls: boolean
+          chat: boolean
+          follows: boolean
+          gifts: boolean
+          marketing: boolean
+          system: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls?: boolean
+          chat?: boolean
+          follows?: boolean
+          gifts?: boolean
+          marketing?: boolean
+          system?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls?: boolean
+          chat?: boolean
+          follows?: boolean
+          gifts?: boolean
+          marketing?: boolean
+          system?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
