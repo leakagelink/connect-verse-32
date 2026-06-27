@@ -7,18 +7,16 @@ export const checkUserOnline = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const cutoff = new Date(Date.now() - 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: row } = await supabase
       .from("profiles")
-      .select("id, last_seen_at, is_banned, onboarded")
+      .select("id, last_seen_at, is_banned, onboarded, availability, is_creator")
       .eq("id", data.userId)
       .maybeSingle();
+    const recent = !!row?.last_seen_at && row.last_seen_at >= cutoff;
+    const creatorAvailable = !!row?.is_creator && row?.availability === "online";
     const online =
-      !!row &&
-      !row.is_banned &&
-      row.onboarded &&
-      !!row.last_seen_at &&
-      row.last_seen_at >= cutoff;
+      !!row && !row.is_banned && row.onboarded && (recent || creatorAvailable);
     return { online, last_seen_at: row?.last_seen_at ?? null };
   });
 
