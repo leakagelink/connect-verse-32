@@ -515,3 +515,38 @@ export const adminResetCredentialStatus = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const adminSeedAgoraFromEnv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const appId = process.env.AGORA_APP_ID?.trim();
+    const appCert = process.env.AGORA_APP_CERTIFICATE?.trim();
+    if (!appId || !appCert) throw new Error("AGORA_APP_ID / AGORA_APP_CERTIFICATE not set");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Skip if an Agora credential with same app_id already exists
+    const { data: existing } = await supabaseAdmin
+      .from("calling_credentials")
+      .select("id, credentials")
+      .eq("provider", "agora");
+    const dup = (existing ?? []).find(
+      (r: any) => (r.credentials as any)?.app_id === appId,
+    );
+    if (dup) return { ok: true, id: dup.id, already: true };
+    const { data: row, error } = await supabaseAdmin
+      .from("calling_credentials")
+      .insert({
+        provider: "agora",
+        label: "Agora (env)",
+        priority: 1,
+        monthly_quota_minutes: 10000,
+        credentials: { app_id: appId, app_certificate: appCert },
+        status: "healthy",
+        is_active: true,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true, id: row.id, already: false };
+  });
+

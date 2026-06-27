@@ -472,7 +472,17 @@ function CallingCredentialsTab() {
             <Phone className="size-4 text-primary" />
             <h2 className="font-semibold">Calling provider pool</h2>
           </div>
-          <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={async () => {
+              try {
+                const { adminSeedAgoraFromEnv } = await import("@/lib/calling.functions");
+                const res = await adminSeedAgoraFromEnv();
+                toast.success(res.already ? "Agora env credential already seeded" : "Agora credential seeded from env ✓");
+                qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+              } catch (e: any) { toast.error(e?.message ?? "Failed to seed"); }
+            }}>Seed Agora from env</Button>
+            <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
+          </div>
         </div>
         <div className="mt-3 text-xs">
           Pool health:{" "}
