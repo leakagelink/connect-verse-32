@@ -793,6 +793,8 @@ export type Database = {
           language: string | null
           last_seen_at: string | null
           onboarded: boolean
+          push_platform: string | null
+          push_token: string | null
           state: string | null
           strike_count: number
           updated_at: string
@@ -819,6 +821,8 @@ export type Database = {
           language?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
+          push_platform?: string | null
+          push_token?: string | null
           state?: string | null
           strike_count?: number
           updated_at?: string
@@ -845,6 +849,8 @@ export type Database = {
           language?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
+          push_platform?: string | null
+          push_token?: string | null
           state?: string | null
           strike_count?: number
           updated_at?: string
