@@ -366,10 +366,11 @@ export const recordCallMetrics = createServerFn({ method: "POST" })
     if (!log || (log.caller_id !== context.userId && log.callee_id !== context.userId)) {
       throw new Error("Not authorized for this call.");
     }
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin as any)
       .from("call_logs")
       .update(patch)
       .eq("id", data.callLogId);
+
     if (error) throw new Error(error.message);
 
 
