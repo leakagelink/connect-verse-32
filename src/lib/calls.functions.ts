@@ -109,7 +109,8 @@ export const startCallLog = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: row, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("call_logs")
       .insert({
         caller_id: userId,
@@ -120,6 +121,7 @@ export const startCallLog = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw error;
+
     return {
       id: row.id as string,
       resumed: false,
