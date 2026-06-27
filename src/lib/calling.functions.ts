@@ -561,40 +561,104 @@ export const adminTestCredential = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const diagnostics: Record<string, any> = {
+      env: {
+        AGORA_APP_ID: process.env.AGORA_APP_ID ? `set(len=${process.env.AGORA_APP_ID.length})` : "MISSING",
+        AGORA_APP_CERTIFICATE: process.env.AGORA_APP_CERTIFICATE ? `set(len=${process.env.AGORA_APP_CERTIFICATE.length})` : "MISSING",
+      },
+    };
+
     let cred: any = null;
     if (data.credentialId) {
-      const { data: row } = await supabaseAdmin
+      const { data: row, error } = await supabaseAdmin
         .from("calling_credentials").select("*").eq("id", data.credentialId).maybeSingle();
+      if (error) diagnostics.lookupError = error.message;
       cred = row;
     } else {
       cred = await pickCredentialServer(null, []);
+      diagnostics.pickedFromPool = !!cred;
     }
-    if (!cred) return { ok: false, error: "No credential available in pool" };
+    if (!cred) return { ok: false, error: "No credential available in pool", diagnostics };
 
     const c = (cred.credentials ?? {}) as Record<string, string>;
+    diagnostics.credentialId = cred.id;
+    diagnostics.label = cred.label;
+    diagnostics.provider = cred.provider;
+    diagnostics.status = cred.status;
+    diagnostics.is_active = cred.is_active;
+    diagnostics.fieldsPresent = Object.fromEntries(
+      Object.entries(c).map(([k, v]) => [k, v ? `set(len=${String(v).length})` : "MISSING"]),
+    );
+
     const started = Date.now();
     const channel = `test_${Math.random().toString(36).slice(2, 10)}`;
 
     try {
       if (cred.provider === "agora") {
-        if (!c.app_id || !c.app_certificate) throw new Error("Missing app_id / app_certificate");
-        const agoraMod: any = await import("agora-token");
-        const { RtcTokenBuilder, RtcRole } = agoraMod.default ?? agoraMod;
+        const missing: string[] = [];
+        if (!c.app_id) missing.push("app_id");
+        if (!c.app_certificate) missing.push("app_certificate");
+        if (missing.length) {
+          throw new Error(`Missing required Agora field(s): ${missing.join(", ")}`);
+        }
+        if (c.app_id.length !== 32) {
+          diagnostics.warnings = [...(diagnostics.warnings ?? []), `app_id length=${c.app_id.length} (expected 32 hex chars)`];
+        }
+        if (c.app_certificate.length !== 32) {
+          diagnostics.warnings = [...(diagnostics.warnings ?? []), `app_certificate length=${c.app_certificate.length} (expected 32 hex chars)`];
+        }
+
+        let agoraMod: any;
+        try {
+          agoraMod = await import("agora-token");
+        } catch (impErr: any) {
+          throw new Error(`Failed to import 'agora-token' module: ${impErr?.message ?? impErr}`);
+        }
+        const resolved = agoraMod.default ?? agoraMod;
+        diagnostics.agoraModule = {
+          topLevelKeys: Object.keys(agoraMod).slice(0, 20),
+          hasDefault: !!agoraMod.default,
+          resolvedKeys: resolved ? Object.keys(resolved).slice(0, 20) : [],
+        };
+        const { RtcTokenBuilder, RtcRole } = resolved ?? {};
+        if (!RtcTokenBuilder) {
+          throw new Error(`RtcTokenBuilder missing from agora-token module. Resolved keys: [${diagnostics.agoraModule.resolvedKeys.join(", ")}]`);
+        }
+        if (typeof RtcTokenBuilder.buildTokenWithUserAccount !== "function") {
+          throw new Error(`RtcTokenBuilder.buildTokenWithUserAccount is not a function. Available methods: [${Object.keys(RtcTokenBuilder).join(", ")}]`);
+        }
+        if (!RtcRole || typeof RtcRole.PUBLISHER === "undefined") {
+          throw new Error(`RtcRole.PUBLISHER missing. RtcRole keys: [${RtcRole ? Object.keys(RtcRole).join(", ") : "null"}]`);
+        }
 
         const exp = Math.floor(Date.now() / 1000) + 300;
-        const token = RtcTokenBuilder.buildTokenWithUserAccount(
-          c.app_id, c.app_certificate, channel, "admin-test", RtcRole.PUBLISHER, exp, exp,
-        );
-        if (!token || token.length < 20) throw new Error("Token builder returned empty token");
+        let token: string;
+        try {
+          token = RtcTokenBuilder.buildTokenWithUserAccount(
+            c.app_id, c.app_certificate, channel, "admin-test", RtcRole.PUBLISHER, exp, exp,
+          );
+        } catch (tErr: any) {
+          throw new Error(`buildTokenWithUserAccount threw: ${tErr?.message ?? tErr}`);
+        }
+        if (!token || token.length < 20) throw new Error(`Token builder returned empty/short token (len=${token?.length ?? 0})`);
+
+        diagnostics.tokenLength = token.length;
+        diagnostics.channel = channel;
         await supabaseAdmin.rpc("report_credential_success", { _id: cred.id });
         return {
           ok: true, provider: "agora", credentialId: cred.id, label: cred.label,
           latencyMs: Date.now() - started,
           detail: `Token issued (${token.length} chars). Agora app_id verified.`,
+          diagnostics,
         };
       }
       if (cred.provider === "100ms") {
-        if (!c.access_key || !c.app_secret || !c.template_id) throw new Error("Missing access_key / app_secret / template_id");
+        const missing: string[] = [];
+        if (!c.access_key) missing.push("access_key");
+        if (!c.app_secret) missing.push("app_secret");
+        if (!c.template_id) missing.push("template_id");
+        if (missing.length) throw new Error(`Missing required 100ms field(s): ${missing.join(", ")}`);
+
         const jwt = (await import("jsonwebtoken")).default;
         const now = Math.floor(Date.now() / 1000);
         const mgmt = jwt.sign(
@@ -602,29 +666,32 @@ export const adminTestCredential = createServerFn({ method: "POST" })
           c.app_secret,
           { algorithm: "HS256", expiresIn: "5m", jwtid: crypto.randomUUID() },
         );
-        // Lightweight auth probe — list rooms (limit 1). Validates access_key + app_secret.
         const res = await fetch("https://api.100ms.live/v2/rooms?limit=1", {
           headers: { Authorization: `Bearer ${mgmt}` },
         });
+        diagnostics.httpStatus = res.status;
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
-          throw new Error(`100ms API ${res.status}: ${txt.slice(0, 200)}`);
+          throw new Error(`100ms API ${res.status}: ${txt.slice(0, 300)}`);
         }
         await supabaseAdmin.rpc("report_credential_success", { _id: cred.id });
         return {
           ok: true, provider: "100ms", credentialId: cred.id, label: cred.label,
           latencyMs: Date.now() - started,
           detail: "Management token accepted by 100ms API.",
+          diagnostics,
         };
       }
       throw new Error(`Unknown provider: ${cred.provider}`);
     } catch (e: any) {
       const msg = e?.message ?? String(e);
+      const stack = typeof e?.stack === "string" ? e.stack.split("\n").slice(0, 5).join("\n") : null;
       await supabaseAdmin.rpc("report_credential_failure", { _id: cred.id, _error: msg });
       return {
         ok: false, provider: cred.provider, credentialId: cred.id, label: cred.label,
-        latencyMs: Date.now() - started, error: msg,
+        latencyMs: Date.now() - started, error: msg, stack, diagnostics,
       };
     }
   });
+
 
