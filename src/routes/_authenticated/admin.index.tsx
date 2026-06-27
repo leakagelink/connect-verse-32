@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin.functions";
 import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
 import { adminGetPaymentConfig, adminSavePaymentConfig } from "@/lib/payments.functions";
+import { adminGetCallingConfig, adminSaveCallingConfig } from "@/lib/calling.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon, Bot, Siren } from "lucide-react";
+import { Users, Flag, Ban, IndianRupee, Radio, ShieldAlert, Settings as SettingsIcon, ShieldCheck, Wallet as WalletIcon, Bot, Siren, Phone } from "lucide-react";
 import { adminListKyc, adminReviewKyc, adminListWithdrawals, adminProcessWithdrawal, getKycDocUrl, adminListKycPurgeLog } from "@/lib/kyc.functions";
 import {
   adminListModerationQueue, adminReviewModerationEvent,
@@ -93,6 +94,7 @@ function AdminPanel() {
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="calling">Calling</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -214,6 +216,11 @@ function AdminPanel() {
         <TabsContent value="payments" className="space-y-3">
           <PaymentsTab />
         </TabsContent>
+
+        <TabsContent value="calling" className="space-y-3">
+          <CallingTab />
+        </TabsContent>
+
 
         <TabsContent value="settings" className="space-y-3">
           <SettingsTab />
@@ -358,6 +365,103 @@ function PaymentsTab() {
     </Card>
   );
 }
+
+function CallingTab() {
+  const qc = useQueryClient();
+  const getCfg = useServerFn(adminGetCallingConfig);
+  const saveCfg = useServerFn(adminSaveCallingConfig);
+  const { data: cfg, isLoading } = useQuery({
+    queryKey: ["admin-calling-config"],
+    queryFn: () => getCfg(),
+  });
+  const [appId, setAppId] = useState("");
+  const [appCert, setAppCert] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(patch: { provider?: "mock" | "agora"; app_id?: string; app_certificate?: string }) {
+    setBusy(true);
+    try {
+      await saveCfg({ data: patch });
+      toast.success("Saved");
+      qc.invalidateQueries({ queryKey: ["admin-calling-config"] });
+      qc.invalidateQueries({ queryKey: ["calling-config"] });
+      setAppId(""); setAppCert("");
+    } catch (e: any) {
+      toast.error(e.message ?? "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isAgora = cfg?.provider === "agora";
+  const ready = cfg?.has_app_id && cfg?.has_app_certificate;
+
+  return (
+    <Card className="glass p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <Phone className="size-4 text-primary" />
+        <h2 className="font-semibold">Calling infrastructure (Agora)</h2>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">
+            Provider: <span className={isAgora ? "text-success" : "text-warning"}>{isAgora ? "AGORA" : "MOCK (P2P sim)"}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {isAgora
+              ? "Real Agora channels — low-latency audio/video with auto-reconnect."
+              : "Pre-production WebRTC simulation. Switch to Agora before production launch."}
+          </p>
+        </div>
+        <Switch
+          checked={isAgora}
+          disabled={isLoading || busy || (!isAgora && !ready)}
+          onCheckedChange={(v) => save({ provider: v ? "agora" : "mock" })}
+        />
+      </div>
+      {!ready && (
+        <p className="text-xs text-warning">
+          Add both App ID and App Certificate below before switching to AGORA.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium">
+          Agora App ID {cfg?.has_app_id && <span className="text-muted-foreground">· current: {cfg.app_id_masked}</span>}
+        </label>
+        <div className="flex gap-2">
+          <Input placeholder="e.g. a1b2c3d4e5f6..." value={appId} onChange={(e) => setAppId(e.target.value)} />
+          <Button disabled={busy || !appId} onClick={() => save({ app_id: appId })}>Save</Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium">
+          Agora App Certificate {cfg?.has_app_certificate && <span className="text-muted-foreground">· current: {cfg.app_certificate_masked}</span>}
+        </label>
+        <div className="flex gap-2">
+          <Input type="password" placeholder="••••••••" value={appCert} onChange={(e) => setAppCert(e.target.value)} />
+          <Button disabled={busy || !appCert} onClick={() => save({ app_certificate: appCert })}>Save</Button>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border/60 p-3 text-xs space-y-1">
+        <p className="font-semibold">Setup steps:</p>
+        <ol className="list-decimal pl-4 space-y-0.5 text-muted-foreground">
+          <li>Create an account at <code className="bg-muted/40 px-1 rounded">console.agora.io</code></li>
+          <li>Create a project with <b>"Secured mode: APP ID + Token"</b> (never use App ID-only mode)</li>
+          <li>Copy the <b>App ID</b> and generate the <b>Primary App Certificate</b></li>
+          <li>Paste both above and toggle Provider to AGORA</li>
+        </ol>
+        <p className="text-muted-foreground mt-1">Tokens are short-lived (1 hr) and scoped per-user per-channel.</p>
+      </div>
+    </Card>
+  );
+}
+
+
+
 
 
 

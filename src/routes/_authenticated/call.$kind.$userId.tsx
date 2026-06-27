@@ -26,6 +26,9 @@ import { ModerationSampler } from "@/components/moderation-sampler";
 import { useScreenPrivacy } from "@/hooks/use-screen-privacy";
 import { onHardwareBack } from "@/lib/native";
 import { supabase } from "@/integrations/supabase/client";
+import { getCallingConfig, issueAgoraToken, recordCallMetrics } from "@/lib/calling.functions";
+import { AgoraSession, channelForPair } from "@/lib/agora-client";
+import { Signal, SignalHigh, SignalLow, SignalMedium, SignalZero } from "lucide-react";
 
 
 
@@ -38,9 +41,14 @@ function CallScreen() {
   const { kind, userId } = useParams({ from: "/_authenticated/call/$kind/$userId" });
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteContainerRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const agoraRef = useRef<AgoraSession | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
+  const [provider, setProvider] = useState<"mock" | "agora">("mock");
+  const [networkQ, setNetworkQ] = useState<number>(0); // 0=unknown,1=excellent..6=down
+  const [remoteJoined, setRemoteJoined] = useState(false);
   
   const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
@@ -168,14 +176,55 @@ function CallScreen() {
 
   useEffect(() => {
     let mounted = true;
+    if (!myId) return; // wait for profile so Agora UID = supabase user id
     async function start() {
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: kind === "video" ? { width: 640, height: 480, facingMode: "user" } : false,
-        });
-        if (!mounted) { stream.getTracks().forEach((t) => t.stop()); return; }
+        // Determine calling provider for this user/session.
+        let cfg: { provider: "mock" | "agora"; appId: string } = { provider: "mock", appId: "" };
+        try { cfg = await getCallingConfig(); } catch { /* default mock */ }
+        if (mounted) setProvider(cfg.provider);
+
+        let stream: MediaStream;
+        if (cfg.provider === "agora" && cfg.appId) {
+          // --- Real Agora call ---
+          const channel = channelForPair(myId, userId);
+          const tok = await issueAgoraToken({ data: { channel, role: "publisher" } });
+          const session = new AgoraSession();
+          agoraRef.current = session;
+          stream = await session.join({
+            appId: tok.appId,
+            channel: tok.channel,
+            token: tok.token,
+            account: tok.account,
+            kind: kind as "voice" | "video",
+            events: {
+              onRemoteUser: (user, mediaType) => {
+                if (!mounted) return;
+                setRemoteJoined(true);
+                if (mediaType === "video" && remoteContainerRef.current) {
+                  session.attachRemoteVideo(user, remoteContainerRef.current);
+                }
+              },
+              onRemoteLeft: () => mounted && setRemoteJoined(false),
+              onQuality: (q) => mounted && setNetworkQ(Math.max(q.uplinkNetworkQuality, q.downlinkNetworkQuality)),
+              onDisconnected: () => mounted && toast.warning("Network unstable — reconnecting…"),
+              onReconnected: () => mounted && toast.success("Reconnected"),
+              onVideoFallback: () => {
+                if (!mounted) return;
+                setCamOff(true);
+                toast.warning("Switched to audio-only due to poor network.");
+              },
+            },
+          });
+        } else {
+          // --- Mock / pre-production P2P ---
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: kind === "video" ? { width: 640, height: 480, facingMode: "user" } : false,
+          });
+        }
+        if (!mounted) { stream.getTracks().forEach((t) => t.stop()); agoraRef.current?.leave(); return; }
         streamRef.current = stream;
         if (videoRef.current && kind === "video") {
           videoRef.current.srcObject = stream;
@@ -256,8 +305,9 @@ function CallScreen() {
     return () => {
       mounted = false;
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      agoraRef.current?.leave().catch(() => {});
     };
-  }, [kind, navigate]);
+  }, [kind, navigate, myId, userId]);
 
   useEffect(() => {
     if (!connected) return;
@@ -510,6 +560,11 @@ function CallScreen() {
     const id = callLogIdRef.current;
     const totalSeconds = sessionStartElapsedRef.current + elapsedRef.current;
     const totalCoins = syncedCoinsRef.current;
+    // Capture Agora stats BEFORE leave() resets them.
+    const session = agoraRef.current;
+    const stats = session?.stats();
+    session?.leave().catch(() => {});
+    agoraRef.current = null;
     if (id) {
       endLogFn({
         data: {
@@ -517,6 +572,16 @@ function CallScreen() {
           durationSeconds: totalSeconds,
           coinsSpent: totalCoins,
           status: totalSeconds > 0 ? "completed" : "cancelled",
+        },
+      }).catch(() => {});
+      // Persist call quality + provider for analytics / dispute review.
+      recordCallMetrics({
+        data: {
+          callLogId: id,
+          provider,
+          channelName: stats?.channel,
+          qualityAvg: stats?.qualityAvg,
+          disconnects: stats?.disconnects,
         },
       }).catch(() => {});
     }
@@ -542,18 +607,39 @@ function CallScreen() {
         <div className="relative aspect-[3/4] sm:aspect-video bg-black flex items-center justify-center">
 
           {kind === "video" ? (
-            <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
+            <>
+              {/* Remote peer fills the frame when joined (Agora). Local preview moves to a picture-in-picture tile. */}
+              <div
+                ref={remoteContainerRef}
+                className={`absolute inset-0 size-full ${remoteJoined ? "block" : "hidden"}`}
+              />
+              <video
+                ref={videoRef}
+                className={
+                  remoteJoined
+                    ? "absolute bottom-24 right-3 w-24 h-32 sm:w-32 sm:h-40 object-cover rounded-lg border-2 border-white/50 z-10"
+                    : "absolute inset-0 size-full object-cover"
+                }
+                muted
+                playsInline
+              />
+            </>
           ) : (
             <div className="text-center">
               <div className="mx-auto size-28 rounded-full brand-gradient flex items-center justify-center mb-4 animate-pulse">
                 <Mic className="size-12 text-primary-foreground" />
               </div>
-              <p className="text-lg font-semibold text-white">Voice call</p>
+              <p className="text-lg font-semibold text-white">
+                {provider === "agora" && !remoteJoined ? "Ringing…" : "Voice call"}
+              </p>
             </div>
           )}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-white">
-            <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs">
+            <div className="px-2.5 py-1 rounded-full bg-black/50 text-xs flex items-center gap-1.5">
               {connected ? `Connected · ${mm}:${ss}` : "Connecting…"}
+              {provider === "agora" && networkQ > 0 && (
+                <NetworkBars q={networkQ} />
+              )}
             </div>
             <div className="px-2.5 py-1 rounded-full bg-coin/80 text-xs font-semibold flex items-center gap-1">
               <Coins className="size-3" /> {perMin} / min
@@ -798,5 +884,20 @@ function CallScreen() {
 
 
 
+  );
+}
+
+function NetworkBars({ q }: { q: number }) {
+  // Agora: 1=excellent, 2=good, 3=poor, 4=bad, 5=very-bad, 6=down
+  const label =
+    q <= 2 ? "Strong" : q === 3 ? "Fair" : q === 4 ? "Weak" : q >= 5 ? "Very weak" : "—";
+  const color =
+    q <= 2 ? "text-emerald-400" : q === 3 ? "text-yellow-400" : "text-red-400";
+  const Icon =
+    q <= 1 ? SignalHigh : q === 2 ? Signal : q === 3 ? SignalMedium : q === 4 ? SignalLow : SignalZero;
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${color}`} title={`Network: ${label}`}>
+      <Icon className="size-3" />
+    </span>
   );
 }

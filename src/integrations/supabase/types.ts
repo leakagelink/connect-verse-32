@@ -120,42 +120,54 @@ export type Database = {
         Row: {
           callee_id: string
           caller_id: string
+          channel_name: string | null
           coins_spent: number
           created_at: string
+          disconnects: number
           duration_seconds: number
           ended_at: string | null
           free_seconds_used: number
           id: string
           kind: string
           last_flushed_at: string | null
+          provider: string | null
+          quality_avg: number | null
           started_at: string
           status: string
         }
         Insert: {
           callee_id: string
           caller_id: string
+          channel_name?: string | null
           coins_spent?: number
           created_at?: string
+          disconnects?: number
           duration_seconds?: number
           ended_at?: string | null
           free_seconds_used?: number
           id?: string
           kind: string
           last_flushed_at?: string | null
+          provider?: string | null
+          quality_avg?: number | null
           started_at?: string
           status?: string
         }
         Update: {
           callee_id?: string
           caller_id?: string
+          channel_name?: string | null
           coins_spent?: number
           created_at?: string
+          disconnects?: number
           duration_seconds?: number
           ended_at?: string | null
           free_seconds_used?: number
           id?: string
           kind?: string
           last_flushed_at?: string | null
+          provider?: string | null
+          quality_avg?: number | null
           started_at?: string
           status?: string
         }
