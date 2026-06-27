@@ -80,61 +80,19 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
   return (
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl safe-top">
-        <div className="mx-auto grid max-w-3xl grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 px-2 py-2 sm:px-4 sm:py-2.5">
+        <div className="mx-auto flex max-w-3xl items-center justify-center px-3 py-2 sm:px-4 sm:py-2.5">
           <Link to="/home" className="flex shrink-0 items-center" aria-label={`${APP_NAME} home`}>
-            <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={32} height={32} className="size-8 rounded-md" />
+            <img
+              src={talkoraLogo.url}
+              alt={`${APP_NAME} logo`}
+              width={36}
+              height={36}
+              className="size-8 rounded-md sm:size-9"
+            />
           </Link>
-          <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
-            <Link
-              to="/recharge"
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-coin/15 px-2 py-1 text-[11px] font-semibold text-coin hover:bg-coin/25 transition sm:px-2.5 sm:text-xs"
-              title="Available coins"
-            >
-              <Coins className="size-3.5" />
-              <span className="truncate max-w-[72px] sm:max-w-none">{balance.toLocaleString("en-IN")}</span>
-              <span className="ml-0.5 rounded-full bg-coin/30 px-1.5 text-[10px]">+</span>
-            </Link>
-            <Link
-              to="/chat"
-              className={cn(
-                "relative inline-flex size-8 shrink-0 items-center justify-center rounded-full transition sm:size-9",
-                pathname.startsWith("/chat") ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground/80"
-              )}
-              title="Inbox"
-            >
-              <MessageCircle className="size-4 sm:size-[18px]" />
-              {unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              )}
-            </Link>
-            <NotificationsBell active={pathname.startsWith("/notifications")} />
-
-            <Link
-              to="/recents"
-              className={cn(
-                "inline-flex size-8 shrink-0 items-center justify-center rounded-full transition sm:size-9",
-                pathname.startsWith("/recents") ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground/80"
-              )}
-              title="Recents · call history"
-            >
-              <History className="size-4 sm:size-[18px]" />
-            </Link>
-
-            <Link
-              to="/settings"
-              className={cn(
-                "inline-flex size-8 shrink-0 items-center justify-center rounded-full transition sm:size-9",
-                pathname.startsWith("/settings") ? "bg-primary/15 text-primary" : "hover:bg-muted text-foreground/80"
-              )}
-              title="Profile"
-            >
-              <User className="size-4 sm:size-[18px]" />
-            </Link>
-          </div>
         </div>
       </header>
+
 
 
       <main className="mx-auto max-w-3xl px-4 pt-4">{children}</main>
