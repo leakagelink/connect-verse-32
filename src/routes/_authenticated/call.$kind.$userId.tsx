@@ -309,7 +309,7 @@ function CallScreen() {
         (s.session as { leave: () => Promise<void> }).leave().catch(() => {});
       }
     };
-  }, [kind, navigate, myId, userId]);
+  }, [kind, navigate, myId, userId, permReady]);
 
 
   useEffect(() => {
