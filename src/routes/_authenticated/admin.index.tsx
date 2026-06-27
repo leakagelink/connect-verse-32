@@ -176,6 +176,10 @@ function AdminPanel() {
           <WithdrawalsTab />
         </TabsContent>
 
+        <TabsContent value="purge-log" className="space-y-3">
+          <PurgeLogTab />
+        </TabsContent>
+
         <TabsContent value="transactions" className="space-y-2">
           {(txns ?? []).map((t: any) => (
             <Card key={t.id} className="glass p-3 flex items-center justify-between gap-3">
