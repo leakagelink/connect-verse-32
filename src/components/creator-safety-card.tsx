@@ -9,7 +9,7 @@ import { Radio, MoonStar, Circle, X, Globe2, MapPinned } from "lucide-react";
 import { toast } from "sonner";
 import { updateAvailability, updateLocationBlocks } from "@/lib/safety.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
-import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/location.data";
+import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
 
 const OPTIONS = [
   { value: "online" as const, label: "Online — receive calls", icon: Radio, color: "text-emerald-500" },
@@ -123,7 +123,7 @@ export function CreatorSafetyCard() {
           <Select value={country} onValueChange={setCountry}>
             <SelectTrigger className="flex-1"><SelectValue placeholder="Select country" /></SelectTrigger>
             <SelectContent>
-              {COUNTRIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {COUNTRIES.map((c: string) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button onClick={addCountry} disabled={!country}>Add</Button>
@@ -143,7 +143,7 @@ export function CreatorSafetyCard() {
               <SelectValue placeholder={country ? "Select state" : "Pick a country first"} />
             </SelectTrigger>
             <SelectContent>
-              {statesForSelected.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              {statesForSelected.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button onClick={addState} disabled={!state}>Add</Button>
