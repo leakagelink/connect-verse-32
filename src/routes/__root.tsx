@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import { APP_NAME } from "@/lib/constants";
 import { LanguageProvider } from "@/lib/i18n";
 import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
+import { installPerfTracker } from "@/lib/perf-tracker";
 
 
 function NotFoundComponent() {
@@ -86,6 +87,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    installPerfTracker(router);
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
