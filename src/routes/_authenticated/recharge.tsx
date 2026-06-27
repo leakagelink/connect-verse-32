@@ -2,14 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listPlans, getWallet } from "@/lib/wallet.functions";
+import { listPlans, getWallet, mockRecharge } from "@/lib/wallet.functions";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+import { getPaymentConfig } from "@/lib/payments.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Sparkles, Gift, ShieldCheck } from "lucide-react";
+import { Coins, Sparkles, Gift, ShieldCheck, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { bonusForDeposit, APP_NAME } from "@/lib/constants";
 import { openRazorpay } from "@/lib/razorpay-client";
@@ -25,17 +26,30 @@ function Recharge() {
   const profileFn = useServerFn(getMyProfile);
   const createOrderFn = useServerFn(createRazorpayOrder);
   const verifyFn = useServerFn(verifyRazorpayPayment);
+  const mockFn = useServerFn(mockRecharge);
+  const cfgFn = useServerFn(getPaymentConfig);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
   const { data: plans } = useQuery({ queryKey: ["plans"], queryFn: () => plansFn() });
   const { data: wallet } = useQuery({ queryKey: ["wallet"], queryFn: () => walletFn() });
+  const { data: cfg } = useQuery({ queryKey: ["payment-config"], queryFn: () => cfgFn() });
   const [busy, setBusy] = useState<string | null>(null);
 
   const bonusPct = bonusForDeposit(wallet?.depositCount ?? 0);
+  const isTest = cfg?.mode !== "live";
 
   async function buy(planId: string, planLabel: string) {
     setBusy(planId);
     try {
+      if (isTest) {
+        const r = await mockFn({ data: { planId } });
+        toast.success(
+          `[TEST] +${r.added.toLocaleString("en-IN")} coins${r.bonus > 0 ? ` (+${r.bonus} bonus)` : ""}`,
+        );
+        qc.invalidateQueries({ queryKey: ["wallet"] });
+        setBusy(null);
+        return;
+      }
       const order = await createOrderFn({ data: { planId } });
       await openRazorpay({
         keyId: order.keyId,
