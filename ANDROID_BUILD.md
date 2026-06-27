@@ -117,6 +117,29 @@ cd android
 
 Output: `android/app/build/outputs/bundle/release/app-release.aab` — that file goes to Play Console.
 
+### If the APK still shows an old/wrong UI
+
+Capacitor can keep an old native bundle or Android can keep old app data. From the repo root in **PowerShell**, rebuild cleanly:
+
+```powershell
+bun run build
+New-Item -ItemType Directory -Force -Path "android\app\src\main\assets"
+npx cap sync android
+Set-Location android
+.\gradlew clean
+.\gradlew assembleDebug
+Set-Location ..
+```
+
+Then uninstall the old app from the phone/emulator and install again. If a device is connected:
+
+```powershell
+adb uninstall in.talkora.app
+adb install "android\app\build\outputs\apk\debug\app-debug.apk"
+```
+
+This project intentionally does **not** set `server.url` in `capacitor.config.ts`; the APK loads the freshly bundled `.output/public` build instead of any old hosted URL.
+
 ---
 
 ## 7. Play Console submission checklist

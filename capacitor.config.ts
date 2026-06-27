@@ -7,28 +7,19 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *   - appId: in.talkora.app   (final id will be reserved on Play Console)
  *   - appName: Talkora
  *
- * The Android shell loads the published web build. Update `server.url`
- * to your published Lovable URL (e.g. https://talkora.lovable.app) before
- * `npx cap sync android`. For full offline-capable APKs, run
- * `bun run build` and remove the `server.url` block so the bundled
- * `dist/` ships inside the APK.
+ * The Android shell ships the bundled web build from `.output/public`.
+ * Keep `server.url` disabled so the APK cannot accidentally load an old
+ * or unrelated hosted site. Re-run `bun run build` + `npx cap sync android`
+ * after web changes before building the APK/AAB.
  */
 const config: CapacitorConfig = {
   appId: 'in.talkora.app',
   appName: 'Talkora',
   webDir: '.output/public',
   server: {
-    // Comment out the next line to ship a fully self-contained APK (offline bundle).
-    url: 'https://connect-verse-32.lovable.app',
     cleartext: false,
     androidScheme: 'https',
-    hostname: 'connect-verse-32.lovable.app',
-    allowNavigation: [
-      'connect-verse-32.lovable.app',
-      '*.lovable.app',
-      'talkora.app',
-      '*.talkora.app',
-    ],
+    allowNavigation: ['*.lovable.app', 'talkora.app', '*.talkora.app'],
   },
   android: {
     allowMixedContent: false,
