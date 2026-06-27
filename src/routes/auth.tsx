@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -21,6 +22,8 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ageOk, setAgeOk] = useState(false);
+  const [termsOk, setTermsOk] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -36,6 +39,8 @@ function AuthPage() {
   }
 
   async function signUp() {
+    if (!ageOk) return toast.error("You must confirm you are 18 or older");
+    if (!termsOk) return toast.error("Please accept Terms, Privacy & Community Guidelines");
     setBusy(true);
     const { error } = await supabase.auth.signUp({
       email, password,
@@ -47,10 +52,31 @@ function AuthPage() {
   }
 
   async function google() {
+    if (!ageOk || !termsOk) {
+      return toast.error("Please confirm age and accept policies before continuing");
+    }
     const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (r.error) toast.error("Google sign-in failed");
     if (!r.redirected && !r.error) navigate({ to: "/home", replace: true });
   }
+
+  const consents = (
+    <div className="space-y-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs">
+      <label className="flex items-start gap-2 cursor-pointer">
+        <Checkbox checked={ageOk} onCheckedChange={(v) => setAgeOk(!!v)} className="mt-0.5" />
+        <span>I confirm I am <strong>18 years or older</strong>.</span>
+      </label>
+      <label className="flex items-start gap-2 cursor-pointer">
+        <Checkbox checked={termsOk} onCheckedChange={(v) => setTermsOk(!!v)} className="mt-0.5" />
+        <span>
+          I agree to the{" "}
+          <a href="/terms" target="_blank" className="underline">Terms</a>,{" "}
+          <a href="/privacy" target="_blank" className="underline">Privacy Policy</a> and{" "}
+          <a href="/community-guidelines" target="_blank" className="underline">Community Guidelines</a>.
+        </span>
+      </label>
+    </div>
+  );
 
   return (
     <div className="min-h-screen grid place-items-center px-4">
@@ -63,26 +89,31 @@ function AuthPage() {
         </div>
         <p className="mt-2 text-center text-sm text-muted-foreground">18+ verified community</p>
 
-        <Button onClick={google} variant="outline" className="mt-6 w-full">Continue with Google</Button>
-        <div className="my-4 flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <Tabs defaultValue="signin">
+        <Tabs defaultValue="signin" className="mt-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign in</TabsTrigger>
             <TabsTrigger value="signup">Sign up</TabsTrigger>
           </TabsList>
+
           <TabsContent value="signin" className="space-y-3">
+            <Button onClick={google} variant="outline" className="w-full">Continue with Google</Button>
+            <div className="my-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+            </div>
             <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
             <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
             <Button onClick={signIn} disabled={busy} className="w-full brand-gradient text-primary-foreground">Sign in</Button>
           </TabsContent>
+
           <TabsContent value="signup" className="space-y-3">
+            {consents}
+            <Button onClick={google} variant="outline" className="w-full" disabled={!ageOk || !termsOk}>Continue with Google</Button>
+            <div className="my-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+            </div>
             <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
             <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" /></div>
-            <Button onClick={signUp} disabled={busy} className="w-full brand-gradient text-primary-foreground">Create account</Button>
-            <p className="text-xs text-muted-foreground text-center">By signing up you agree to our community guidelines. 18+ only.</p>
+            <Button onClick={signUp} disabled={busy || !ageOk || !termsOk} className="w-full brand-gradient text-primary-foreground">Create account</Button>
           </TabsContent>
         </Tabs>
       </Card>

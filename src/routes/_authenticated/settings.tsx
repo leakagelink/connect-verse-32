@@ -1,7 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile, updateMyLanguage } from "@/lib/onboarding.functions";
+import { listBlockedUsers } from "@/lib/account.functions";
+import { unblockUser } from "@/lib/reports.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -9,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins } from "lucide-react";
+import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAlert, FileText, HeartHandshake, BadgeIndianRupee, ChevronRight, UserX, Trash2 } from "lucide-react";
 import { APP_LANGUAGES } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -22,13 +24,25 @@ function Settings() {
   const qc = useQueryClient();
   const profileFn = useServerFn(getMyProfile);
   const langFn = useServerFn(updateMyLanguage);
+  const blockedFn = useServerFn(listBlockedUsers);
+  const unblockFn = useServerFn(unblockUser);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
+  const { data: blocked = [] } = useQuery({ queryKey: ["blocked-users"], queryFn: () => blockedFn() });
 
   const langMut = useMutation({
     mutationFn: (language: string) => langFn({ data: { language } }),
     onSuccess: () => {
       toast.success("Language updated");
       qc.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const unblockMut = useMutation({
+    mutationFn: (targetUserId: string) => unblockFn({ data: { targetUserId } }),
+    onSuccess: () => {
+      toast.success("User unblocked");
+      qc.invalidateQueries({ queryKey: ["blocked-users"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -120,15 +134,68 @@ function Settings() {
         </Select>
       </Card>
 
-      <Card className="glass mt-4 p-4 space-y-1 text-sm">
-        <p className="text-xs text-muted-foreground">Community guidelines</p>
-        <p>No harassment, nudity, scams, hate or illegal activity. Violations result in immediate ban.</p>
+      {/* Blocked users */}
+      <Card className="glass mt-4 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <UserX className="size-4 text-primary" />
+          <p className="text-sm font-semibold">Blocked users</p>
+          <Badge variant="secondary" className="ml-auto">{blocked.length}</Badge>
+        </div>
+        {blocked.length === 0 ? (
+          <p className="text-xs text-muted-foreground">You haven't blocked anyone. Use the block button on any profile, chat or call.</p>
+        ) : (
+          <ul className="space-y-2">
+            {blocked.map((b) => (
+              <li key={b.userId} className="flex items-center gap-3">
+                <Avatar className="size-8">
+                  {b.avatarUrl && <AvatarImage src={b.avatarUrl} />}
+                  <AvatarFallback className="text-xs">{b.username.slice(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm flex-1 truncate">{b.username}</span>
+                <Button size="sm" variant="ghost" onClick={() => unblockMut.mutate(b.userId)} disabled={unblockMut.isPending}>
+                  Unblock
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
+      {/* Safety & legal links */}
+      <Card className="glass mt-4 p-2">
+        <LinkRow to="/safety" icon={<ShieldAlert className="size-4 text-primary" />} label="Safety Center" />
+        <LinkRow to="/community-guidelines" icon={<HeartHandshake className="size-4 text-primary" />} label="Community Guidelines" />
+        <LinkRow to="/privacy" icon={<Shield className="size-4 text-primary" />} label="Privacy Policy" />
+        <LinkRow to="/terms" icon={<FileText className="size-4 text-primary" />} label="Terms of Service" />
+        <LinkRow to="/refund-policy" icon={<BadgeIndianRupee className="size-4 text-primary" />} label="Refund Policy" />
       </Card>
 
       <Button onClick={signOut} variant="outline" className="mt-6 w-full">
         <LogOut className="size-4 mr-2" /> Sign out
       </Button>
+
+      <Link
+        to="/account-delete"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition"
+      >
+        <Trash2 className="size-4" /> Delete my account
+      </Link>
+
+      <p className="mt-6 text-center text-[11px] text-muted-foreground">
+        Support: <a className="underline" href="mailto:support@talkora.app">support@talkora.app</a><br />
+        Grievance Officer (India): grievance@talkora.app
+      </p>
     </AppShell>
+  );
+}
+
+function LinkRow({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm hover:bg-muted/40 transition">
+      {icon}
+      <span className="flex-1">{label}</span>
+      <ChevronRight className="size-4 text-muted-foreground" />
+    </Link>
   );
 }
 
