@@ -15,6 +15,7 @@ import { Route as BannedRouteImport } from './routes/banned'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticated/recharge'
@@ -60,6 +61,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWithdrawRoute = AuthenticatedWithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   id: '/wallet',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/recharge': typeof AuthenticatedRechargeRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/recharge': typeof AuthenticatedRechargeRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/withdraw': typeof AuthenticatedWithdrawRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/recharge': typeof AuthenticatedRechargeRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
+  '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
   '/_authenticated/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/recharge'
     | '/settings'
     | '/wallet'
+    | '/withdraw'
     | '/chat/$conversationId'
     | '/mystery/$caseId'
     | '/rooms/$id'
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/recharge'
     | '/settings'
     | '/wallet'
+    | '/withdraw'
     | '/chat/$conversationId'
     | '/mystery/$caseId'
     | '/rooms/$id'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/_authenticated/recharge'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
+    | '/_authenticated/withdraw'
     | '/_authenticated/chat/$conversationId'
     | '/_authenticated/mystery/$caseId'
     | '/_authenticated/rooms/$id'
@@ -337,6 +349,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/withdraw': {
+      id: '/_authenticated/withdraw'
+      path: '/withdraw'
+      fullPath: '/withdraw'
+      preLoaderRoute: typeof AuthenticatedWithdrawRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/wallet': {
       id: '/_authenticated/wallet'
@@ -487,6 +506,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
   AuthenticatedMysteryCaseIdRoute: typeof AuthenticatedMysteryCaseIdRoute
   AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
   AuthenticatedRoomsNewRoute: typeof AuthenticatedRoomsNewRoute
@@ -503,6 +523,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
   AuthenticatedMysteryCaseIdRoute: AuthenticatedMysteryCaseIdRoute,
   AuthenticatedRoomsIdRoute: AuthenticatedRoomsIdRoute,
   AuthenticatedRoomsNewRoute: AuthenticatedRoomsNewRoute,

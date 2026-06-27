@@ -34,7 +34,10 @@ function Wallet() {
             <Sparkles className="size-4" /> {Math.floor(data.freeSeconds/60)} free minutes remaining
           </div>
         )}
-        <Link to="/recharge"><Button className="mt-4 brand-gradient text-primary-foreground">Recharge coins</Button></Link>
+        <div className="mt-4 flex gap-2">
+          <Link to="/recharge"><Button className="brand-gradient text-primary-foreground">Recharge coins</Button></Link>
+          <Link to="/withdraw"><Button variant="outline">Withdraw</Button></Link>
+        </div>
       </Card>
 
       <h2 className="mt-8 mb-3 text-sm font-semibold text-muted-foreground">Recent transactions</h2>
