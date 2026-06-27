@@ -12,7 +12,8 @@ export function TrendingNowSection() {
   const { data } = useQuery({
     queryKey: ["trending-now"],
     queryFn: () => fn(),
-    refetchInterval: 60_000,
+    refetchInterval: 3 * 60_000,
+    staleTime: 2 * 60_000,
   });
 
   if (!data) return null;

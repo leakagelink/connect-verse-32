@@ -17,7 +17,8 @@ export function RecentlyPlayedSection({
   const { data } = useQuery({
     queryKey: ["recent-partners"],
     queryFn: () => fn(),
-    refetchInterval: 60_000,
+    refetchInterval: 5 * 60_000,
+    staleTime: 3 * 60_000,
   });
 
   if (!data?.length) return null;

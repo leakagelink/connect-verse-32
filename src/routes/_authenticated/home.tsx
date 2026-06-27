@@ -41,19 +41,19 @@ function Home() {
   const startChat = useServerFn(getOrCreateConversation);
   const wallet = useServerFn(getWallet);
 
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getProfile() });
-  const { data: walletData } = useQuery({ queryKey: ["wallet"], queryFn: () => wallet() });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getProfile(), staleTime: 5 * 60_000 });
+  const { data: walletData } = useQuery({ queryKey: ["wallet"], queryFn: () => wallet(), staleTime: 60_000 });
   const { data: onlineUsers, isLoading: loadingOnline, refetch: refetchOnline } = useQuery({
-    queryKey: ["online"], queryFn: () => online(), refetchInterval: 20_000,
+    queryKey: ["online"], queryFn: () => online(), refetchInterval: 45_000, staleTime: 30_000,
   });
   const { data: roomList, isLoading: loadingRooms } = useQuery({
-    queryKey: ["rooms"], queryFn: () => rooms(), refetchInterval: 20_000,
+    queryKey: ["rooms"], queryFn: () => rooms(), refetchInterval: 45_000, staleTime: 30_000,
   });
 
-  // heartbeat every 30s
+  // heartbeat every 60s
   useEffect(() => {
     beat().catch(() => {});
-    const i = setInterval(() => beat().catch(() => {}), 30_000);
+    const i = setInterval(() => beat().catch(() => {}), 60_000);
     return () => clearInterval(i);
   }, [beat]);
 

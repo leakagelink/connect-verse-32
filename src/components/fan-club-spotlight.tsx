@@ -19,7 +19,8 @@ export function FanClubSpotlight() {
   const { data: clubs } = useQuery({
     queryKey: ["featured-fan-clubs"],
     queryFn: () => fn(),
-    refetchInterval: 120_000,
+    refetchInterval: 10 * 60_000,
+    staleTime: 5 * 60_000,
   });
 
   if (!clubs?.length) return null;

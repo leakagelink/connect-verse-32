@@ -11,8 +11,8 @@ export function NotificationsBell({ active }: { active?: boolean }) {
   const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => fn(),
-    refetchInterval: 30_000,
-    staleTime: 15_000,
+    refetchInterval: 60_000,
+    staleTime: 45_000,
   });
   const unread = data?.unread ?? 0;
   return (

@@ -12,7 +12,8 @@ export function MatchmakerRoomsSection({ canHost }: { canHost: boolean }) {
   const { data: rooms, isLoading } = useQuery({
     queryKey: ["mm-rooms"],
     queryFn: () => list(),
-    refetchInterval: 15_000,
+    refetchInterval: 45_000,
+    staleTime: 30_000,
   });
 
   return (

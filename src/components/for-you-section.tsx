@@ -16,7 +16,8 @@ export function ForYouSection({
   const { data } = useQuery({
     queryKey: ["for-you"],
     queryFn: () => fn(),
-    refetchInterval: 60_000,
+    refetchInterval: 3 * 60_000,
+    staleTime: 2 * 60_000,
   });
 
   if (!data?.length) return null;
