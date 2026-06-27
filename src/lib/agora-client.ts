@@ -57,6 +57,7 @@ export class AgoraSession {
 
     this.client.on("user-published", async (user, mediaType) => {
       if (!this.client) return;
+      if (mediaType !== "audio" && mediaType !== "video") return;
       await this.client.subscribe(user, mediaType);
       if (mediaType === "audio") user.audioTrack?.play();
       this.events.onRemoteUser?.(user, mediaType);
