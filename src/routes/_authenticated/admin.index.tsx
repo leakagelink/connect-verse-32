@@ -278,7 +278,7 @@ function PaymentsTab() {
   const [webhookSecret, setWebhookSecret] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function save(patch: Parameters<typeof saveCfg>[0]["data"]) {
+  async function save(patch: { mode?: "test" | "live"; key_id?: string; key_secret?: string; webhook_secret?: string }) {
     setBusy(true);
     try {
       await saveCfg({ data: patch });
