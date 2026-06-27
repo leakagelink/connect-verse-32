@@ -408,6 +408,26 @@ function CallingCredentialsTab() {
   const [appSecret, setAppSecret] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lastTest, setLastTest] = useState<any | null>(null);
+
+  async function runTest(credentialId?: string) {
+    const tid = toast.loading(credentialId ? "Testing credential…" : "Testing pool…");
+    try {
+      const { adminTestCredential } = await import("@/lib/calling.functions");
+      const r = await adminTestCredential({ data: credentialId ? { credentialId } : {} });
+      toast.dismiss(tid);
+      setLastTest(r);
+      if (r.ok) toast.success(`✓ ${(r.provider ?? "").toUpperCase()} ${r.label ?? ""} — ${r.latencyMs}ms`);
+      else toast.error(`✗ ${r.label ?? "pool"}: ${r.error ?? "failed"} (see details)`);
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+    } catch (e: any) {
+      toast.dismiss(tid);
+      const payload = { ok: false, error: e?.message ?? "Test failed", stack: e?.stack ?? null };
+      setLastTest(payload);
+      toast.error(payload.error);
+    }
+  }
+
 
   function resetForm() {
     setLabel(""); setPriority(100); setQuota("");
@@ -487,17 +507,7 @@ function CallingCredentialsTab() {
                 qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
               } catch (e: any) { toast.error(e?.message ?? "Failed to seed"); }
             }}>Seed Agora from env</Button>
-            <Button size="sm" variant="secondary" onClick={async () => {
-              const tid = toast.loading("Testing pool…");
-              try {
-                const { adminTestCredential } = await import("@/lib/calling.functions");
-                const r = await adminTestCredential({ data: {} });
-                toast.dismiss(tid);
-                if (r.ok) toast.success(`✓ ${r.provider?.toUpperCase()} (${r.label}) — ${r.latencyMs}ms · ${r.detail}`);
-                else toast.error(`✗ ${r.label ?? "pool"}: ${r.error ?? "failed"}`);
-                qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
-              } catch (e: any) { toast.dismiss(tid); toast.error(e?.message ?? "Test failed"); }
-            }}>Test Call Connection</Button>
+            <Button size="sm" variant="secondary" onClick={() => runTest()}>Test Call Connection</Button>
             <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
           </div>
 
@@ -509,6 +519,7 @@ function CallingCredentialsTab() {
           </Badge>{" "}
           <span className="text-muted-foreground">· {healthyCount}/{totalActive} healthy · auto-failover enabled</span>
         </div>
+
         <p className="mt-2 text-xs text-muted-foreground">
           When a credential errors or hits its monthly quota, the next healthy one is used automatically — calls keep working without manual intervention.
         </p>
@@ -557,17 +568,8 @@ function CallingCredentialsTab() {
                         Reset
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={async () => {
-                      const tid = toast.loading("Testing…");
-                      try {
-                        const { adminTestCredential } = await import("@/lib/calling.functions");
-                        const r = await adminTestCredential({ data: { credentialId: c.id } });
-                        toast.dismiss(tid);
-                        if (r.ok) toast.success(`✓ ${r.latencyMs}ms — ${r.detail}`);
-                        else toast.error(`✗ ${r.error ?? "failed"}`);
-                        qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
-                      } catch (e: any) { toast.dismiss(tid); toast.error(e?.message ?? "Test failed"); }
-                    }}>Test</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => runTest(c.id)}>Test</Button>
+
                     <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setEditOpen(c.id)}>
                       Edit
                     </Button>
@@ -661,8 +663,63 @@ function CallingCredentialsTab() {
           onSaved={() => qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] })}
         />
       )}
+
+      {/* Test result diagnostics */}
+      <Dialog open={!!lastTest} onOpenChange={(o) => !o && setLastTest(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {lastTest?.ok ? "✓ Test passed" : "✗ Test failed"}
+              {lastTest?.label ? ` — ${lastTest.label}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-2">
+              <div><span className="text-muted-foreground">Provider:</span> {lastTest?.provider ?? "—"}</div>
+              <div><span className="text-muted-foreground">Latency:</span> {lastTest?.latencyMs ?? "—"} ms</div>
+              <div className="col-span-2"><span className="text-muted-foreground">Credential ID:</span> <code className="text-[10px]">{lastTest?.credentialId ?? "—"}</code></div>
+            </div>
+            {lastTest?.error && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2">
+                <div className="font-semibold text-destructive mb-1">Error</div>
+                <code className="text-[11px] whitespace-pre-wrap break-words">{lastTest.error}</code>
+              </div>
+            )}
+            {lastTest?.detail && (
+              <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2">
+                <code className="text-[11px] whitespace-pre-wrap break-words">{lastTest.detail}</code>
+              </div>
+            )}
+            {lastTest?.diagnostics && (
+              <div>
+                <div className="font-semibold mb-1">Diagnostics</div>
+                <pre className="max-h-72 overflow-auto rounded-md bg-muted p-2 text-[10px] leading-snug">
+{JSON.stringify(lastTest.diagnostics, null, 2)}
+                </pre>
+              </div>
+            )}
+            {lastTest?.stack && (
+              <details>
+                <summary className="cursor-pointer text-muted-foreground">Stack trace</summary>
+                <pre className="mt-1 max-h-48 overflow-auto rounded-md bg-muted p-2 text-[10px]">{lastTest.stack}</pre>
+              </details>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(lastTest, null, 2));
+                toast.success("Copied to clipboard");
+              }}
+            >Copy JSON</Button>
+            <Button onClick={() => setLastTest(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 }
 
 function EditCredentialDialog({ credId, cred, onClose, onSaved }: {
