@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search, Gift } from "lucide-react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Coins, Search, Gift, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { toast } from "sonner";
 import { VOICE_CALL_COINS_PER_MINUTE, VIDEO_CALL_COINS_PER_MINUTE } from "@/lib/constants";
@@ -20,6 +20,8 @@ import { MysteryPanel } from "@/components/mystery-panel";
 import { InCallRecharge } from "@/components/in-call-recharge";
 import { GiftPanel } from "@/components/gift-panel";
 import { GiftFloater } from "@/components/gift-floater";
+import { SosButton } from "@/components/sos-button";
+import { SafetyTipOverlay } from "@/components/safety-tip-overlay";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -513,6 +515,7 @@ function CallScreen() {
 
   return (
     <AppShell>
+      <SafetyTipOverlay>
       <Card className="glass overflow-hidden p-0">
         {paused && (
           <div className="bg-amber-500/90 text-black text-xs font-semibold text-center px-3 py-2">
@@ -592,6 +595,18 @@ function CallScreen() {
           </Button>
         </div>
 
+        {/* SOS panic row — Play Store UGC safety requirement */}
+        <div className="px-4 pb-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <ShieldAlert className="size-3" /> Feeling unsafe? Tap SOS →
+          </p>
+          <SosButton
+            partnerUserId={userId}
+            callLogId={callLogIdRef.current}
+            onEndCall={confirmEndCall}
+          />
+        </div>
+
 
         {/* Mystery game controls */}
         <div className="px-4 pb-3">
@@ -657,6 +672,8 @@ function CallScreen() {
 
         <p className="px-4 pb-4 text-center text-[11px] text-muted-foreground">
           Coins are deducted per minute. The back button is disabled during a call — tap the red button to end.
+          <br />
+          <span className="opacity-75">Calls may be sampled by automated &amp; human moderation for safety.</span>
         </p>
       </Card>
 
