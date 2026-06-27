@@ -193,7 +193,29 @@ export async function openAppSettings(): Promise<boolean> {
   return false;
 }
 
-export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
+/* ---- Last denial reason (for the debug panel) ---- */
+const LAST_PERM_KEY = 'talkora.lastPermDenial';
+export interface LastPermDenial {
+  kind: 'voice' | 'video';
+  reason: string;
+  at: number;
+}
+export function getLastPermDenial(): LastPermDenial | null {
+  try {
+    const raw = localStorage.getItem(LAST_PERM_KEY);
+    return raw ? (JSON.parse(raw) as LastPermDenial) : null;
+  } catch { return null; }
+}
+export function clearLastPermDenial(): void {
+  try { localStorage.removeItem(LAST_PERM_KEY); } catch { /* ignore */ }
+}
+function recordPermDenial(kind: 'voice' | 'video', reason: string): void {
+  try {
+    localStorage.setItem(LAST_PERM_KEY, JSON.stringify({ kind, reason, at: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
   granted: boolean;
   reason?: 'mic-denied' | 'camera-denied' | 'media-denied' | 'media-unavailable' | 'plugin-missing';
 }> {
@@ -259,6 +281,13 @@ export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
     console.warn('[perm] requestCallPermissions failed', e);
     return { granted: false, reason: 'plugin-missing' };
   }
+}
+
+export async function requestCallPermissions(kind: 'voice' | 'video') {
+  const res = await _requestCallPermissionsImpl(kind);
+  if (!res.granted && res.reason) recordPermDenial(kind, res.reason);
+  else if (res.granted) clearLastPermDenial();
+  return res;
 }
 
 
