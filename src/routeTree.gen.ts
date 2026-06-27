@@ -29,6 +29,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedDataExportRouteImport } from './routes/_authenticated/data-export'
+import { Route as AuthenticatedCreatorDashboardRouteImport } from './routes/_authenticated/creator-dashboard'
 import { Route as AuthenticatedConnectRouteImport } from './routes/_authenticated/connect'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -143,6 +144,12 @@ const AuthenticatedDataExportRoute = AuthenticatedDataExportRouteImport.update({
   path: '/data-export',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCreatorDashboardRoute =
+  AuthenticatedCreatorDashboardRouteImport.update({
+    id: '/creator-dashboard',
+    path: '/creator-dashboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConnectRoute = AuthenticatedConnectRouteImport.update({
   id: '/connect',
   path: '/connect',
@@ -229,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/connect': typeof AuthenticatedConnectRoute
+  '/creator-dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/account-delete': typeof AuthenticatedAccountDeleteRoute
   '/connect': typeof AuthenticatedConnectRoute
+  '/creator-dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -297,6 +306,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/connect': typeof AuthenticatedConnectRoute
+  '/_authenticated/creator-dashboard': typeof AuthenticatedCreatorDashboardRoute
   '/_authenticated/data-export': typeof AuthenticatedDataExportRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/chat'
     | '/connect'
+    | '/creator-dashboard'
     | '/data-export'
     | '/home'
     | '/leaderboard'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/account-delete'
     | '/connect'
+    | '/creator-dashboard'
     | '/data-export'
     | '/home'
     | '/leaderboard'
@@ -400,6 +412,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/chat'
     | '/_authenticated/connect'
+    | '/_authenticated/creator-dashboard'
     | '/_authenticated/data-export'
     | '/_authenticated/home'
     | '/_authenticated/leaderboard'
@@ -578,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDataExportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/creator-dashboard': {
+      id: '/_authenticated/creator-dashboard'
+      path: '/creator-dashboard'
+      fullPath: '/creator-dashboard'
+      preLoaderRoute: typeof AuthenticatedCreatorDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/connect': {
       id: '/_authenticated/connect'
       path: '/connect'
@@ -701,6 +721,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedConnectRoute: typeof AuthenticatedConnectRoute
+  AuthenticatedCreatorDashboardRoute: typeof AuthenticatedCreatorDashboardRoute
   AuthenticatedDataExportRoute: typeof AuthenticatedDataExportRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
@@ -722,6 +743,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedConnectRoute: AuthenticatedConnectRoute,
+  AuthenticatedCreatorDashboardRoute: AuthenticatedCreatorDashboardRoute,
   AuthenticatedDataExportRoute: AuthenticatedDataExportRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,

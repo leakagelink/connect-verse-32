@@ -371,6 +371,30 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_availability: {
+        Row: {
+          accepting_calls: boolean
+          slots: Json
+          tz: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepting_calls?: boolean
+          slots?: Json
+          tz?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepting_calls?: boolean
+          slots?: Json
+          tz?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       csam_reports: {
         Row: {
           call_log_id: string | null
@@ -434,6 +458,63 @@ export type Database = {
           day_index?: number
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      fan_club_members: {
+        Row: {
+          coins_paid: number
+          creator_id: string
+          expires_at: string
+          fan_id: string
+          joined_at: string
+        }
+        Insert: {
+          coins_paid: number
+          creator_id: string
+          expires_at: string
+          fan_id: string
+          joined_at?: string
+        }
+        Update: {
+          coins_paid?: number
+          creator_id?: string
+          expires_at?: string
+          fan_id?: string
+          joined_at?: string
+        }
+        Relationships: []
+      }
+      fan_clubs: {
+        Row: {
+          created_at: string
+          creator_id: string
+          is_open: boolean
+          monthly_coins: number
+          name: string
+          perks: Json
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          is_open?: boolean
+          monthly_coins?: number
+          name?: string
+          perks?: Json
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          is_open?: boolean
+          monthly_coins?: number
+          name?: string
+          perks?: Json
+          tagline?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1267,6 +1348,28 @@ export type Database = {
       }
     }
     Views: {
+      creator_earnings_30d: {
+        Row: {
+          call_count_30d: number | null
+          call_seconds_30d: number | null
+          creator_id: string | null
+          fan_club_coins_30d: number | null
+          fan_club_signups_30d: number | null
+          gift_coins_30d: number | null
+          gift_count_30d: number | null
+          total_coins_30d: number | null
+          unique_senders_30d: number | null
+        }
+        Relationships: []
+      }
+      creator_earnings_daily: {
+        Row: {
+          coins: number | null
+          creator_id: string | null
+          day: string | null
+        }
+        Relationships: []
+      }
       creator_leaderboard_7d: {
         Row: {
           avatar_url: string | null
@@ -1329,6 +1432,8 @@ export type Database = {
         | "withdrawal_paid"
         | "daily_checkin"
         | "referral_bonus"
+        | "fan_club_spend"
+        | "fan_club_income"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1486,6 +1591,8 @@ export const Constants = {
         "withdrawal_paid",
         "daily_checkin",
         "referral_bonus",
+        "fan_club_spend",
+        "fan_club_income",
       ],
     },
   },
