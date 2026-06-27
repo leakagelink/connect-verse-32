@@ -9,10 +9,8 @@ import { APP_NAME } from "@/lib/constants";
 import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 import { SafetySignalsProbe } from "@/components/safety-signals-probe";
 import { NotificationsBell } from "@/components/notifications-bell";
-import { applyChromeForApp, registerPushNotifications, isNative } from "@/lib/native";
+import { applyChromeForApp } from "@/lib/native";
 import { installDeepLinkHandler } from "@/lib/deep-links";
-import { supabase } from "@/integrations/supabase/client";
-import { registerDeviceToken } from "@/lib/push.functions";
 import { useT, syncStoredLocale, type Locale } from "@/lib/i18n";
 
 
@@ -37,26 +35,11 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
     } catch (e) {
       console.warn("[native] init failed", e);
     }
-    if (!isNative()) return dispose;
-    // Defer push registration so a missing Firebase config / plugin error
-    // never blocks first render and never crashes the splash → home transition.
-    const t = setTimeout(() => {
-      void (async () => {
-        try {
-          const reg = await registerPushNotifications();
-          if (!reg) return;
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-          await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
-        } catch (e) {
-          console.warn("[push] registration failed (non-fatal)", e);
-        }
-      })();
-    }, 4000);
-    return () => {
-      clearTimeout(t);
-      dispose?.();
-    };
+    // Push notification permission is intentionally NOT requested on app
+    // launch. It is now user-triggered from Settings so Android does not show
+    // only the notification dialog before call mic/camera permission, and a
+    // partial Firebase setup cannot crash the first screen.
+    return dispose;
   }, [router]);
 
 
