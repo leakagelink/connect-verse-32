@@ -6,8 +6,13 @@ import { Bell } from "lucide-react";
 import {
   getNotificationPrefs, saveNotificationPrefs, type NotificationPrefs,
 } from "@/lib/notifications.functions";
+import { registerDeviceToken } from "@/lib/push.functions";
+import { registerPushNotifications, isNative } from "@/lib/native";
+import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const ROWS: Array<{ key: keyof NotificationPrefs; tKey: string }> = [
   { key: "chat", tKey: "notif.prefs.chat" },
@@ -21,6 +26,7 @@ const ROWS: Array<{ key: keyof NotificationPrefs; tKey: string }> = [
 export function NotificationPrefsCard() {
   const { t } = useT();
   const qc = useQueryClient();
+  const [enabling, setEnabling] = useState(false);
   const getFn = useServerFn(getNotificationPrefs);
   const saveFn = useServerFn(saveNotificationPrefs);
   const { data: prefs } = useQuery({ queryKey: ["notif-prefs"], queryFn: () => getFn() });
@@ -43,6 +49,28 @@ export function NotificationPrefsCard() {
     saveMut.mutate({ ...prefs!, [key]: value });
   }
 
+  async function enableDeviceNotifications() {
+    setEnabling(true);
+    try {
+      const reg = await registerPushNotifications();
+      if (!reg) {
+        toast.error("Notification permission not granted or Firebase setup missing.");
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in again.");
+        return;
+      }
+      await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
+      toast.success("Device notifications enabled");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not enable notifications");
+    } finally {
+      setEnabling(false);
+    }
+  }
+
   return (
     <Card className="glass mt-4 p-4">
       <div className="flex items-center gap-2 mb-3">
@@ -50,6 +78,18 @@ export function NotificationPrefsCard() {
         <p className="text-sm font-semibold">{t("settings.notifications")}</p>
       </div>
       <div className="space-y-3">
+        {isNative() && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full justify-start gap-2"
+            disabled={enabling}
+            onClick={enableDeviceNotifications}
+          >
+            <Bell className="size-4" />
+            {enabling ? "Enabling..." : "Enable device notifications"}
+          </Button>
+        )}
         {ROWS.map((row) => (
           <div key={row.key} className="flex items-center justify-between">
             <span className="text-sm">{t(row.tKey)}</span>
