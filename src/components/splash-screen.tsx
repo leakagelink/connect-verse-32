@@ -12,22 +12,21 @@ const FADE_MS = 450;
  * - Pure CSS animations (no extra deps). Respects prefers-reduced-motion.
  */
 export function SplashScreen() {
-  const [stage, setStage] = useState<"show" | "fade" | "gone">(() => {
-    if (typeof window === "undefined") return "gone";
-    return sessionStorage.getItem(SEEN_KEY) ? "gone" : "show";
-  });
+  const [stage, setStage] = useState<"idle" | "show" | "fade" | "gone">("idle");
 
   useEffect(() => {
-    if (stage !== "show") return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(SEEN_KEY)) { setStage("gone"); return; }
+    setStage("show");
     const t1 = setTimeout(() => setStage("fade"), HOLD_MS);
     const t2 = setTimeout(() => {
       setStage("gone");
       try { sessionStorage.setItem(SEEN_KEY, "1"); } catch {}
     }, HOLD_MS + FADE_MS);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [stage]);
+  }, []);
 
-  if (stage === "gone") return null;
+  if (stage === "gone" || stage === "idle") return null;
 
   return (
     <div
