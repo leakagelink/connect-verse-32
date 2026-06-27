@@ -162,7 +162,12 @@ export const recordCallMetrics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => MetricsInput.parse(d))
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = { provider: data.provider };
+    const patch: {
+      provider: string;
+      channel_name?: string;
+      quality_avg?: number;
+      disconnects?: number;
+    } = { provider: data.provider };
     if (data.channelName) patch.channel_name = data.channelName;
     if (typeof data.qualityAvg === "number") patch.quality_avg = data.qualityAvg;
     if (typeof data.disconnects === "number") patch.disconnects = data.disconnects;
