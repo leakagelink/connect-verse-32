@@ -50,11 +50,15 @@ function push(ev: PerfEvent) {
 
 async function flush() {
   if (!buffer.length) return;
-  const batch = buffer.splice(0, buffer.length);
-  try {
-    await logPerfBatch({ data: { events: batch as any } });
-  } catch {
-    /* swallow to avoid feedback loops */
+  const all = buffer.splice(0, buffer.length);
+  // Server caps batch at 50 events — chunk before sending.
+  for (let i = 0; i < all.length; i += 50) {
+    const batch = all.slice(i, i + 50);
+    try {
+      await logPerfBatch({ data: { events: batch as any } });
+    } catch {
+      /* swallow to avoid feedback loops */
+    }
   }
 }
 

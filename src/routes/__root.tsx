@@ -12,6 +12,7 @@ import { APP_NAME } from "@/lib/constants";
 import { LanguageProvider } from "@/lib/i18n";
 import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 import { installPerfTracker } from "@/lib/perf-tracker";
+import { SplashScreen } from "@/components/splash-screen";
 
 
 function NotFoundComponent() {
@@ -98,6 +99,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
+        <SplashScreen />
         <Outlet />
         <Toaster theme="dark" position="top-center" richColors />
       </LanguageProvider>
