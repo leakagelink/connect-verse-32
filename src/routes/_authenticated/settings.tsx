@@ -16,6 +16,7 @@ import { APP_LANGUAGES } from "@/lib/constants";
 import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { NotificationPrefsCard } from "@/components/notification-prefs-card";
 import { AvatarUploadCard } from "@/components/avatar-upload-card";
+import { AiAvatarPicker } from "@/components/ai-avatar-picker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
