@@ -520,17 +520,6 @@ function CallingCredentialsTab() {
           <span className="text-muted-foreground">· {healthyCount}/{totalActive} healthy · auto-failover enabled</span>
         </div>
 
-            <Button size="sm" onClick={() => { resetForm(); setAddOpen(true); }}>+ Add credential</Button>
-          </div>
-
-        </div>
-        <div className="mt-3 text-xs">
-          Pool health:{" "}
-          <Badge variant={poolHealth === "good" ? "default" : poolHealth === "degraded" ? "secondary" : "destructive"}>
-            {poolHealth.toUpperCase()}
-          </Badge>{" "}
-          <span className="text-muted-foreground">· {healthyCount}/{totalActive} healthy · auto-failover enabled</span>
-        </div>
         <p className="mt-2 text-xs text-muted-foreground">
           When a credential errors or hits its monthly quota, the next healthy one is used automatically — calls keep working without manual intervention.
         </p>
