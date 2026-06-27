@@ -43,7 +43,7 @@ function Onboarding() {
     setBusy(true);
     try {
       await onboard({ data: { username, gender, dob, country, state: state || undefined, language, acceptGuidelines: true as const, asCreator: creator } });
-      toast.success("Welcome to ConnectVerse! You got 5 free minutes 🎉");
+      toast.success("Welcome to Talkora! You got 5 free minutes 🎉");
       navigate({ to: "/home", replace: true });
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }
