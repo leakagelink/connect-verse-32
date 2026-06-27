@@ -87,7 +87,7 @@ export const recordDeviceSignals = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Persist fingerprints on profile (used by record_ban_signals trigger).
-    const update: Record<string, unknown> = {};
+    const update: { device_fp?: string; ip_hash?: string } = {};
     if (deviceFp) update.device_fp = deviceFp;
     if (ipHash) update.ip_hash = ipHash;
     if (Object.keys(update).length > 0) {
