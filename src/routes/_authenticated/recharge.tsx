@@ -106,7 +106,7 @@ function Recharge() {
               <Button
                 size="sm"
                 disabled={busy === p.id}
-                onClick={() => buy(p.id, p.label)}
+                onClick={() => buy(p.id, p.label ?? "Coin pack")}
                 className="mt-3 w-full brand-gradient text-primary-foreground"
               >
                 {busy === p.id ? "…" : "Buy"}
