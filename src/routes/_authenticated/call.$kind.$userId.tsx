@@ -560,6 +560,11 @@ function CallScreen() {
     const id = callLogIdRef.current;
     const totalSeconds = sessionStartElapsedRef.current + elapsedRef.current;
     const totalCoins = syncedCoinsRef.current;
+    // Capture Agora stats BEFORE leave() resets them.
+    const session = agoraRef.current;
+    const stats = session?.stats();
+    session?.leave().catch(() => {});
+    agoraRef.current = null;
     if (id) {
       endLogFn({
         data: {
@@ -567,6 +572,16 @@ function CallScreen() {
           durationSeconds: totalSeconds,
           coinsSpent: totalCoins,
           status: totalSeconds > 0 ? "completed" : "cancelled",
+        },
+      }).catch(() => {});
+      // Persist call quality + provider for analytics / dispute review.
+      recordCallMetrics({
+        data: {
+          callLogId: id,
+          provider,
+          channelName: stats?.channel,
+          qualityAvg: stats?.qualityAvg,
+          disconnects: stats?.disconnects,
         },
       }).catch(() => {});
     }
