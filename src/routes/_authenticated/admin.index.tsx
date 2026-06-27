@@ -408,6 +408,26 @@ function CallingCredentialsTab() {
   const [appSecret, setAppSecret] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lastTest, setLastTest] = useState<any | null>(null);
+
+  async function runTest(credentialId?: string) {
+    const tid = toast.loading(credentialId ? "Testing credential…" : "Testing pool…");
+    try {
+      const { adminTestCredential } = await import("@/lib/calling.functions");
+      const r = await adminTestCredential({ data: credentialId ? { credentialId } : {} });
+      toast.dismiss(tid);
+      setLastTest(r);
+      if (r.ok) toast.success(`✓ ${(r.provider ?? "").toUpperCase()} ${r.label ?? ""} — ${r.latencyMs}ms`);
+      else toast.error(`✗ ${r.label ?? "pool"}: ${r.error ?? "failed"} (see details)`);
+      qc.invalidateQueries({ queryKey: ["admin-calling-credentials"] });
+    } catch (e: any) {
+      toast.dismiss(tid);
+      const payload = { ok: false, error: e?.message ?? "Test failed", stack: e?.stack ?? null };
+      setLastTest(payload);
+      toast.error(payload.error);
+    }
+  }
+
 
   function resetForm() {
     setLabel(""); setPriority(100); setQuota("");
