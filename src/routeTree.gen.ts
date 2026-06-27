@@ -41,6 +41,7 @@ import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/publi
 import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticated/rooms.new'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
 import { Route as AuthenticatedMysteryCaseIdRouteImport } from './routes/_authenticated/mystery.$caseId'
+import { Route as AuthenticatedMatchmakerNewRouteImport } from './routes/_authenticated/matchmaker.new'
 import { Route as AuthenticatedChatConversationIdRouteImport } from './routes/_authenticated/chat.$conversationId'
 import { Route as ApiPublicHooksKycCleanupRouteImport } from './routes/api/public/hooks/kyc-cleanup'
 import { Route as AuthenticatedCallKindUserIdRouteImport } from './routes/_authenticated/call.$kind.$userId'
@@ -210,6 +211,12 @@ const AuthenticatedMysteryCaseIdRoute =
     path: '/mystery/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMatchmakerNewRoute =
+  AuthenticatedMatchmakerNewRouteImport.update({
+    id: '/matchmaker/new',
+    path: '/matchmaker/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedChatConversationIdRoute =
   AuthenticatedChatConversationIdRouteImport.update({
     id: '/$conversationId',
@@ -256,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/wallet': typeof AuthenticatedWalletRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/matchmaker/new': typeof AuthenticatedMatchmakerNewRoute
   '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
@@ -290,6 +298,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof AuthenticatedWalletRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/matchmaker/new': typeof AuthenticatedMatchmakerNewRoute
   '/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
@@ -328,6 +337,7 @@ export interface FileRoutesById {
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
+  '/_authenticated/matchmaker/new': typeof AuthenticatedMatchmakerNewRoute
   '/_authenticated/mystery/$caseId': typeof AuthenticatedMysteryCaseIdRoute
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/rooms/new': typeof AuthenticatedRoomsNewRoute
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/withdraw'
     | '/chat/$conversationId'
+    | '/matchmaker/new'
     | '/mystery/$caseId'
     | '/rooms/$id'
     | '/rooms/new'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/withdraw'
     | '/chat/$conversationId'
+    | '/matchmaker/new'
     | '/mystery/$caseId'
     | '/rooms/$id'
     | '/rooms/new'
@@ -437,6 +449,7 @@ export interface FileRouteTypes {
     | '/_authenticated/wallet'
     | '/_authenticated/withdraw'
     | '/_authenticated/chat/$conversationId'
+    | '/_authenticated/matchmaker/new'
     | '/_authenticated/mystery/$caseId'
     | '/_authenticated/rooms/$id'
     | '/_authenticated/rooms/new'
@@ -688,6 +701,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMysteryCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/matchmaker/new': {
+      id: '/_authenticated/matchmaker/new'
+      path: '/matchmaker/new'
+      fullPath: '/matchmaker/new'
+      preLoaderRoute: typeof AuthenticatedMatchmakerNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat/$conversationId': {
       id: '/_authenticated/chat/$conversationId'
       path: '/$conversationId'
@@ -753,6 +773,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
+  AuthenticatedMatchmakerNewRoute: typeof AuthenticatedMatchmakerNewRoute
   AuthenticatedMysteryCaseIdRoute: typeof AuthenticatedMysteryCaseIdRoute
   AuthenticatedRoomsIdRoute: typeof AuthenticatedRoomsIdRoute
   AuthenticatedRoomsNewRoute: typeof AuthenticatedRoomsNewRoute
@@ -776,6 +797,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
+  AuthenticatedMatchmakerNewRoute: AuthenticatedMatchmakerNewRoute,
   AuthenticatedMysteryCaseIdRoute: AuthenticatedMysteryCaseIdRoute,
   AuthenticatedRoomsIdRoute: AuthenticatedRoomsIdRoute,
   AuthenticatedRoomsNewRoute: AuthenticatedRoomsNewRoute,
