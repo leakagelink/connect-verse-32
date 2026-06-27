@@ -1,6 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { aiAvatarUrl } from "@/lib/ai-avatar";
+
+type BlockedProfile = {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+  ai_avatar_style: string | null;
+  gender: string | null;
+};
 
 /** List users the current user has blocked (for management in Settings). */
 export const listBlockedUsers = createServerFn({ method: "GET" })
@@ -13,21 +22,35 @@ export const listBlockedUsers = createServerFn({ method: "GET" })
       .eq("blocker_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    const ids = (rows ?? []).map((r: any) => r.blocked_id);
-    let profilesById = new Map<string, { username: string | null; avatar_url: string | null }>();
+    const ids = (rows ?? []).map((r: any) => r.blocked_id as string);
+    const profilesById = new Map<string, BlockedProfile>();
     if (ids.length) {
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, username, avatar_url, ai_avatar_style, gender")
         .in("id", ids);
-      profilesById = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      for (const p of (profs ?? []) as BlockedProfile[]) {
+        profilesById.set(p.id, {
+          id: p.id,
+          username: p.username ?? null,
+          avatar_url: p.avatar_url ?? null,
+          ai_avatar_style: p.ai_avatar_style ?? null,
+          gender: p.gender ?? null,
+        });
+      }
     }
-    return (rows ?? []).map((r: any) => ({
-      userId: r.blocked_id,
-      username: profilesById.get(r.blocked_id)?.username ?? "—",
-      avatarUrl: profilesById.get(r.blocked_id)?.avatar_url ?? null,
-      blockedAt: r.created_at,
-    }));
+    return (rows ?? []).map((r: any) => {
+      const p = profilesById.get(r.blocked_id);
+      const avatar = p?.avatar_url
+        ? p.avatar_url
+        : aiAvatarUrl(r.blocked_id, p?.ai_avatar_style ?? null, p?.gender ?? null);
+      return {
+        userId: r.blocked_id as string,
+        username: p?.username ?? "—",
+        avatarUrl: avatar,
+        blockedAt: r.created_at as string,
+      };
+    });
   });
 
 /**
