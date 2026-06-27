@@ -959,6 +959,9 @@ export type Database = {
         | "signup_bonus"
         | "gift_spend"
         | "gift_received"
+        | "withdrawal_hold"
+        | "withdrawal_refund"
+        | "withdrawal_paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1111,6 +1114,9 @@ export const Constants = {
         "signup_bonus",
         "gift_spend",
         "gift_received",
+        "withdrawal_hold",
+        "withdrawal_refund",
+        "withdrawal_paid",
       ],
     },
   },
