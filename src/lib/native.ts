@@ -113,6 +113,61 @@ export async function registerPushNotifications(): Promise<PushRegistration | nu
   }
 }
 
+/* ---------------- Call permissions (mic / camera) ---------------- */
+
+/**
+ * Request RECORD_AUDIO (and CAMERA for video) at the OS level BEFORE the
+ * call screen calls `navigator.mediaDevices.getUserMedia()`. Two reasons:
+ *
+ *  1. Capacitor's WebView only auto-grants `getUserMedia` requests for
+ *     resources owned by a registered native plugin. Without the Camera
+ *     plugin + voice-recorder plugin installed and synced, the WebView
+ *     silently denies the request and the call fails with no prompt.
+ *  2. Calling the plugin's `requestPermissions()` triggers the standard
+ *     Android runtime permission dialog inside a user gesture chain.
+ *
+ * Safe on web — returns `granted: true` without prompting (the browser
+ * will handle its own mic/camera prompt on the actual getUserMedia call).
+ */
+export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
+  granted: boolean;
+  reason?: 'mic-denied' | 'camera-denied' | 'plugin-missing';
+}> {
+  if (!isNative()) return { granted: true };
+  try {
+    // Microphone — required for both voice and video.
+    try {
+      const { VoiceRecorder } = await import('capacitor-voice-recorder');
+      const has = await VoiceRecorder.hasAudioRecordingPermission();
+      if (!has.value) {
+        const req = await VoiceRecorder.requestAudioRecordingPermission();
+        if (!req.value) return { granted: false, reason: 'mic-denied' };
+      }
+    } catch (e) {
+      console.warn('[perm] mic plugin missing', e);
+      return { granted: false, reason: 'plugin-missing' };
+    }
+    if (kind === 'video') {
+      try {
+        const { Camera } = await import('@capacitor/camera');
+        const status = await Camera.checkPermissions();
+        if (status.camera !== 'granted') {
+          const req = await Camera.requestPermissions({ permissions: ['camera'] });
+          if (req.camera !== 'granted') return { granted: false, reason: 'camera-denied' };
+        }
+      } catch (e) {
+        console.warn('[perm] camera plugin missing', e);
+        return { granted: false, reason: 'plugin-missing' };
+      }
+    }
+    return { granted: true };
+  } catch (e) {
+    console.warn('[perm] requestCallPermissions failed', e);
+    return { granted: false, reason: 'plugin-missing' };
+  }
+}
+
+
 /* ---------------- Device fingerprint (for ban_signals) ---------------- */
 
 export async function getNativeDeviceId(): Promise<string | null> {
