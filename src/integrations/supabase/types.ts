@@ -437,6 +437,45 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_doc_purge_log: {
+        Row: {
+          cron_run_id: string
+          deleted_at: string
+          doc_kind: string
+          error_message: string | null
+          id: string
+          kyc_request_id: string
+          kyc_status: string
+          storage_path: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          cron_run_id: string
+          deleted_at?: string
+          doc_kind: string
+          error_message?: string | null
+          id?: string
+          kyc_request_id: string
+          kyc_status: string
+          storage_path: string
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          cron_run_id?: string
+          deleted_at?: string
+          doc_kind?: string
+          error_message?: string | null
+          id?: string
+          kyc_request_id?: string
+          kyc_status?: string
+          storage_path?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_requests: {
         Row: {
           aadhaar_back_path: string
