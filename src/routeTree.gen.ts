@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SafetyRouteImport } from './routes/safety'
+import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as CommunityGuidelinesRouteImport } from './routes/community-guidelines'
 import { Route as BannedRouteImport } from './routes/banned'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -39,9 +42,24 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundPolicyRoute = RefundPolicyRouteImport.update({
+  id: '/refund-policy',
+  path: '/refund-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityGuidelinesRoute = CommunityGuidelinesRouteImport.update({
+  id: '/community-guidelines',
+  path: '/community-guidelines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BannedRoute = BannedRouteImport.update({
@@ -162,7 +180,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
@@ -187,7 +208,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/connect': typeof AuthenticatedConnectRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -212,7 +236,10 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/banned': typeof BannedRoute
+  '/community-guidelines': typeof CommunityGuidelinesRoute
   '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
@@ -239,7 +266,10 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/banned'
+    | '/community-guidelines'
     | '/privacy'
+    | '/refund-policy'
+    | '/safety'
     | '/terms'
     | '/admin'
     | '/chat'
@@ -264,7 +294,10 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/banned'
+    | '/community-guidelines'
     | '/privacy'
+    | '/refund-policy'
+    | '/safety'
     | '/terms'
     | '/connect'
     | '/home'
@@ -288,7 +321,10 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/banned'
+    | '/community-guidelines'
     | '/privacy'
+    | '/refund-policy'
+    | '/safety'
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/chat'
@@ -315,7 +351,10 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BannedRoute: typeof BannedRoute
+  CommunityGuidelinesRoute: typeof CommunityGuidelinesRoute
   PrivacyRoute: typeof PrivacyRoute
+  RefundPolicyRoute: typeof RefundPolicyRoute
+  SafetyRoute: typeof SafetyRoute
   TermsRoute: typeof TermsRoute
   ApiPublicHooksKycCleanupRoute: typeof ApiPublicHooksKycCleanupRoute
 }
@@ -329,11 +368,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund-policy': {
+      id: '/refund-policy'
+      path: '/refund-policy'
+      fullPath: '/refund-policy'
+      preLoaderRoute: typeof RefundPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community-guidelines': {
+      id: '/community-guidelines'
+      path: '/community-guidelines'
+      fullPath: '/community-guidelines'
+      preLoaderRoute: typeof CommunityGuidelinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/banned': {
@@ -559,7 +619,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BannedRoute: BannedRoute,
+  CommunityGuidelinesRoute: CommunityGuidelinesRoute,
   PrivacyRoute: PrivacyRoute,
+  RefundPolicyRoute: RefundPolicyRoute,
+  SafetyRoute: SafetyRoute,
   TermsRoute: TermsRoute,
   ApiPublicHooksKycCleanupRoute: ApiPublicHooksKycCleanupRoute,
 }
