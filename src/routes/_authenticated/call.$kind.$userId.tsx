@@ -515,7 +515,7 @@ function CallScreen() {
 
   return (
     <AppShell>
-      <SafetyTipOverlay>
+      <SafetyTipOverlay />
       <Card className="glass overflow-hidden p-0">
         {paused && (
           <div className="bg-amber-500/90 text-black text-xs font-semibold text-center px-3 py-2">
