@@ -309,3 +309,34 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Admin: KYC document purge audit log (retention compliance)
+export const adminListKycPurgeLog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    cron_run_id: z.string().uuid().optional(),
+    kyc_request_id: z.string().uuid().optional(),
+    limit: z.number().int().min(1).max(500).default(200),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let q = supabaseAdmin.from("kyc_doc_purge_log")
+      .select("*")
+      .order("deleted_at", { ascending: false })
+      .limit(data.limit);
+    if (data.cron_run_id) q = q.eq("cron_run_id", data.cron_run_id);
+    if (data.kyc_request_id) q = q.eq("kyc_request_id", data.kyc_request_id);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const userIds = Array.from(new Set((rows ?? []).map(r => r.user_id)));
+    const { data: profs } = userIds.length
+      ? await supabaseAdmin.from("profiles").select("id, username").in("id", userIds)
+      : { data: [] as any[] };
+    const map = new Map((profs ?? []).map(p => [p.id, p]));
+    return (rows ?? []).map(r => ({ ...r, profile: map.get(r.user_id) ?? null }));
+  });
+
