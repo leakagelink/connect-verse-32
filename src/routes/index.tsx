@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MessageCircle, Shield, Coins, Sparkles, Users, Heart } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
-import talkoraLogo from "@/assets/talkora-logo.png";
+import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,7 +22,7 @@ function Landing() {
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <img src={talkoraLogo} alt={`${APP_NAME} logo`} width={32} height={32} className="size-8 rounded-lg" />
+          <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={32} height={32} className="size-8 rounded-lg" />
           {APP_NAME}
         </div>
         <Link to="/auth"><Button variant="ghost">Sign in</Button></Link>
