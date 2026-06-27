@@ -16,7 +16,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'in.talkora.app',
   appName: 'Talkora',
-  webDir: 'dist',
+  webDir: '.output/public',
   server: {
     // Comment out the next line to ship a fully self-contained APK.
     url: 'https://talkora.lovable.app',
