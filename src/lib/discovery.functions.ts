@@ -176,7 +176,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
     const cutoff = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { data: creators } = await supabase
       .from("profiles")
-      .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at")
+      .select("id, username, gender, country, state, language, avatar_url, ai_avatar_style, is_creator, last_seen_at")
       .eq("is_banned", false)
       .eq("onboarded", true)
       .eq("is_creator", true)
@@ -185,7 +185,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
       .limit(60);
 
     const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
-    const scored = (creators ?? []).map((c) => {
+    const scored = withAiAvatars(creators ?? []).map((c) => {
       let score = 0;
       if (me?.language && c.language === me.language) score += 5;
       if (me?.state && c.state === me.state) score += 3;
@@ -196,6 +196,7 @@ export const listForYouCreators = createServerFn({ method: "GET" })
     scored.sort((a, b) => b._score - a._score);
     return scored.slice(0, 12);
   });
+
 
 // =============================================================
 // NEW JOINERS — recently onboarded users (last 24h)
