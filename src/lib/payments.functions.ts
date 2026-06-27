@@ -50,10 +50,7 @@ export const getPaymentConfig = createServerFn({ method: "GET" })
     };
   });
 
-async function assertAdmin(ctx: {
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> };
-  userId: string;
-}) {
+async function assertAdmin(ctx: { supabase: any; userId: string }) {
   const { data: isAdmin } = await ctx.supabase.rpc("has_role", {
     _user_id: ctx.userId,
     _role: "admin",
