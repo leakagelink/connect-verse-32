@@ -1019,3 +1019,120 @@ function BroadcastTab() {
   );
 }
 
+function FcmTab() {
+  const getFn = useServerFn(adminGetFcmConfig);
+  const saveFn = useServerFn(adminSaveFcmConfig);
+  const clearFn = useServerFn(adminClearFcmConfig);
+  const testFn = useServerFn(adminSendTestPush);
+  const qc = useQueryClient();
+  const { data: cfg } = useQuery({ queryKey: ["admin","fcm"], queryFn: () => getFn() });
+  const [json, setJson] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    if (!json.trim()) { toast.error("Paste the service account JSON first"); return; }
+    setBusy(true);
+    try {
+      const r = await saveFn({ data: { serviceAccountJson: json.trim() } });
+      toast.success(`Saved · project ${r.projectId}`);
+      setJson("");
+      qc.invalidateQueries({ queryKey: ["admin","fcm"] });
+    } catch (e: any) { toast.error(e?.message ?? "Save failed"); }
+    finally { setBusy(false); }
+  }
+  async function clear() {
+    if (!confirm("Remove the stored FCM service account?")) return;
+    await clearFn();
+    toast.success("Cleared");
+    qc.invalidateQueries({ queryKey: ["admin","fcm"] });
+  }
+  async function test() {
+    setBusy(true);
+    try {
+      const r = await testFn();
+      toast.success(`Test sent · pushed to ${r.pushed} device(s)`);
+    } catch (e: any) { toast.error(e?.message ?? "Test failed"); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <>
+      <Card className="glass p-4 space-y-3">
+        <h3 className="font-semibold flex items-center gap-2"><Radio className="size-4" /> Firebase Cloud Messaging</h3>
+        <div className="flex items-center gap-2 text-xs">
+          <Badge variant={cfg?.configured ? "default" : "secondary"}>
+            {cfg?.configured ? `Configured (${cfg.source})` : "Not configured"}
+          </Badge>
+          {cfg?.projectId && <span className="text-muted-foreground">project: <span className="font-mono">{cfg.projectId}</span></span>}
+        </div>
+        {cfg?.clientEmail && (
+          <p className="text-[11px] text-muted-foreground font-mono break-all">{cfg.clientEmail}</p>
+        )}
+
+        <Textarea
+          rows={8}
+          placeholder='Paste full service account JSON, e.g. { "type": "service_account", "project_id": "...", "private_key": "-----BEGIN PRIVATE KEY-----\\n...", "client_email": "...", ... }'
+          value={json}
+          onChange={(e) => setJson(e.target.value)}
+          className="font-mono text-[11px]"
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={save} disabled={busy}>{busy ? "Saving…" : "Save service account"}</Button>
+          <Button variant="outline" onClick={test} disabled={busy || !cfg?.configured}>Send test push to me</Button>
+          {cfg?.source === "db" && (
+            <Button variant="ghost" onClick={clear} disabled={busy}>Clear stored JSON</Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          The full JSON is stored encrypted at rest and only readable by admins. Once saved you don't need to redeploy.
+        </p>
+      </Card>
+
+      <Card className="glass p-4 space-y-3 text-sm">
+        <h3 className="font-semibold">Step-by-step setup guide</h3>
+        <ol className="list-decimal pl-5 space-y-2 text-[13px] leading-relaxed">
+          <li>
+            Open <a className="underline text-primary" href="https://console.firebase.google.com/" target="_blank" rel="noreferrer">console.firebase.google.com</a> and sign in with your Google account.
+          </li>
+          <li>Click <b>Add project</b> → name it <b>Talkora</b> → accept terms → Continue. Disable Google Analytics if you don't need it, then <b>Create project</b>.</li>
+          <li>
+            Once the project is ready, click the gear icon (top-left, next to "Project Overview") → <b>Project settings</b>.
+          </li>
+          <li>
+            Open the <b>Cloud Messaging</b> tab. If it shows <i>Firebase Cloud Messaging API (V1)</i> as <b>Disabled</b>, click <b>Manage API in Google Cloud Console</b> → press <b>Enable</b>.
+          </li>
+          <li>
+            Back in <b>Project settings</b>, open the <b>Service accounts</b> tab → click <b>Generate new private key</b> → confirm <b>Generate key</b>. A <code>.json</code> file downloads to your computer.
+          </li>
+          <li>
+            Open that JSON file in Notepad / VS Code, <b>select all</b> contents (Ctrl+A → Ctrl+C), and <b>paste it into the textarea above</b>. Click <b>Save service account</b>.
+          </li>
+          <li>
+            Click <b>Send test push to me</b>. If your phone has the Talkora app installed and you've allowed notifications, a "Test push from Talkora" banner should appear within ~5 seconds.
+          </li>
+        </ol>
+
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-[12px] space-y-1.5">
+          <p className="font-semibold text-amber-400">For the Android build (one-time)</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>In Firebase → Project settings → <b>General</b> tab → scroll to <b>Your apps</b> → click the Android icon.</li>
+            <li>Package name must be exactly <code>in.talkora.app</code> (matches <code>capacitor.config.ts</code>). Nickname: Talkora. Skip SHA-1 for now. <b>Register app</b>.</li>
+            <li>Download <code>google-services.json</code> → place it at <code>android/app/google-services.json</code> before <code>npx cap sync android</code>.</li>
+            <li>Skip the rest of the setup wizard — Capacitor's <code>@capacitor/push-notifications</code> handles the Gradle plugins automatically.</li>
+          </ol>
+        </div>
+
+        <div className="rounded-md border bg-muted/30 p-3 text-[12px] space-y-1">
+          <p className="font-semibold">Security notes</p>
+          <ul className="list-disc pl-5 space-y-0.5 text-muted-foreground">
+            <li>Never share the service account JSON publicly — it grants send-as-Talkora rights to FCM.</li>
+            <li>To rotate: in Firebase → Service accounts → <b>Manage all service account keys</b> → revoke the old key after pasting the new one here.</li>
+            <li>If you ever set the <code>FCM_SERVICE_ACCOUNT_JSON</code> environment secret on the backend, it overrides what's stored here.</li>
+          </ul>
+        </div>
+      </Card>
+    </>
+  );
+}
+
+
