@@ -296,7 +296,9 @@ function CallScreen() {
           } catch { /* ignore log start failure */ }
         }, 1200);
       } catch (e: any) {
-        toast.error("Could not access camera / mic: " + e.message);
+        const msg = String(e?.message ?? e ?? "");
+        const isMedia = /getUserMedia|NotAllowedError|NotFoundError|Permission|media|camera|mic/i.test(msg);
+        toast.error(isMedia ? `Could not access camera / mic: ${msg}` : `Couldn't start call: ${msg}`);
         navigate({ to: "/connect" });
       }
     }
