@@ -886,3 +886,18 @@ function CallScreen() {
 
   );
 }
+
+function NetworkBars({ q }: { q: number }) {
+  // Agora: 1=excellent, 2=good, 3=poor, 4=bad, 5=very-bad, 6=down
+  const label =
+    q <= 2 ? "Strong" : q === 3 ? "Fair" : q === 4 ? "Weak" : q >= 5 ? "Very weak" : "—";
+  const color =
+    q <= 2 ? "text-emerald-400" : q === 3 ? "text-yellow-400" : "text-red-400";
+  const Icon =
+    q <= 1 ? SignalHigh : q === 2 ? Signal : q === 3 ? SignalMedium : q === 4 ? SignalLow : SignalZero;
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${color}`} title={`Network: ${label}`}>
+      <Icon className="size-3" />
+    </span>
+  );
+}
