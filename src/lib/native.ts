@@ -176,7 +176,7 @@ export async function checkCallPermissions(): Promise<{ mic: PermState; camera: 
 export async function openAppSettings(): Promise<boolean> {
   if (!isNative()) return false;
   try {
-    const mod = await import('@capacitor-community/app-settings').catch(() => null as any);
+    const mod: any = await import(/* @vite-ignore */ '@capacitor-community/app-settings' as string).catch(() => null);
     if (mod?.NativeSettings?.open) {
       await mod.NativeSettings.open({ optionAndroid: 'application_details', optionIOS: 'app' });
       return true;
