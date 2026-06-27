@@ -421,6 +421,10 @@ function OnlineList({
             <div className="flex items-center gap-2">
               <p className="font-medium truncate">{u.username ?? "anon"}</p>
               {u.is_creator && <Badge variant="secondary" className="text-xs">Creator</Badge>}
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto shrink-0" title={u.last_seen_at ?? ""}>
+                <span className="size-1.5 rounded-full bg-emerald-500 mr-1 inline-block" />
+                {formatLastSeen(u.last_seen_at)}
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground truncate">
               {[u.gender, u.country, u.language].filter(Boolean).join(" · ") || "Online now"}
