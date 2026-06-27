@@ -30,22 +30,35 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
   // Phase 4 — Capacitor: status-bar colour, splash hide, push token registration.
   // Phase 10 — deep-link bridge (talkora:// → in-app route).
   useEffect(() => {
-    void applyChromeForApp();
-    const dispose = installDeepLinkHandler(router);
+    let dispose: (() => void) | undefined;
+    try {
+      void applyChromeForApp().catch((e) => console.warn("[native] chrome failed", e));
+      dispose = installDeepLinkHandler(router);
+    } catch (e) {
+      console.warn("[native] init failed", e);
+    }
     if (!isNative()) return dispose;
-    void (async () => {
-      const reg = await registerPushNotifications();
-      if (!reg) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      try {
-        await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
-      } catch (e) {
-        console.warn("[push] register device token failed", e);
-      }
-    })();
-    return dispose;
+    // Defer push registration so a missing Firebase config / plugin error
+    // never blocks first render and never crashes the splash → home transition.
+    const t = setTimeout(() => {
+      void (async () => {
+        try {
+          const reg = await registerPushNotifications();
+          if (!reg) return;
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          await registerDeviceToken({ data: { token: reg.token, platform: reg.platform } });
+        } catch (e) {
+          console.warn("[push] registration failed (non-fatal)", e);
+        }
+      })();
+    }, 4000);
+    return () => {
+      clearTimeout(t);
+      dispose?.();
+    };
   }, [router]);
+
 
   // Phase 10 — sync stored locale from profile.app_language whenever it changes.
   useEffect(() => {
@@ -66,7 +79,7 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
 
   return (
     <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl">
+      <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl safe-top">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5">
           <Link to="/home" className="flex items-center gap-1.5 font-bold">
             <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={28} height={28} className="size-7 rounded-md" />
@@ -127,8 +140,9 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       <main className="mx-auto max-w-3xl px-4 pt-4">{children}</main>
       <SafetySignalsProbe />
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t">
+      <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t safe-bottom">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 relative">
+
           {nav.slice(0, 2).map((n) => {
             const active = pathname.startsWith(n.to);
             const Icon = n.icon;
