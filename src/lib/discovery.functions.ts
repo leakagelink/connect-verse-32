@@ -141,10 +141,10 @@ export const listRecentPartners = createServerFn({ method: "GET" })
     const cutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, username, avatar_url, country, language, gender, is_creator, last_seen_at, availability")
+      .select("id, username, avatar_url, ai_avatar_style, country, language, gender, is_creator, last_seen_at, availability")
       .in("id", ids)
       .eq("is_banned", false);
-    const map = new Map((profs ?? []).map((p) => [p.id, p]));
+    const map = new Map(withAiAvatars(profs ?? []).map((p) => [p.id, p]));
     return partners
       .map((p) => {
         const prof = map.get(p.id);
@@ -158,6 +158,7 @@ export const listRecentPartners = createServerFn({ method: "GET" })
       })
       .filter(Boolean);
   });
+
 
 // =============================================================
 // FOR YOU — personalized creators by language/state
