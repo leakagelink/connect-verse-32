@@ -46,11 +46,13 @@ function Home() {
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getProfile(), staleTime: 5 * 60_000 });
   const { data: walletData } = useQuery({ queryKey: ["wallet"], queryFn: () => wallet(), staleTime: 60_000 });
   const { data: onlineUsers, isLoading: loadingOnline, refetch: refetchOnline } = useQuery({
-    queryKey: ["online"], queryFn: () => online(), refetchInterval: 45_000, staleTime: 30_000,
+    queryKey: ["online"], queryFn: () => online(), staleTime: 30_000,
   });
   const { data: roomList, isLoading: loadingRooms } = useQuery({
-    queryKey: ["rooms"], queryFn: () => rooms(), refetchInterval: 45_000, staleTime: 30_000,
+    queryKey: ["rooms"], queryFn: () => rooms(), staleTime: 30_000,
   });
+
+  const queryClient = useQueryClient();
 
   // heartbeat every 60s
   useEffect(() => {
@@ -58,6 +60,39 @@ function Home() {
     const i = setInterval(() => beat().catch(() => {}), 60_000);
     return () => clearInterval(i);
   }, [beat]);
+
+  // Realtime: rooms table changes invalidate the rooms list instantly
+  useEffect(() => {
+    const ch = supabase
+      .channel("rt-rooms")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rooms" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [queryClient]);
+
+  // Realtime presence: refresh the online users list on join/leave
+  useEffect(() => {
+    const uid = me?.profile?.id;
+    if (!uid) return;
+    const ch = supabase.channel("presence:online", { config: { presence: { key: uid } } });
+    ch.on("presence", { event: "sync" }, () => {
+      queryClient.invalidateQueries({ queryKey: ["online"] });
+    })
+      .on("presence", { event: "join" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["online"] });
+      })
+      .on("presence", { event: "leave" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["online"] });
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await ch.track({ uid, at: Date.now() });
+        }
+      });
+    return () => { supabase.removeChannel(ch); };
+  }, [me?.profile?.id, queryClient]);
 
   useEffect(() => {
     if (me?.profile?.is_banned) navigate({ to: "/banned", replace: true });
