@@ -410,6 +410,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          coins_awarded: number
+          created_at: string
+          day_index: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          checkin_date: string
+          coins_awarded: number
+          created_at?: string
+          day_index: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          checkin_date?: string
+          coins_awarded?: number
+          created_at?: string
+          day_index?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -803,11 +830,15 @@ export type Database = {
           is_banned: boolean
           is_creator: boolean
           language: string | null
+          last_checkin_date: string | null
           last_seen_at: string | null
           onboarded: boolean
           push_platform: string | null
           push_token: string | null
+          referral_code: string | null
+          referred_by: string | null
           state: string | null
+          streak_days: number
           strike_count: number
           updated_at: string
           username: string | null
@@ -831,11 +862,15 @@ export type Database = {
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
+          last_checkin_date?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
           push_platform?: string | null
           push_token?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           state?: string | null
+          streak_days?: number
           strike_count?: number
           updated_at?: string
           username?: string | null
@@ -859,11 +894,15 @@ export type Database = {
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
+          last_checkin_date?: string | null
           last_seen_at?: string | null
           onboarded?: boolean
           push_platform?: string | null
           push_token?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           state?: string | null
+          streak_days?: number
           strike_count?: number
           updated_at?: string
           username?: string | null
@@ -934,6 +973,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          code_used: string
+          created_at: string
+          first_recharge_at: string | null
+          id: string
+          recharge_bonus_coins: number
+          referee_id: string
+          referrer_id: string
+          signup_bonus_coins: number
+        }
+        Insert: {
+          code_used: string
+          created_at?: string
+          first_recharge_at?: string | null
+          id?: string
+          recharge_bonus_coins?: number
+          referee_id: string
+          referrer_id: string
+          signup_bonus_coins?: number
+        }
+        Update: {
+          code_used?: string
+          created_at?: string
+          first_recharge_at?: string | null
+          id?: string
+          recharge_bonus_coins?: number
+          referee_id?: string
+          referrer_id?: string
+          signup_bonus_coins?: number
+        }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -1195,13 +1267,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      creator_leaderboard_7d: {
+        Row: {
+          avatar_url: string | null
+          coins_received: number | null
+          country: string | null
+          gifts_count: number | null
+          is_creator: boolean | null
+          language: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       credit_razorpay_payment: {
         Args: { _order_id: string; _payload: Json; _payment_id: string }
         Returns: Json
       }
+      generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
