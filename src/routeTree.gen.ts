@@ -38,7 +38,6 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAccountDeleteRouteImport } from './routes/_authenticated/account-delete'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as ApiPublicSeedAdminRouteImport } from './routes/api/public/seed-admin'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticated/rooms.new'
 import { Route as AuthenticatedRoomsIdRouteImport } from './routes/_authenticated/rooms.$id'
@@ -198,11 +197,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const ApiPublicSeedAdminRoute = ApiPublicSeedAdminRouteImport.update({
-  id: '/api/public/seed-admin',
-  path: '/api/public/seed-admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicRazorpayWebhookRoute =
   ApiPublicRazorpayWebhookRouteImport.update({
     id: '/api/public/razorpay-webhook',
@@ -296,7 +290,6 @@ export interface FileRoutesByFullPath {
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
@@ -335,7 +328,6 @@ export interface FileRoutesByTo {
   '/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
@@ -378,7 +370,6 @@ export interface FileRoutesById {
   '/_authenticated/rooms/$id': typeof AuthenticatedRoomsIdRoute
   '/_authenticated/rooms/new': typeof AuthenticatedRoomsNewRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/call/$kind/$userId': typeof AuthenticatedCallKindUserIdRoute
@@ -421,7 +412,6 @@ export interface FileRouteTypes {
     | '/rooms/$id'
     | '/rooms/new'
     | '/api/public/razorpay-webhook'
-    | '/api/public/seed-admin'
     | '/admin/'
     | '/chat/'
     | '/call/$kind/$userId'
@@ -460,7 +450,6 @@ export interface FileRouteTypes {
     | '/rooms/$id'
     | '/rooms/new'
     | '/api/public/razorpay-webhook'
-    | '/api/public/seed-admin'
     | '/admin'
     | '/chat'
     | '/call/$kind/$userId'
@@ -502,7 +491,6 @@ export interface FileRouteTypes {
     | '/_authenticated/rooms/$id'
     | '/_authenticated/rooms/new'
     | '/api/public/razorpay-webhook'
-    | '/api/public/seed-admin'
     | '/_authenticated/admin/'
     | '/_authenticated/chat/'
     | '/_authenticated/call/$kind/$userId'
@@ -522,7 +510,6 @@ export interface RootRouteChildren {
   SafetyRoute: typeof SafetyRoute
   TermsRoute: typeof TermsRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
-  ApiPublicSeedAdminRoute: typeof ApiPublicSeedAdminRoute
   ApiPublicHooksKycCleanupRoute: typeof ApiPublicHooksKycCleanupRoute
   ApiPublicHooksResetCallingQuotasRoute: typeof ApiPublicHooksResetCallingQuotasRoute
 }
@@ -732,13 +719,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/api/public/seed-admin': {
-      id: '/api/public/seed-admin'
-      path: '/api/public/seed-admin'
-      fullPath: '/api/public/seed-admin'
-      preLoaderRoute: typeof ApiPublicSeedAdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/razorpay-webhook': {
       id: '/api/public/razorpay-webhook'
       path: '/api/public/razorpay-webhook'
@@ -903,7 +883,6 @@ const rootRouteChildren: RootRouteChildren = {
   SafetyRoute: SafetyRoute,
   TermsRoute: TermsRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
-  ApiPublicSeedAdminRoute: ApiPublicSeedAdminRoute,
   ApiPublicHooksKycCleanupRoute: ApiPublicHooksKycCleanupRoute,
   ApiPublicHooksResetCallingQuotasRoute: ApiPublicHooksResetCallingQuotasRoute,
 }
