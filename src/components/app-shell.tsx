@@ -66,7 +66,7 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
 
   return (
     <div className="min-h-screen pb-20">
-      <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl">
+      <header className="sticky top-0 z-40 glass border-b backdrop-blur-xl safe-top">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5">
           <Link to="/home" className="flex items-center gap-1.5 font-bold">
             <img src={talkoraLogo.url} alt={`${APP_NAME} logo`} width={28} height={28} className="size-7 rounded-md" />
