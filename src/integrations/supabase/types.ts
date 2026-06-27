@@ -658,6 +658,7 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          deleted_at: string | null
           dob: string | null
           free_seconds_remaining: number
           gender: Database["public"]["Enums"]["gender_type"] | null
@@ -677,6 +678,7 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          deleted_at?: string | null
           dob?: string | null
           free_seconds_remaining?: number
           gender?: Database["public"]["Enums"]["gender_type"] | null
@@ -696,6 +698,7 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          deleted_at?: string | null
           dob?: string | null
           free_seconds_remaining?: number
           gender?: Database["public"]["Enums"]["gender_type"] | null
