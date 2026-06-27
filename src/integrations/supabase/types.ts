@@ -156,9 +156,11 @@ export type Database = {
           channel_name: string | null
           coins_spent: number
           created_at: string
+          credential_id: string | null
           disconnects: number
           duration_seconds: number
           ended_at: string | null
+          failover_chain: Json | null
           free_seconds_used: number
           id: string
           kind: string
@@ -174,9 +176,11 @@ export type Database = {
           channel_name?: string | null
           coins_spent?: number
           created_at?: string
+          credential_id?: string | null
           disconnects?: number
           duration_seconds?: number
           ended_at?: string | null
+          failover_chain?: Json | null
           free_seconds_used?: number
           id?: string
           kind: string
@@ -192,9 +196,11 @@ export type Database = {
           channel_name?: string | null
           coins_spent?: number
           created_at?: string
+          credential_id?: string | null
           disconnects?: number
           duration_seconds?: number
           ended_at?: string | null
+          failover_chain?: Json | null
           free_seconds_used?: number
           id?: string
           kind?: string
@@ -204,7 +210,15 @@ export type Database = {
           started_at?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "calling_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_usage_flushes: {
         Row: {
@@ -249,6 +263,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      calling_credentials: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          credentials: Json
+          id: string
+          is_active: boolean
+          label: string
+          last_error: string | null
+          last_error_at: string | null
+          last_used_at: string | null
+          minutes_used_current_month: number
+          monthly_quota_minutes: number | null
+          priority: number
+          provider: string
+          quota_reset_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          label: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          minutes_used_current_month?: number
+          monthly_quota_minutes?: number | null
+          priority?: number
+          provider: string
+          quota_reset_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          last_used_at?: string | null
+          minutes_used_current_month?: number
+          monthly_quota_minutes?: number | null
+          priority?: number
+          provider?: string
+          quota_reset_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       case_guesses: {
         Row: {
@@ -1639,6 +1710,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_credential_minutes: {
+        Args: { _id: string; _minutes: number }
+        Returns: undefined
+      }
       credit_razorpay_payment: {
         Args: { _order_id: string; _payload: Json; _payment_id: string }
         Returns: Json
@@ -1655,6 +1730,38 @@ export type Database = {
         Args: { _type: string; _value: string }
         Returns: boolean
       }
+      pick_calling_credential: {
+        Args: { _provider?: string }
+        Returns: {
+          consecutive_failures: number
+          created_at: string
+          credentials: Json
+          id: string
+          is_active: boolean
+          label: string
+          last_error: string | null
+          last_error_at: string | null
+          last_used_at: string | null
+          minutes_used_current_month: number
+          monthly_quota_minutes: number | null
+          priority: number
+          provider: string
+          quota_reset_at: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calling_credentials"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      report_credential_failure: {
+        Args: { _error: string; _id: string }
+        Returns: undefined
+      }
+      report_credential_success: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "creator"
