@@ -71,7 +71,7 @@ function pemToPkcs8(pem: string): ArrayBuffer {
 }
 
 async function getAccessToken(): Promise<string | null> {
-  const sa = loadServiceAccount();
+  const sa = await loadServiceAccount();
   if (!sa) return null;
   const now = Math.floor(Date.now() / 1000);
   if (cached && cached.exp - 60 > now) return cached.token;
@@ -129,7 +129,7 @@ export async function sendFcmToTokens(
 ): Promise<{ sent: number; failed: number; invalidTokens: string[] }> {
   const out = { sent: 0, failed: 0, invalidTokens: [] as string[] };
   if (tokens.length === 0) return out;
-  const sa = loadServiceAccount();
+  const sa = await loadServiceAccount();
   const accessToken = await getAccessToken();
   if (!sa || !accessToken) {
     console.warn("[fcm] skipping push — FCM_SERVICE_ACCOUNT_JSON not configured");
