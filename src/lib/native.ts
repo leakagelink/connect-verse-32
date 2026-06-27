@@ -176,7 +176,10 @@ export async function checkCallPermissions(): Promise<{ mic: PermState; camera: 
 export async function openAppSettings(): Promise<boolean> {
   if (!isNative()) return false;
   try {
-    const mod: any = await import(/* @vite-ignore */ '@capacitor-community/app-settings' as string).catch(() => null);
+    // Use a runtime-computed specifier so Vite doesn't try to pre-resolve
+    // this optional plugin (it's only installed in the native Android build).
+    const pkg = ['@capacitor-community', 'app-settings'].join('/');
+    const mod: any = await import(/* @vite-ignore */ pkg).catch(() => null);
     if (mod?.NativeSettings?.open) {
       await mod.NativeSettings.open({ optionAndroid: 'application_details', optionIOS: 'app' });
       return true;
