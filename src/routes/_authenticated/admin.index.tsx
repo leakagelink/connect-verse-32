@@ -279,3 +279,154 @@ function BanDialog({ onBan, label = "Ban" }: { onBan: (reason: string, type: "te
     </Dialog>
   );
 }
+
+function KycDocLink({ path, label }: { path: string; label: string }) {
+  const urlFn = useServerFn(getKycDocUrl);
+  async function open() {
+    try {
+      const { url } = await urlFn({ data: { path } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) { toast.error(e.message); }
+  }
+  return <Button size="sm" variant="outline" type="button" onClick={open}>{label}</Button>;
+}
+
+function KycTab() {
+  const listFn = useServerFn(adminListKyc);
+  const reviewFn = useServerFn(adminReviewKyc);
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending"|"approved"|"rejected"|"all">("pending");
+  const { data } = useQuery({ queryKey: ["admin","kyc", status], queryFn: () => listFn({ data: { status } }) });
+  const [notes, setNotes] = useState<Record<string,string>>({});
+
+  async function decide(id: string, decision: "approved"|"rejected") {
+    if (decision === "rejected" && !(notes[id] ?? "").trim()) return toast.error("Add rejection reason");
+    try {
+      await reviewFn({ data: { id, decision, notes: notes[id] } });
+      toast.success(`KYC ${decision}`);
+      qc.invalidateQueries({ queryKey: ["admin","kyc"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="size-4 text-primary" />
+        <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {!data?.length && <Card className="glass p-6 text-center text-muted-foreground text-sm">No KYC requests.</Card>}
+      {(data ?? []).map((k: any) => (
+        <Card key={k.id} className="glass p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-medium">{k.full_name} <span className="text-xs text-muted-foreground">@{k.profile?.username ?? "—"} · {k.profile?.gender ?? "—"}</span></p>
+              <p className="text-xs text-muted-foreground">DOB: {k.dob} · PAN: {k.pan_number} · Aadhaar: ****{k.aadhaar_last4}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Payout: {k.payout_method === "bank"
+                  ? `Bank • ${k.bank_account_name} • ${k.bank_account_number} • ${k.bank_ifsc}`
+                  : `UPI • ${k.upi_id}`}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">{format(new Date(k.created_at), "dd MMM yyyy, HH:mm")}</p>
+            </div>
+            <Badge variant={k.status === "pending" ? "secondary" : k.status === "approved" ? "default" : "destructive"}>{k.status}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <KycDocLink path={k.pan_doc_path} label="PAN doc" />
+            <KycDocLink path={k.aadhaar_front_path} label="Aadhaar front" />
+            <KycDocLink path={k.aadhaar_back_path} label="Aadhaar back" />
+            <KycDocLink path={k.selfie_path} label="Selfie" />
+          </div>
+          {k.status === "pending" && (
+            <div className="space-y-2">
+              <Textarea placeholder="Notes (required for rejection)" value={notes[k.id] ?? ""} onChange={(e) => setNotes(s => ({ ...s, [k.id]: e.target.value }))} />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => decide(k.id, "approved")}>Approve</Button>
+                <Button size="sm" variant="destructive" onClick={() => decide(k.id, "rejected")}>Reject</Button>
+              </div>
+            </div>
+          )}
+          {k.status !== "pending" && k.review_notes && <p className="text-xs text-muted-foreground">Notes: {k.review_notes}</p>}
+        </Card>
+      ))}
+    </>
+  );
+}
+
+function WithdrawalsTab() {
+  const listFn = useServerFn(adminListWithdrawals);
+  const processFn = useServerFn(adminProcessWithdrawal);
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending"|"processing"|"paid"|"rejected"|"all">("pending");
+  const { data } = useQuery({ queryKey: ["admin","wd", status], queryFn: () => listFn({ data: { status } }) });
+  const [utr, setUtr] = useState<Record<string,string>>({});
+  const [notes, setNotes] = useState<Record<string,string>>({});
+
+  async function act(id: string, decision: "processing"|"paid"|"rejected") {
+    if (decision === "rejected" && !(notes[id] ?? "").trim()) return toast.error("Add rejection reason");
+    if (decision === "paid" && !(utr[id] ?? "").trim()) return toast.error("UTR reference required");
+    try {
+      await processFn({ data: { id, decision, utr_reference: utr[id], notes: notes[id] } });
+      toast.success(`Marked ${decision}`);
+      qc.invalidateQueries({ queryKey: ["admin","wd"] });
+    } catch (e: any) { toast.error(e.message); }
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <WalletIcon className="size-4 text-primary" />
+        <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="processing">Processing</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {!data?.length && <Card className="glass p-6 text-center text-muted-foreground text-sm">No withdrawals.</Card>}
+      {(data ?? []).map((w: any) => {
+        const snap = w.payout_snapshot || {};
+        return (
+          <Card key={w.id} className="glass p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">@{w.profile?.username ?? "—"} · ₹{Number(w.inr_amount).toFixed(2)} <span className="text-xs text-muted-foreground">({w.coins} coins)</span></p>
+                <p className="text-xs text-muted-foreground">
+                  {snap.method === "bank"
+                    ? `Bank • ${snap.account_name} • ${snap.account_number} • ${snap.ifsc}`
+                    : `UPI • ${snap.upi_id}`}
+                </p>
+                <p className="text-[11px] text-muted-foreground">{format(new Date(w.created_at), "dd MMM yyyy, HH:mm")}</p>
+              </div>
+              <Badge variant={w.status === "pending" ? "secondary" : w.status === "paid" ? "default" : w.status === "rejected" ? "destructive" : "outline"}>{w.status}</Badge>
+            </div>
+            {(w.status === "pending" || w.status === "processing") && (
+              <div className="space-y-2">
+                <Input placeholder="UTR / Transaction reference" value={utr[w.id] ?? ""} onChange={(e) => setUtr(s => ({ ...s, [w.id]: e.target.value }))} />
+                <Textarea placeholder="Notes (required for rejection)" value={notes[w.id] ?? ""} onChange={(e) => setNotes(s => ({ ...s, [w.id]: e.target.value }))} />
+                <div className="flex flex-wrap gap-2">
+                  {w.status === "pending" && <Button size="sm" variant="outline" onClick={() => act(w.id, "processing")}>Mark processing</Button>}
+                  <Button size="sm" onClick={() => act(w.id, "paid")}>Mark paid</Button>
+                  <Button size="sm" variant="destructive" onClick={() => act(w.id, "rejected")}>Reject & refund</Button>
+                </div>
+              </div>
+            )}
+            {w.utr_reference && <p className="text-xs text-muted-foreground">UTR: {w.utr_reference}</p>}
+            {w.admin_notes && <p className="text-xs text-muted-foreground">Notes: {w.admin_notes}</p>}
+          </Card>
+        );
+      })}
+    </>
+  );
+}
