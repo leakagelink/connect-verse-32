@@ -13,6 +13,7 @@ import { EngagementStrip } from "@/components/engagement-strip";
 import { LiveCreatorsStrip } from "@/components/live-creators-strip";
 import { QuickActionsGrid } from "@/components/quick-actions-grid";
 import { RechargeOfferCard } from "@/components/recharge-offer-card";
+import { MatchmakerRoomsSection } from "@/components/matchmaker-rooms-section";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
