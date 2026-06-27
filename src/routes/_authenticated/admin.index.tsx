@@ -167,6 +167,14 @@ function AdminPanel() {
           {!reports?.length && <Card className="glass p-6 text-center text-muted-foreground text-sm">No reports.</Card>}
         </TabsContent>
 
+        <TabsContent value="kyc" className="space-y-3">
+          <KycTab />
+        </TabsContent>
+
+        <TabsContent value="withdrawals" className="space-y-3">
+          <WithdrawalsTab />
+        </TabsContent>
+
         <TabsContent value="transactions" className="space-y-2">
           {(txns ?? []).map((t: any) => (
             <Card key={t.id} className="glass p-3 flex items-center justify-between gap-3">
