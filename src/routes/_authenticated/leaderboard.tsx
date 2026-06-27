@@ -66,10 +66,10 @@ function LeaderboardPage() {
               <div className="text-right">
                 <div className="flex items-center gap-1 justify-end text-coin font-bold">
                   <Gift className="size-3.5" />
-                  {u.coins_received.toLocaleString("en-IN")}
+                  {(u.coins_received ?? 0).toLocaleString("en-IN")}
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  {u.gifts_count} gift{u.gifts_count === 1 ? "" : "s"}
+                  {u.gifts_count ?? 0} gift{(u.gifts_count ?? 0) === 1 ? "" : "s"}
                 </p>
               </div>
             </Card>

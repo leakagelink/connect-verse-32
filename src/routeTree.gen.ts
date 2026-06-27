@@ -22,9 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWithdrawRouteImport } from './routes/_authenticated/withdraw'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedReferRouteImport } from './routes/_authenticated/refer'
 import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticated/recharge'
 import { Route as AuthenticatedRecentsRouteImport } from './routes/_authenticated/recents'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedDataExportRouteImport } from './routes/_authenticated/data-export'
 import { Route as AuthenticatedConnectRouteImport } from './routes/_authenticated/connect'
@@ -105,6 +107,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReferRoute = AuthenticatedReferRouteImport.update({
+  id: '/refer',
+  path: '/refer',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRechargeRoute = AuthenticatedRechargeRouteImport.update({
   id: '/recharge',
   path: '/recharge',
@@ -120,6 +127,12 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLeaderboardRoute =
+  AuthenticatedLeaderboardRouteImport.update({
+    id: '/leaderboard',
+    path: '/leaderboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -218,9 +231,11 @@ export interface FileRoutesByFullPath {
   '/connect': typeof AuthenticatedConnectRoute
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
   '/recharge': typeof AuthenticatedRechargeRoute
+  '/refer': typeof AuthenticatedReferRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -248,9 +263,11 @@ export interface FileRoutesByTo {
   '/connect': typeof AuthenticatedConnectRoute
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
   '/recharge': typeof AuthenticatedRechargeRoute
+  '/refer': typeof AuthenticatedReferRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/withdraw': typeof AuthenticatedWithdrawRoute
@@ -282,9 +299,11 @@ export interface FileRoutesById {
   '/_authenticated/connect': typeof AuthenticatedConnectRoute
   '/_authenticated/data-export': typeof AuthenticatedDataExportRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/recents': typeof AuthenticatedRecentsRoute
   '/_authenticated/recharge': typeof AuthenticatedRechargeRoute
+  '/_authenticated/refer': typeof AuthenticatedReferRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_authenticated/withdraw': typeof AuthenticatedWithdrawRoute
@@ -316,9 +335,11 @@ export interface FileRouteTypes {
     | '/connect'
     | '/data-export'
     | '/home'
+    | '/leaderboard'
     | '/onboarding'
     | '/recents'
     | '/recharge'
+    | '/refer'
     | '/settings'
     | '/wallet'
     | '/withdraw'
@@ -346,9 +367,11 @@ export interface FileRouteTypes {
     | '/connect'
     | '/data-export'
     | '/home'
+    | '/leaderboard'
     | '/onboarding'
     | '/recents'
     | '/recharge'
+    | '/refer'
     | '/settings'
     | '/wallet'
     | '/withdraw'
@@ -379,9 +402,11 @@ export interface FileRouteTypes {
     | '/_authenticated/connect'
     | '/_authenticated/data-export'
     | '/_authenticated/home'
+    | '/_authenticated/leaderboard'
     | '/_authenticated/onboarding'
     | '/_authenticated/recents'
     | '/_authenticated/recharge'
+    | '/_authenticated/refer'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
     | '/_authenticated/withdraw'
@@ -504,6 +529,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/refer': {
+      id: '/_authenticated/refer'
+      path: '/refer'
+      fullPath: '/refer'
+      preLoaderRoute: typeof AuthenticatedReferRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/recharge': {
       id: '/_authenticated/recharge'
       path: '/recharge'
@@ -523,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leaderboard': {
+      id: '/_authenticated/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/home': {
@@ -664,9 +703,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConnectRoute: typeof AuthenticatedConnectRoute
   AuthenticatedDataExportRoute: typeof AuthenticatedDataExportRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedRecentsRoute: typeof AuthenticatedRecentsRoute
   AuthenticatedRechargeRoute: typeof AuthenticatedRechargeRoute
+  AuthenticatedReferRoute: typeof AuthenticatedReferRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
   AuthenticatedWithdrawRoute: typeof AuthenticatedWithdrawRoute
@@ -683,9 +724,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConnectRoute: AuthenticatedConnectRoute,
   AuthenticatedDataExportRoute: AuthenticatedDataExportRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedRecentsRoute: AuthenticatedRecentsRoute,
   AuthenticatedRechargeRoute: AuthenticatedRechargeRoute,
+  AuthenticatedReferRoute: AuthenticatedReferRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedWithdrawRoute: AuthenticatedWithdrawRoute,
