@@ -91,6 +91,7 @@ function AdminPanel() {
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -207,6 +208,10 @@ function AdminPanel() {
               </div>
             </Card>
           ))}
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-3">
+          <PaymentsTab />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-3">
