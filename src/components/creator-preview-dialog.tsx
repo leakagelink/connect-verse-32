@@ -33,12 +33,31 @@ function formatAgo(ts: number | null) {
 export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, onFindAnother }: Props) {
   const fetchProfile = useServerFn(getPartnerProfile);
   const checkOnline = useServerFn(checkUserOnline);
+  const getClub = useServerFn(getFanClubFor);
+  const joinClub = useServerFn(joinFanClub);
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["partner-preview", userId],
     queryFn: () => fetchProfile({ data: { userId: userId! } }),
     enabled: !!userId,
     staleTime: 30_000,
   });
+  const fanClubQuery = useQuery({
+    queryKey: ["partner-fan-club", userId],
+    queryFn: () => getClub({ data: { creatorId: userId! } }),
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+  const joinMut = useMutation({
+    mutationFn: () => joinClub({ data: { creatorId: userId! } }),
+    onSuccess: (r: any) => {
+      toast.success(`Joined! Active until ${new Date(r.expires_at).toLocaleDateString()}`);
+      qc.invalidateQueries({ queryKey: ["partner-fan-club", userId] });
+      qc.invalidateQueries({ queryKey: ["wallet"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
 
   const [checking, setChecking] = useState(false);
   const [offline, setOffline] = useState(false);
