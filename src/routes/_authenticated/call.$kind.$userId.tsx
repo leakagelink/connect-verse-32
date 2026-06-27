@@ -176,14 +176,55 @@ function CallScreen() {
 
   useEffect(() => {
     let mounted = true;
+    if (!myId) return; // wait for profile so Agora UID = supabase user id
     async function start() {
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: kind === "video" ? { width: 640, height: 480, facingMode: "user" } : false,
-        });
-        if (!mounted) { stream.getTracks().forEach((t) => t.stop()); return; }
+        // Determine calling provider for this user/session.
+        let cfg: { provider: "mock" | "agora"; appId: string } = { provider: "mock", appId: "" };
+        try { cfg = await getCallingConfig(); } catch { /* default mock */ }
+        if (mounted) setProvider(cfg.provider);
+
+        let stream: MediaStream;
+        if (cfg.provider === "agora" && cfg.appId) {
+          // --- Real Agora call ---
+          const channel = channelForPair(myId, userId);
+          const tok = await issueAgoraToken({ data: { channel, role: "publisher" } });
+          const session = new AgoraSession();
+          agoraRef.current = session;
+          stream = await session.join({
+            appId: tok.appId,
+            channel: tok.channel,
+            token: tok.token,
+            account: tok.account,
+            kind: kind as "voice" | "video",
+            events: {
+              onRemoteUser: (user, mediaType) => {
+                if (!mounted) return;
+                setRemoteJoined(true);
+                if (mediaType === "video" && remoteContainerRef.current) {
+                  session.attachRemoteVideo(user, remoteContainerRef.current);
+                }
+              },
+              onRemoteLeft: () => mounted && setRemoteJoined(false),
+              onQuality: (q) => mounted && setNetworkQ(Math.max(q.uplinkNetworkQuality, q.downlinkNetworkQuality)),
+              onDisconnected: () => mounted && toast.warning("Network unstable — reconnecting…"),
+              onReconnected: () => mounted && toast.success("Reconnected"),
+              onVideoFallback: () => {
+                if (!mounted) return;
+                setCamOff(true);
+                toast.warning("Switched to audio-only due to poor network.");
+              },
+            },
+          });
+        } else {
+          // --- Mock / pre-production P2P ---
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: kind === "video" ? { width: 640, height: 480, facingMode: "user" } : false,
+          });
+        }
+        if (!mounted) { stream.getTracks().forEach((t) => t.stop()); agoraRef.current?.leave(); return; }
         streamRef.current = stream;
         if (videoRef.current && kind === "video") {
           videoRef.current.srcObject = stream;
