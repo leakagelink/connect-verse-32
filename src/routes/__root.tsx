@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { APP_NAME } from "@/lib/constants";
 import { LanguageProvider } from "@/lib/i18n";
+import talkoraLogo from "@/assets/talkora-logo.png.asset.json";
 
 
 function NotFoundComponent() {
@@ -62,8 +63,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/0cae957f-686c-4df8-ad6b-155643af95c3/talkora-logo.png" },
-      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/0cae957f-686c-4df8-ad6b-155643af95c3/talkora-logo.png" },
+      { rel: "icon", type: "image/png", href: talkoraLogo.url },
+      { rel: "apple-touch-icon", href: talkoraLogo.url },
     ],
   }),
   shellComponent: RootShell,
