@@ -22,6 +22,7 @@ import { GiftPanel } from "@/components/gift-panel";
 import { GiftFloater } from "@/components/gift-floater";
 import { SosButton } from "@/components/sos-button";
 import { SafetyTipOverlay } from "@/components/safety-tip-overlay";
+import { ModerationSampler } from "@/components/moderation-sampler";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -678,6 +679,15 @@ function CallScreen() {
       </Card>
 
       <MysteryPanel caseId={caseId} open={casePanelOpen} onOpenChange={setCasePanelOpen} />
+
+      {/* Phase 3 — periodic AI safety sampling of the local mic/cam */}
+      <ModerationSampler
+        stream={streamRef.current}
+        kind={kind as "voice" | "video"}
+        selfUserId={myId}
+        callLogId={callLogIdRef.current}
+        enabled={connected && !paused && Boolean(myId)}
+      />
 
       <GiftPanel
         open={giftOpen}
