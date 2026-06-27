@@ -67,6 +67,19 @@ function CallScreen() {
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
 
+  // Phase 4 — Native: block screenshots / screen-recording during the call,
+  // and intercept Android hardware back to surface the "End call?" prompt
+  // instead of bailing out mid-call.
+  useScreenPrivacy(true);
+  useEffect(() => {
+    const off = onHardwareBack(() => {
+      setConfirmEnd(true);
+      return true; // handled — do not exit app
+    });
+    return off;
+  }, []);
+
+
 
 
   const perMin = kind === "video" ? VIDEO_CALL_COINS_PER_MINUTE : VOICE_CALL_COINS_PER_MINUTE;
