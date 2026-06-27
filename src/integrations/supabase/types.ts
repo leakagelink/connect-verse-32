@@ -1753,63 +1753,6 @@ export type Database = {
         }
         Relationships: []
       }
-      public_profiles: {
-        Row: {
-          ai_avatar_style: string | null
-          availability: string | null
-          avatar_path: string | null
-          avatar_url: string | null
-          bio: string | null
-          country: string | null
-          created_at: string | null
-          gender: Database["public"]["Enums"]["gender_type"] | null
-          id: string | null
-          is_creator: boolean | null
-          language: string | null
-          last_seen_at: string | null
-          referral_code: string | null
-          state: string | null
-          streak_days: number | null
-          username: string | null
-        }
-        Insert: {
-          ai_avatar_style?: string | null
-          availability?: string | null
-          avatar_path?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          country?: string | null
-          created_at?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
-          id?: string | null
-          is_creator?: boolean | null
-          language?: string | null
-          last_seen_at?: string | null
-          referral_code?: string | null
-          state?: string | null
-          streak_days?: number | null
-          username?: string | null
-        }
-        Update: {
-          ai_avatar_style?: string | null
-          availability?: string | null
-          avatar_path?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          country?: string | null
-          created_at?: string | null
-          gender?: Database["public"]["Enums"]["gender_type"] | null
-          id?: string | null
-          is_creator?: boolean | null
-          language?: string | null
-          last_seen_at?: string | null
-          referral_code?: string | null
-          state?: string | null
-          streak_days?: number | null
-          username?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       add_credential_minutes: {
