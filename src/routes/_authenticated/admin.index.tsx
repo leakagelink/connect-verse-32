@@ -95,6 +95,7 @@ function AdminPanel() {
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="calling">Calling</TabsTrigger>
+          <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -220,6 +221,11 @@ function AdminPanel() {
         <TabsContent value="calling" className="space-y-3">
           <CallingTab />
         </TabsContent>
+
+        <TabsContent value="broadcast" className="space-y-3">
+          <BroadcastTab />
+        </TabsContent>
+
 
 
         <TabsContent value="settings" className="space-y-3">
