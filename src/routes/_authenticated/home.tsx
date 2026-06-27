@@ -7,14 +7,18 @@ import { getMyProfile } from "@/lib/onboarding.functions";
 import { getOrCreateConversation } from "@/lib/chat.functions";
 import { heartbeat, listOnlineUsers } from "@/lib/presence.functions";
 import { listRooms } from "@/lib/rooms.functions";
+import { getWallet } from "@/lib/wallet.functions";
 import { AppShell } from "@/components/app-shell";
 import { EngagementStrip } from "@/components/engagement-strip";
+import { LiveCreatorsStrip } from "@/components/live-creators-strip";
+import { QuickActionsGrid } from "@/components/quick-actions-grid";
+import { RechargeOfferCard } from "@/components/recharge-offer-card";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, Gift, ChevronRight } from "lucide-react";
+import { MessageCircle, Phone, Video, Sparkles, Users, Plus, Radio, Gamepad2, Mic, ChevronRight, Flame } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -28,8 +32,10 @@ function Home() {
   const beat = useServerFn(heartbeat);
   const rooms = useServerFn(listRooms);
   const startChat = useServerFn(getOrCreateConversation);
+  const wallet = useServerFn(getWallet);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getProfile() });
+  const { data: walletData } = useQuery({ queryKey: ["wallet"], queryFn: () => wallet() });
   const { data: onlineUsers, isLoading: loadingOnline, refetch: refetchOnline } = useQuery({
     queryKey: ["online"], queryFn: () => online(), refetchInterval: 20_000,
   });
@@ -58,64 +64,88 @@ function Home() {
     } catch (e: any) { toast.error(e.message); }
   }
 
+  function startCall(uid: string, kind: "voice" | "video") {
+    setPreview({ userId: uid, kind });
+  }
+
+  function autoMatchFree() {
+    const candidates = (onlineUsers ?? []).filter(
+      (u: any) => u.gender === "female" && u.id !== me?.profile?.id,
+    );
+    if (candidates.length === 0) {
+      toast.info("No female creators are online right now. Try again in a moment.");
+      return;
+    }
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setPreview({ userId: pick.id, kind: "voice" });
+  }
+
+  const freeMin = Math.floor((me?.profile?.free_seconds_remaining ?? 0) / 60);
+  const freeSec = (me?.profile?.free_seconds_remaining ?? 0) % 60;
+
   return (
     <AppShell isAdmin={me?.isAdmin}>
+      {/* Header */}
       <div className="mb-4 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold">Discover</h1>
-          <p className="text-sm text-muted-foreground">Live members, calls & rooms</p>
+          <p className="text-sm text-muted-foreground">Live creators · calls · rooms</p>
         </div>
         <Button size="sm" variant="outline" onClick={() => refetchOnline()}>Refresh</Button>
       </div>
 
-      <Link to="/recharge" className="block mb-4">
-        <Card className="relative overflow-hidden p-4 border-primary/40 brand-gradient text-primary-foreground hover:opacity-95 transition">
-          <div className="absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -left-4 -bottom-8 size-24 rounded-full bg-white/10 blur-2xl" />
+      {/* Free Minutes Hero Banner — sticky, top priority */}
+      {(me?.profile?.free_seconds_remaining ?? 0) > 0 && (
+        <Card className="relative overflow-hidden mb-4 p-4 border-emerald-500/40 bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-transparent">
+          <div className="absolute -right-8 -top-8 size-28 rounded-full bg-emerald-400/15 blur-3xl" />
           <div className="relative flex items-center gap-3">
-            <div className="size-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Gift className="size-6" />
+            <div className="size-12 rounded-2xl bg-emerald-500/25 backdrop-blur flex items-center justify-center">
+              <Flame className="size-6 text-emerald-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-base">First Recharge Offer</p>
-                <Badge className="bg-white/25 text-primary-foreground border-0 text-[10px]">LIMITED</Badge>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-extrabold tabular-nums text-emerald-300">
+                  {freeMin}:{freeSec.toString().padStart(2, "0")}
+                </span>
+                <span className="text-xs text-muted-foreground">free min left</span>
               </div>
-              <p className="text-xs opacity-90">Get <span className="font-semibold">+50% bonus</span> on 1st · +40% on 2nd · +30% on 3rd deposit</p>
+              <p className="text-[11px] text-muted-foreground">Connect instantly — auto-match with a live creator.</p>
             </div>
-            <ChevronRight className="size-5 opacity-90" />
+            <Button size="sm" className="brand-gradient shadow-lg shadow-primary/30" onClick={autoMatchFree}>
+              Use now
+            </Button>
           </div>
-        </Card>
-      </Link>
-
-      {me?.profile?.free_seconds_remaining && me.profile.free_seconds_remaining > 0 && (
-        <Card className="glass mb-4 p-4 flex items-center gap-3 border-primary/30">
-          <Sparkles className="size-5 text-primary" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">{Math.floor(me.profile.free_seconds_remaining/60)} free min left</p>
-            <p className="text-xs text-muted-foreground">Connect instantly with an available creator.</p>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              const candidates = (onlineUsers ?? []).filter(
-                (u: any) => u.gender === "female" && u.id !== me?.profile?.id,
-              );
-              if (candidates.length === 0) {
-                toast.info("No female creators are online right now. Try again in a moment.");
-                return;
-              }
-              const pick = candidates[Math.floor(Math.random() * candidates.length)];
-              setPreview({ userId: pick.id, kind: "voice" });
-            }}
-          >
-            Use now
-          </Button>
         </Card>
       )}
 
+      {/* Live Creators Strip */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider">Live Now</h2>
+            <Badge variant="secondary" className="text-[10px]">{(onlineUsers ?? []).length}</Badge>
+          </div>
+          <Link to="/connect" className="text-xs text-primary font-medium">See all →</Link>
+        </div>
+        <LiveCreatorsStrip users={onlineUsers ?? []} loading={loadingOnline} onCall={startCall} />
+      </div>
+
+      {/* Quick Actions Grid 2x2 */}
+      <div className="mb-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-2">Quick Actions</h2>
+        <QuickActionsGrid />
+      </div>
+
+      {/* Recharge Offer — only if user still has a bonus tier */}
+      <div className="mb-5">
+        <RechargeOfferCard depositCount={walletData?.depositCount ?? 0} />
+      </div>
+
+      {/* Engagement (daily check-in streak) */}
       <EngagementStrip />
 
+      {/* Creator dashboard shortcut for female users */}
       {me?.profile?.gender === "female" && (
         <Link to="/creator-dashboard" className="block mb-4">
           <Card className="glass p-3 flex items-center gap-3 border-coin/40 hover:border-coin transition">
@@ -130,6 +160,8 @@ function Home() {
           </Card>
         </Link>
       )}
+
+
 
 
 
