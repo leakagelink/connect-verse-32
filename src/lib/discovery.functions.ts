@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withAiAvatar, withAiAvatars } from "./ai-avatar";
+
 
 const ONLINE_WINDOW_SECONDS = 60;
 
