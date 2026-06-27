@@ -90,7 +90,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
     }
 
     return {
-      profile,
+      profile: withAiAvatar(profile as any),
       roles: (roles ?? []).map((r) => r.role),
       isAdmin: (roles ?? []).some((r) => r.role === "admin"),
       walletBalance: Number(wallet?.coin_balance ?? 0),
@@ -101,6 +101,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
   });
 
 export const updateMyLanguage = createServerFn({ method: "POST" })
+
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ language: z.string().min(2).max(40) }).parse(d))
   .handler(async ({ data, context }) => {
