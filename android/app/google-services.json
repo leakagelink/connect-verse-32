@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610506083028",
+    "project_id": "talkora-6eec0",
+    "storage_bucket": "talkora-6eec0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610506083028:android:74b016e137d6807bd74941",
+        "android_client_info": {
+          "package_name": "in.talkora.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0FhOTz59PJ-KWV40AAaMNDSGBtnwTLiQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
