@@ -94,15 +94,23 @@ function Home() {
     const uid = me?.profile?.id;
     if (!uid) return;
     const ch = supabase.channel("presence:online", { config: { presence: { key: uid } } });
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ["online"] });
-    ch.on("presence", { event: "sync" }, refresh)
-      .on("presence", { event: "join" }, refresh)
-      .on("presence", { event: "leave" }, refresh)
+    const syncPresence = () => {
+      const state = ch.presenceState() as Record<string, Array<{ uid?: string }>>;
+      const ids = new Set<string>();
+      for (const key of Object.keys(state)) {
+        ids.add(key);
+        for (const entry of state[key] ?? []) if (entry?.uid) ids.add(entry.uid);
+      }
+      setPresentIds(ids);
+      queryClient.invalidateQueries({ queryKey: ["online"] });
+    };
+    ch.on("presence", { event: "sync" }, syncPresence)
+      .on("presence", { event: "join" }, syncPresence)
+      .on("presence", { event: "leave" }, syncPresence)
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           setRtConnected(true);
           await ch.track({ uid, at: Date.now() });
-          // Reconnect → pull fresh data right away
           queryClient.invalidateQueries({ queryKey: ["online"] });
           queryClient.invalidateQueries({ queryKey: ["rooms"] });
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
