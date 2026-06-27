@@ -75,19 +75,39 @@ export const listFeaturedFanClubs = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: clubs } = await supabase
       .from("fan_clubs")
-      .select("creator_id, name, tagline, perks, monthly_coins, member_count, is_open")
+      .select("creator_id, name, tagline, perks, monthly_coins, is_open, created_at")
       .eq("is_open", true)
-      .order("member_count", { ascending: false, nullsFirst: false })
-      .limit(8);
+      .order("created_at", { ascending: false })
+      .limit(20);
     const ids = (clubs ?? []).map((c) => c.creator_id);
     if (!ids.length) return [];
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, username, avatar_url, country, language, gender")
-      .in("id", ids);
-    const map = new Map((profs ?? []).map((p) => [p.id, p]));
-    return (clubs ?? []).map((c) => ({ ...c, creator: map.get(c.creator_id) }));
+    const now = new Date().toISOString();
+    const [{ data: members }, { data: profs }] = await Promise.all([
+      supabase
+        .from("fan_club_members")
+        .select("creator_id, fan_id, expires_at")
+        .in("creator_id", ids)
+        .gt("expires_at", now),
+      supabase
+        .from("profiles")
+        .select("id, username, avatar_url, country, language, gender")
+        .in("id", ids),
+    ]);
+    const counts = new Map<string, number>();
+    for (const m of members ?? []) {
+      counts.set(m.creator_id, (counts.get(m.creator_id) ?? 0) + 1);
+    }
+    const profMap = new Map((profs ?? []).map((p) => [p.id, p]));
+    return (clubs ?? [])
+      .map((c) => ({
+        ...c,
+        creator: profMap.get(c.creator_id),
+        member_count: counts.get(c.creator_id) ?? 0,
+      }))
+      .sort((a, b) => b.member_count - a.member_count)
+      .slice(0, 8);
   });
+
 
 // =============================================================
 // RECENTLY PLAYED WITH — distinct partners from recent calls
