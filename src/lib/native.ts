@@ -129,6 +129,67 @@ export async function registerPushNotifications(): Promise<PushRegistration | nu
  * Safe on web — returns `granted: true` without prompting (the browser
  * will handle its own mic/camera prompt on the actual getUserMedia call).
  */
+export type PermState = 'granted' | 'denied' | 'prompt' | 'unknown';
+
+/**
+ * Read current mic/camera permission status WITHOUT prompting. Used by the
+ * pre-call gate so we can show the user accurate badges and tailor the
+ * next CTA (Allow vs. Open Settings).
+ */
+export async function checkCallPermissions(): Promise<{ mic: PermState; camera: PermState }> {
+  if (isNative()) {
+    let mic: PermState = 'unknown';
+    let camera: PermState = 'unknown';
+    try {
+      const { VoiceRecorder } = await import('capacitor-voice-recorder');
+      const has = await VoiceRecorder.hasAudioRecordingPermission();
+      mic = has.value ? 'granted' : 'prompt';
+    } catch { mic = 'unknown'; }
+    try {
+      const { Camera } = await import('@capacitor/camera');
+      const status = await Camera.checkPermissions();
+      const v = status.camera;
+      camera = v === 'granted' ? 'granted'
+        : v === 'denied' ? 'denied'
+        : v === 'prompt' || v === 'prompt-with-rationale' ? 'prompt'
+        : 'unknown';
+    } catch { camera = 'unknown'; }
+    return { mic, camera };
+  }
+  // Web: Permissions API (best-effort; Safari may not support 'camera').
+  const read = async (name: PermissionName): Promise<PermState> => {
+    try {
+      // @ts-ignore — name strings beyond the lib's union
+      const r = await navigator.permissions?.query?.({ name });
+      if (!r) return 'unknown';
+      return (r.state as PermState) ?? 'unknown';
+    } catch { return 'unknown'; }
+  };
+  const [mic, camera] = await Promise.all([
+    read('microphone' as PermissionName),
+    read('camera' as PermissionName),
+  ]);
+  return { mic, camera };
+}
+
+/** Open the OS app-settings screen so the user can flip a denied permission. */
+export async function openAppSettings(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const mod: any = await import(/* @vite-ignore */ '@capacitor-community/app-settings' as string).catch(() => null);
+    if (mod?.NativeSettings?.open) {
+      await mod.NativeSettings.open({ optionAndroid: 'application_details', optionIOS: 'app' });
+      return true;
+    }
+  } catch { /* ignore */ }
+  try {
+    const { App } = await import('@capacitor/app');
+    // Fallback: at least surface a hint; can't deep-link without the plugin.
+    void App;
+  } catch { /* ignore */ }
+  return false;
+}
+
 export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
   granted: boolean;
   reason?: 'mic-denied' | 'camera-denied' | 'plugin-missing';
