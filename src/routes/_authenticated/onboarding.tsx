@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile, completeOnboarding } from "@/lib/onboarding.functions";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,9 @@ function Onboarding() {
   const navigate = useNavigate();
   const getProfile = useServerFn(getMyProfile);
   const onboard = useServerFn(completeOnboarding);
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["me"], queryFn: () => getProfile() });
+
 
   const [username, setU] = useState("");
   const [gender, setG] = useState<"male"|"female"|"other"|"">("");
@@ -43,8 +46,11 @@ function Onboarding() {
     setBusy(true);
     try {
       await onboard({ data: { username, gender, dob, country, state: state || undefined, language, acceptGuidelines: true as const, asCreator: creator } });
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      await queryClient.refetchQueries({ queryKey: ["me"] });
       toast.success("Welcome to Talkora! You got 5 free minutes 🎉");
       navigate({ to: "/home", replace: true });
+
     } catch (e: any) { toast.error(e.message); } finally { setBusy(false); }
   }
 
