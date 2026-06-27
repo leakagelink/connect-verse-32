@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       if (me?.profile?.is_banned) throw redirect({ to: "/banned", replace: true });
       if (me?.profile?.onboarded) throw redirect({ to: "/home", replace: true });
     } catch (e: any) {
-      if (e && typeof e === "object" && "isRedirect" in e) throw e;
+      if (isRedirect(e)) throw e;
       // network/auth hiccup — let the page render and re-check client-side
     }
   },
