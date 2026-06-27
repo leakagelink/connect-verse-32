@@ -245,6 +245,43 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
               </span>
             </div>
 
+            {fanClubQuery.data?.club?.is_open && (
+              <div className="rounded-lg border border-coin/40 bg-coin/5 p-3 flex items-start gap-2">
+                {fanClubQuery.data.active ? (
+                  <Crown className="size-4 text-coin shrink-0 mt-0.5" />
+                ) : (
+                  <Trophy className="size-4 text-coin shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate">
+                    {fanClubQuery.data.club.name}
+                    {fanClubQuery.data.active && (
+                      <span className="ml-1 text-[10px] text-coin font-normal">· Member</span>
+                    )}
+                  </p>
+                  {fanClubQuery.data.club.tagline && (
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {fanClubQuery.data.club.tagline}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant={fanClubQuery.data.active ? "outline" : "default"}
+                  className="h-7 text-[11px]"
+                  disabled={joinMut.isPending}
+                  onClick={() => joinMut.mutate()}
+                >
+                  {joinMut.isPending
+                    ? "…"
+                    : fanClubQuery.data.active
+                      ? `Extend · ${fanClubQuery.data.club.monthly_coins}`
+                      : `Join · ${fanClubQuery.data.club.monthly_coins}`}
+                </Button>
+              </div>
+            )}
+
+
             <DialogFooter className="gap-2 sm:gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={checking}>Cancel</Button>
               {offline || liveOnline === false ? (
