@@ -437,6 +437,78 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_requests: {
+        Row: {
+          aadhaar_back_path: string
+          aadhaar_front_path: string
+          aadhaar_last4: string
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          created_at: string
+          dob: string
+          full_name: string
+          id: string
+          pan_doc_path: string
+          pan_number: string
+          payout_method: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          aadhaar_back_path: string
+          aadhaar_front_path: string
+          aadhaar_last4: string
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          dob: string
+          full_name: string
+          id?: string
+          pan_doc_path: string
+          pan_number: string
+          payout_method: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          aadhaar_back_path?: string
+          aadhaar_front_path?: string
+          aadhaar_last4?: string
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          dob?: string
+          full_name?: string
+          id?: string
+          pan_doc_path?: string
+          pan_number?: string
+          payout_method?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -798,6 +870,54 @@ export type Database = {
           total_recharged_inr?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          admin_notes: string | null
+          coins: number
+          created_at: string
+          id: string
+          inr_amount: number
+          payout_method: string
+          payout_snapshot: Json
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          utr_reference: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          coins: number
+          created_at?: string
+          id?: string
+          inr_amount: number
+          payout_method: string
+          payout_snapshot: Json
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          utr_reference?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          coins?: number
+          created_at?: string
+          id?: string
+          inr_amount?: number
+          payout_method?: string
+          payout_snapshot?: Json
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          utr_reference?: string | null
         }
         Relationships: []
       }
