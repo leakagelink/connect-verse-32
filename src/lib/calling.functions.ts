@@ -644,8 +644,9 @@ export const adminTestCredential = createServerFn({ method: "POST" })
         };
 
         if (!RtcTokenBuilder) {
-          throw new Error(`RtcTokenBuilder missing from agora-token module. Resolved keys: [${diagnostics.agoraModule.resolvedKeys.join(", ")}]`);
+          throw new Error(`RtcTokenBuilder missing. top=[${diagnostics.agoraModule.topLevelKeys.join(",")}] default=[${diagnostics.agoraModule.defaultKeys.join(",")}]`);
         }
+
         if (typeof RtcTokenBuilder.buildTokenWithUserAccount !== "function") {
           throw new Error(`RtcTokenBuilder.buildTokenWithUserAccount is not a function. Available methods: [${Object.keys(RtcTokenBuilder).join(", ")}]`);
         }
