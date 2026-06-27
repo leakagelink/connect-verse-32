@@ -190,3 +190,28 @@ export const listForYouCreators = createServerFn({ method: "GET" })
     scored.sort((a, b) => b._score - a._score);
     return scored.slice(0, 12);
   });
+
+// =============================================================
+// NEW JOINERS — recently onboarded users (last 24h)
+// =============================================================
+export const listNewJoiners = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at, created_at")
+      .eq("is_banned", false)
+      .eq("onboarded", true)
+      .neq("id", userId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(60);
+    const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_SECONDS * 1000).toISOString();
+    return (data ?? []).map((u) => ({
+      ...u,
+      online: !!u.last_seen_at && u.last_seen_at >= onlineCutoff,
+    }));
+  });
+

@@ -18,6 +18,7 @@ import { TrendingNowSection } from "@/components/trending-now-section";
 import { FanClubSpotlight } from "@/components/fan-club-spotlight";
 import { RecentlyPlayedSection } from "@/components/recently-played-section";
 import { ForYouSection } from "@/components/for-you-section";
+import { TrustBadgesFooter } from "@/components/trust-badges-footer";
 
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -272,6 +273,10 @@ function Home() {
           )}
         </TabsContent>
       </Tabs>
+
+      <TrustBadgesFooter />
+
+
 
       <CreatorPreviewDialog
         userId={preview?.userId ?? null}

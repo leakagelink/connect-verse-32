@@ -27,6 +27,7 @@ import { Route as AuthenticatedRechargeRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRecentsRouteImport } from './routes/_authenticated/recents'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedNewJoinersRouteImport } from './routes/_authenticated/new-joiners'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedDataExportRouteImport } from './routes/_authenticated/data-export'
@@ -137,6 +138,11 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNewJoinersRoute = AuthenticatedNewJoinersRouteImport.update({
+  id: '/new-joiners',
+  path: '/new-joiners',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeaderboardRoute =
   AuthenticatedLeaderboardRouteImport.update({
     id: '/leaderboard',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/new-joiners': typeof AuthenticatedNewJoinersRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
@@ -297,6 +304,7 @@ export interface FileRoutesByTo {
   '/data-export': typeof AuthenticatedDataExportRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/new-joiners': typeof AuthenticatedNewJoinersRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/recents': typeof AuthenticatedRecentsRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/data-export': typeof AuthenticatedDataExportRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/new-joiners': typeof AuthenticatedNewJoinersRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/recents': typeof AuthenticatedRecentsRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/data-export'
     | '/home'
     | '/leaderboard'
+    | '/new-joiners'
     | '/notifications'
     | '/onboarding'
     | '/recents'
@@ -413,6 +423,7 @@ export interface FileRouteTypes {
     | '/data-export'
     | '/home'
     | '/leaderboard'
+    | '/new-joiners'
     | '/notifications'
     | '/onboarding'
     | '/recents'
@@ -452,6 +463,7 @@ export interface FileRouteTypes {
     | '/_authenticated/data-export'
     | '/_authenticated/home'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/new-joiners'
     | '/_authenticated/notifications'
     | '/_authenticated/onboarding'
     | '/_authenticated/recents'
@@ -614,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/new-joiners': {
+      id: '/_authenticated/new-joiners'
+      path: '/new-joiners'
+      fullPath: '/new-joiners'
+      preLoaderRoute: typeof AuthenticatedNewJoinersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leaderboard': {
@@ -785,6 +804,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDataExportRoute: typeof AuthenticatedDataExportRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedNewJoinersRoute: typeof AuthenticatedNewJoinersRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedRecentsRoute: typeof AuthenticatedRecentsRoute
@@ -810,6 +830,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDataExportRoute: AuthenticatedDataExportRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedNewJoinersRoute: AuthenticatedNewJoinersRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedRecentsRoute: AuthenticatedRecentsRoute,
