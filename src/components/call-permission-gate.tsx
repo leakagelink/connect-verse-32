@@ -59,7 +59,19 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
       const micOk = s.mic === "granted";
       const camOk = !needsCamera || s.camera === "granted";
       // Auto-advance if already fully granted.
-      if (micOk && camOk) onReady();
+      if (micOk && camOk) {
+        onReady();
+        return;
+      }
+      // Auto-request permissions on screen open so the OS dialog appears
+      // immediately without requiring an extra tap. If the OS won't prompt
+      // (previously denied), the UI falls back to the "Open Settings" CTA.
+      const canPrompt =
+        (s.mic !== "denied") &&
+        (!needsCamera || s.camera !== "denied");
+      if (canPrompt) {
+        void handleAllow();
+      }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
