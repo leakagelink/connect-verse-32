@@ -858,6 +858,71 @@ export type Database = {
         }
         Relationships: []
       }
+      razorpay_orders: {
+        Row: {
+          amount_paise: number
+          bonus_credited: number | null
+          coins_credited: number | null
+          created_at: string
+          credited_at: string | null
+          currency: string
+          id: string
+          notes: Json | null
+          paid_at: string | null
+          plan_id: string
+          razorpay_order_id: string
+          razorpay_payment_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          webhook_payload: Json | null
+        }
+        Insert: {
+          amount_paise: number
+          bonus_credited?: number | null
+          coins_credited?: number | null
+          created_at?: string
+          credited_at?: string | null
+          currency?: string
+          id?: string
+          notes?: Json | null
+          paid_at?: string | null
+          plan_id: string
+          razorpay_order_id: string
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          webhook_payload?: Json | null
+        }
+        Update: {
+          amount_paise?: number
+          bonus_credited?: number | null
+          coins_credited?: number | null
+          created_at?: string
+          credited_at?: string | null
+          currency?: string
+          id?: string
+          notes?: Json | null
+          paid_at?: string | null
+          plan_id?: string
+          razorpay_order_id?: string
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          webhook_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razorpay_orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "coin_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           admin_notes: string | null
@@ -1121,6 +1186,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_razorpay_payment: {
+        Args: { _order_id: string; _payload: Json; _payment_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
