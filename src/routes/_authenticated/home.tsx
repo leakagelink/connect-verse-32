@@ -32,8 +32,10 @@ function Home() {
   const beat = useServerFn(heartbeat);
   const rooms = useServerFn(listRooms);
   const startChat = useServerFn(getOrCreateConversation);
+  const wallet = useServerFn(getWallet);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getProfile() });
+  const { data: walletData } = useQuery({ queryKey: ["wallet"], queryFn: () => wallet() });
   const { data: onlineUsers, isLoading: loadingOnline, refetch: refetchOnline } = useQuery({
     queryKey: ["online"], queryFn: () => online(), refetchInterval: 20_000,
   });
