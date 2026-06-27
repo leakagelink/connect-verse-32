@@ -603,6 +603,18 @@ function CallScreen() {
   const ss = String(totalElapsed % 60).padStart(2, "0");
 
 
+  if (!permReady) {
+    return (
+      <AppShell>
+        <CallPermissionGate
+          kind={kind as "voice" | "video"}
+          onReady={() => setPermReady(true)}
+          onCancel={() => navigate({ to: "/connect" })}
+        />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <SafetyTipOverlay />
