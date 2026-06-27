@@ -305,8 +305,9 @@ function CallScreen() {
     return () => {
       mounted = false;
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      agoraRef.current?.leave().catch(() => {});
     };
-  }, [kind, navigate]);
+  }, [kind, navigate, myId, userId]);
 
   useEffect(() => {
     if (!connected) return;
