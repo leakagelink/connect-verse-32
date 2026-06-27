@@ -28,6 +28,7 @@ import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/h
 import { Route as AuthenticatedConnectRouteImport } from './routes/_authenticated/connect'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAccountDeleteRouteImport } from './routes/_authenticated/account-delete'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedRoomsNewRouteImport } from './routes/_authenticated/rooms.new'
@@ -131,6 +132,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAccountDeleteRoute =
+  AuthenticatedAccountDeleteRouteImport.update({
+    id: '/account-delete',
+    path: '/account-delete',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
+  '/account-delete': typeof AuthenticatedAccountDeleteRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/connect': typeof AuthenticatedConnectRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
+  '/account-delete': typeof AuthenticatedAccountDeleteRoute
   '/connect': typeof AuthenticatedConnectRoute
   '/home': typeof AuthenticatedHomeRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -241,6 +250,7 @@ export interface FileRoutesById {
   '/refund-policy': typeof RefundPolicyRoute
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/account-delete': typeof AuthenticatedAccountDeleteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/connect': typeof AuthenticatedConnectRoute
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/refund-policy'
     | '/safety'
     | '/terms'
+    | '/account-delete'
     | '/admin'
     | '/chat'
     | '/connect'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/refund-policy'
     | '/safety'
     | '/terms'
+    | '/account-delete'
     | '/connect'
     | '/home'
     | '/onboarding'
@@ -326,6 +338,7 @@ export interface FileRouteTypes {
     | '/refund-policy'
     | '/safety'
     | '/terms'
+    | '/_authenticated/account-delete'
     | '/_authenticated/admin'
     | '/_authenticated/chat'
     | '/_authenticated/connect'
@@ -494,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/account-delete': {
+      id: '/_authenticated/account-delete'
+      path: '/account-delete'
+      fullPath: '/account-delete'
+      preLoaderRoute: typeof AuthenticatedAccountDeleteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat/': {
       id: '/_authenticated/chat/'
       path: '/'
@@ -578,6 +598,7 @@ const AuthenticatedChatRouteWithChildren =
   AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountDeleteRoute: typeof AuthenticatedAccountDeleteRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedConnectRoute: typeof AuthenticatedConnectRoute
@@ -595,6 +616,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountDeleteRoute: AuthenticatedAccountDeleteRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedConnectRoute: AuthenticatedConnectRoute,
