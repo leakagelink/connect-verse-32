@@ -116,6 +116,22 @@ function Home() {
 
       <EngagementStrip />
 
+      {me?.profile?.gender === "female" && (
+        <Link to="/creator-dashboard" className="block mb-4">
+          <Card className="glass p-3 flex items-center gap-3 border-coin/40 hover:border-coin transition">
+            <div className="size-10 rounded-xl bg-coin/15 flex items-center justify-center">
+              <Sparkles className="size-5 text-coin" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Creator Dashboard</p>
+              <p className="text-[11px] text-muted-foreground">Earnings · schedule · fan club</p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
+
+
 
 
       <Tabs defaultValue="online" className="w-full">
