@@ -41,9 +41,14 @@ function CallScreen() {
   const { kind, userId } = useParams({ from: "/_authenticated/call/$kind/$userId" });
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteContainerRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const agoraRef = useRef<AgoraSession | null>(null);
   const endedRef = useRef(false);
   const callLogIdRef = useRef<string | null>(null);
+  const [provider, setProvider] = useState<"mock" | "agora">("mock");
+  const [networkQ, setNetworkQ] = useState<number>(0); // 0=unknown,1=excellent..6=down
+  const [remoteJoined, setRemoteJoined] = useState(false);
   
   const elapsedRef = useRef(0);
   const [muted, setMuted] = useState(false);
