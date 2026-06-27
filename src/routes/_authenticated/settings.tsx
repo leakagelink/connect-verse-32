@@ -15,6 +15,7 @@ import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAler
 import { APP_LANGUAGES } from "@/lib/constants";
 import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { NotificationPrefsCard } from "@/components/notification-prefs-card";
+import { PermissionDebugPanel } from "@/components/permission-debug-panel";
 import { AvatarUploadCard } from "@/components/avatar-upload-card";
 import { AiAvatarPicker } from "@/components/ai-avatar-picker";
 import { toast } from "sonner";
@@ -164,6 +165,12 @@ function Settings() {
 
       {/* Creator safety: availability + country/state blocks (only renders if is_creator) */}
       <CreatorSafetyCard />
+
+      {/* Mic / Camera permission diagnostics */}
+      <div className="mt-4">
+        <PermissionDebugPanel />
+      </div>
+
 
 
       {/* Blocked users */}
