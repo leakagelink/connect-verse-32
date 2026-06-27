@@ -35,6 +35,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ban_signals: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          signal_type: string
+          signal_value: string
+          source_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          signal_type: string
+          signal_value: string
+          source_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          signal_type?: string
+          signal_value?: string
+          source_user_id?: string | null
+        }
+        Relationships: []
+      }
       bans: {
         Row: {
           banned_by: string | null
@@ -653,16 +680,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability: string
           avatar_url: string | null
           ban_reason: string | null
           bio: string | null
+          blocked_countries: string[]
+          blocked_states: string[]
           country: string | null
           created_at: string
           deleted_at: string | null
+          device_fp: string | null
           dob: string | null
           free_seconds_remaining: number
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
+          ip_hash: string | null
           is_banned: boolean
           is_creator: boolean
           language: string | null
@@ -673,16 +705,21 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          availability?: string
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
+          blocked_countries?: string[]
+          blocked_states?: string[]
           country?: string | null
           created_at?: string
           deleted_at?: string | null
+          device_fp?: string | null
           dob?: string | null
           free_seconds_remaining?: number
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id: string
+          ip_hash?: string | null
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
@@ -693,16 +730,21 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          availability?: string
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
+          blocked_countries?: string[]
+          blocked_states?: string[]
           country?: string | null
           created_at?: string
           deleted_at?: string | null
+          device_fp?: string | null
           dob?: string | null
           free_seconds_remaining?: number
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          ip_hash?: string | null
           is_banned?: boolean
           is_creator?: boolean
           language?: string | null
@@ -797,6 +839,7 @@ export type Database = {
         Row: {
           cover_url: string | null
           created_at: string
+          gender_gate: string
           host_id: string
           id: string
           is_active: boolean
@@ -809,6 +852,7 @@ export type Database = {
         Insert: {
           cover_url?: string | null
           created_at?: string
+          gender_gate?: string
           host_id: string
           id?: string
           is_active?: boolean
@@ -821,6 +865,7 @@ export type Database = {
         Update: {
           cover_url?: string | null
           created_at?: string
+          gender_gate?: string
           host_id?: string
           id?: string
           is_active?: boolean
@@ -979,6 +1024,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_signal_banned: {
+        Args: { _type: string; _value: string }
         Returns: boolean
       }
     }
