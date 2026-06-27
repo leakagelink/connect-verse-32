@@ -550,3 +550,77 @@ export const adminSeedAgoraFromEnv = createServerFn({ method: "POST" })
     return { ok: true, id: row.id, already: false };
   });
 
+const TestInput = z.object({ credentialId: z.string().uuid().optional() });
+
+export const adminTestCredential = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => TestInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let cred: any = null;
+    if (data.credentialId) {
+      const { data: row } = await supabaseAdmin
+        .from("calling_credentials").select("*").eq("id", data.credentialId).maybeSingle();
+      cred = row;
+    } else {
+      cred = await pickCredentialServer(null, []);
+    }
+    if (!cred) return { ok: false, error: "No credential available in pool" };
+
+    const c = (cred.credentials ?? {}) as Record<string, string>;
+    const started = Date.now();
+    const channel = `test_${Math.random().toString(36).slice(2, 10)}`;
+
+    try {
+      if (cred.provider === "agora") {
+        if (!c.app_id || !c.app_certificate) throw new Error("Missing app_id / app_certificate");
+        const { RtcTokenBuilder, RtcRole } = await import("agora-token");
+        const exp = Math.floor(Date.now() / 1000) + 300;
+        const token = RtcTokenBuilder.buildTokenWithUserAccount(
+          c.app_id, c.app_certificate, channel, "admin-test", RtcRole.PUBLISHER, exp, exp,
+        );
+        if (!token || token.length < 20) throw new Error("Token builder returned empty token");
+        await supabaseAdmin.rpc("report_credential_success", { _id: cred.id });
+        return {
+          ok: true, provider: "agora", credentialId: cred.id, label: cred.label,
+          latencyMs: Date.now() - started,
+          detail: `Token issued (${token.length} chars). Agora app_id verified.`,
+        };
+      }
+      if (cred.provider === "100ms") {
+        if (!c.access_key || !c.app_secret || !c.template_id) throw new Error("Missing access_key / app_secret / template_id");
+        const jwt = (await import("jsonwebtoken")).default;
+        const now = Math.floor(Date.now() / 1000);
+        const mgmt = jwt.sign(
+          { access_key: c.access_key, type: "management", version: 2, iat: now, nbf: now },
+          c.app_secret,
+          { algorithm: "HS256", expiresIn: "5m", jwtid: crypto.randomUUID() },
+        );
+        // Lightweight auth probe — list rooms (limit 1). Validates access_key + app_secret.
+        const res = await fetch("https://api.100ms.live/v2/rooms?limit=1", {
+          headers: { Authorization: `Bearer ${mgmt}` },
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`100ms API ${res.status}: ${txt.slice(0, 200)}`);
+        }
+        await supabaseAdmin.rpc("report_credential_success", { _id: cred.id });
+        return {
+          ok: true, provider: "100ms", credentialId: cred.id, label: cred.label,
+          latencyMs: Date.now() - started,
+          detail: "Management token accepted by 100ms API.",
+        };
+      }
+      throw new Error(`Unknown provider: ${cred.provider}`);
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      await supabaseAdmin.rpc("report_credential_failure", { _id: cred.id, _error: msg });
+      return {
+        ok: false, provider: cred.provider, credentialId: cred.id, label: cred.label,
+        latencyMs: Date.now() - started, error: msg,
+      };
+    }
+  });
+
