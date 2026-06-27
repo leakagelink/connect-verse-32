@@ -1,34 +1,38 @@
 /**
- * 100ms RTC client wrapper — mirrors the public surface of AgoraSession so
- * the call screen can swap providers without major branching.
+ * 100ms RTC client wrapper — mirrors AgoraSession's public surface so the
+ * call screen can swap providers without major branching.
  *
- * 100ms doesn't hand out raw MediaStream objects for its published tracks
- * (the SDK manages capture internally), so the local preview and remote
- * video are rendered via `attachLocalVideo` / `attachRemoteVideo` instead
- * of `<video srcObject>`. ModerationSampler is disabled on 100ms calls
- * (it needs a raw MediaStream).
+ * 100ms manages capture internally; local preview + remote video are
+ * rendered via `attachLocalVideo` / `attachRemoteVideo`, not a MediaStream.
+ * ModerationSampler is disabled on 100ms calls.
+ *
+ * The HMS store/actions types are imported as `any` because the public
+ * type surface from `@100mslive/hms-video-store` v0.14 doesn't expose the
+ * `IHMSStoreReadOnly.subscribe / getState` overloads cleanly — the
+ * runtime API works fine.
  */
-import type {
-  HMSReactiveStore as HMSReactiveStoreType,
-  HMSActions,
-  HMSStore,
-  HMSPeer,
-} from "@100mslive/hms-video-store";
-
 export type HmsEvents = {
   onRemoteJoined?: () => void;
   onRemoteLeft?: () => void;
-  /** 0=unknown, 1=excellent ... 5=worst (we normalize to Agora's 1..6 scale: 6=down). */
   onQuality?: (q: number) => void;
   onDisconnected?: () => void;
   onReconnected?: () => void;
   onVideoFallback?: () => void;
 };
 
+// Cached SDK module so attach helpers don't re-import.
+let hmsModule: any = null;
+async function loadHms() {
+  if (!hmsModule) {
+    hmsModule = await import("@100mslive/hms-video-store");
+  }
+  return hmsModule;
+}
+
 export class HmsSession {
-  private store: HMSReactiveStoreType | null = null;
-  private actions: HMSActions | null = null;
-  private hmsStore: HMSStore | null = null;
+  private store: any = null;
+  private actions: any = null;
+  private hmsStore: any = null;
   private unsubscribes: Array<() => void> = [];
   private events: HmsEvents = {};
   private channel = "";
@@ -54,13 +58,13 @@ export class HmsSession {
     this.channel = opts.channel;
     this.events = opts.events ?? {};
 
-    const mod = await import("@100mslive/hms-video-store");
+    const mod = await loadHms();
     this.store = new mod.HMSReactiveStore();
     this.store.triggerOnSubscribe();
     this.actions = this.store.getActions();
     this.hmsStore = this.store.getStore();
 
-    // Watch connection state — counts reconnects as disconnects.
+    // Connection state — fires onDisconnected / onReconnected.
     this.unsubscribes.push(
       this.hmsStore.subscribe((connected: boolean | undefined) => {
         if (connected) {
@@ -73,9 +77,9 @@ export class HmsSession {
       }, mod.selectIsConnectedToRoom),
     );
 
-    // Watch peers — fire remote join/left + reattach video on track changes.
+    // Peers — emit remote join/left and (re)attach video tracks as they change.
     this.unsubscribes.push(
-      this.hmsStore.subscribe((peers: HMSPeer[]) => {
+      this.hmsStore.subscribe((peers: any[]) => {
         const remote = peers.find((p) => !p.isLocal);
         if (remote) {
           this.events.onRemoteJoined?.();
@@ -86,7 +90,6 @@ export class HmsSession {
           this.events.onRemoteLeft?.();
           this.attachedRemoteTrackId = null;
         }
-        // Local video track may appear after enable; attach when available.
         const local = peers.find((p) => p.isLocal);
         if (local?.videoTrack && this.kind === "video") {
           this.tryAttachLocal(local.videoTrack);
@@ -104,20 +107,18 @@ export class HmsSession {
     });
   }
 
-  /** Attach local video preview to a <video> element. */
+  /** Attach local video preview to a <video> element. Call after join(). */
   attachLocalVideo(el: HTMLVideoElement) {
     this.localVideoEl = el;
-    if (!this.hmsStore || !this.actions) return;
-    const mod = require("@100mslive/hms-video-store");
-    const peers = this.hmsStore.getState(mod.selectPeers) as HMSPeer[];
+    if (!this.hmsStore || !hmsModule) return;
+    const peers = this.hmsStore.getState(hmsModule.selectPeers) as any[];
     const local = peers.find((p) => p.isLocal);
     if (local?.videoTrack) this.tryAttachLocal(local.videoTrack);
   }
 
-  /** Attach remote video to a container element (we create a <video> inside). */
+  /** Attach remote video into a container. Creates a <video> child element. */
   attachRemoteVideo(container: HTMLElement) {
     this.remoteContainerEl = container;
-    // Build (or reuse) a <video> inside the container.
     let v = container.querySelector("video[data-hms-remote]") as HTMLVideoElement | null;
     if (!v) {
       v = document.createElement("video");
@@ -130,11 +131,8 @@ export class HmsSession {
       container.appendChild(v);
     }
     this.remoteVideoEl = v;
-    if (!this.hmsStore) return;
-    // Use require here is fine because the module is already loaded by join().
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require("@100mslive/hms-video-store");
-    const peers = this.hmsStore.getState(mod.selectPeers) as HMSPeer[];
+    if (!this.hmsStore || !hmsModule) return;
+    const peers = this.hmsStore.getState(hmsModule.selectPeers) as any[];
     const remote = peers.find((p) => !p.isLocal);
     if (remote?.videoTrack) this.tryAttachRemote(remote.videoTrack);
   }

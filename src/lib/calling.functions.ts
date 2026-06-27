@@ -341,12 +341,13 @@ export const recordCallMetrics = createServerFn({ method: "POST" })
     if (typeof data.disconnects === "number") patch.disconnects = data.disconnects;
     if (data.credentialId) patch.credential_id = data.credentialId;
     if (data.failoverChain) patch.failover_chain = data.failoverChain;
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("call_logs")
       .update(patch)
       .eq("id", data.callLogId)
       .or(`caller_id.eq.${context.userId},callee_id.eq.${context.userId}`);
     if (error) throw new Error(error.message);
+
 
     // Credit successful minutes against the credential quota + mark success
     if (data.credentialId && data.durationSeconds && data.durationSeconds > 0) {
@@ -475,9 +476,10 @@ export const adminUpdateCredential = createServerFn({ method: "POST" })
     }
     patch.credentials = creds;
 
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin as any)
       .from("calling_credentials").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
+
     return { ok: true };
   });
 
