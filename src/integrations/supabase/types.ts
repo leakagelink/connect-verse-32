@@ -447,6 +447,8 @@ export type Database = {
           bank_ifsc: string | null
           created_at: string
           dob: string
+          docs_deleted_at: string | null
+          docs_retention_until: string | null
           full_name: string
           id: string
           pan_doc_path: string
@@ -470,6 +472,8 @@ export type Database = {
           bank_ifsc?: string | null
           created_at?: string
           dob: string
+          docs_deleted_at?: string | null
+          docs_retention_until?: string | null
           full_name: string
           id?: string
           pan_doc_path: string
@@ -493,6 +497,8 @@ export type Database = {
           bank_ifsc?: string | null
           created_at?: string
           dob?: string
+          docs_deleted_at?: string | null
+          docs_retention_until?: string | null
           full_name?: string
           id?: string
           pan_doc_path?: string
