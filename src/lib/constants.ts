@@ -1,4 +1,6 @@
-export const APP_NAME = "ConnectVerse";
+export const APP_NAME = "Talkora";
+export const APP_TAGLINE = "Voice Chat & Live Rooms";
+export const APP_FULL_NAME = "Talkora — Voice Chat & Live Rooms";
 export const CHAT_COINS_PER_MINUTE = 2;
 export const VOICE_CALL_COINS_PER_MINUTE = 8;
 export const VIDEO_CALL_COINS_PER_MINUTE = 16;

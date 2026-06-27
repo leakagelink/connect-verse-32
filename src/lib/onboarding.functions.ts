@@ -22,7 +22,7 @@ export const completeOnboarding = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     const age = differenceInYears(new Date(), parseISO(data.dob));
-    if (age < MIN_AGE) throw new Error("You must be 18+ to use ConnectVerse");
+    if (age < MIN_AGE) throw new Error("You must be 18+ to use Talkora");
 
     // username uniqueness
     const { data: existing } = await supabase
