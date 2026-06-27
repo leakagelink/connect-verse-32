@@ -9,6 +9,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
 import { APP_NAME } from "@/lib/constants";
+import { LanguageProvider } from "@/lib/i18n";
+
 
 function NotFoundComponent() {
   return (
@@ -88,8 +90,11 @@ function RootComponent() {
   }, [router, queryClient]);
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster theme="dark" position="top-center" richColors />
+      <LanguageProvider>
+        <Outlet />
+        <Toaster theme="dark" position="top-center" richColors />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
+
