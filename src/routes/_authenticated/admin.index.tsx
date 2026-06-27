@@ -228,6 +228,9 @@ function AdminPanel() {
           <BroadcastTab />
         </TabsContent>
 
+        <TabsContent value="fcm" className="space-y-3">
+          <FcmTab />
+        </TabsContent>
 
 
         <TabsContent value="settings" className="space-y-3">
