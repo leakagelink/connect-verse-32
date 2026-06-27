@@ -7,6 +7,7 @@ import {
   adminUpdateReport, adminListTransactions,
 } from "@/lib/admin.functions";
 import { getAppSettings, setAppSetting } from "@/lib/settings.functions";
+import { adminGetPaymentConfig, adminSavePaymentConfig } from "@/lib/payments.functions";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -91,6 +92,7 @@ function AdminPanel() {
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="purge-log">Purge Log</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -209,6 +211,10 @@ function AdminPanel() {
           ))}
         </TabsContent>
 
+        <TabsContent value="payments" className="space-y-3">
+          <PaymentsTab />
+        </TabsContent>
+
         <TabsContent value="settings" className="space-y-3">
           <SettingsTab />
         </TabsContent>
@@ -258,6 +264,102 @@ function SettingsTab() {
     </Card>
   );
 }
+
+function PaymentsTab() {
+  const qc = useQueryClient();
+  const getCfg = useServerFn(adminGetPaymentConfig);
+  const saveCfg = useServerFn(adminSavePaymentConfig);
+  const { data: cfg, isLoading } = useQuery({
+    queryKey: ["admin-payment-config"],
+    queryFn: () => getCfg(),
+  });
+  const [keyId, setKeyId] = useState("");
+  const [keySecret, setKeySecret] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(patch: { mode?: "test" | "live"; key_id?: string; key_secret?: string; webhook_secret?: string }) {
+    setBusy(true);
+    try {
+      await saveCfg({ data: patch });
+      toast.success("Saved");
+      qc.invalidateQueries({ queryKey: ["admin-payment-config"] });
+      qc.invalidateQueries({ queryKey: ["payment-config"] });
+      setKeyId(""); setKeySecret(""); setWebhookSecret("");
+    } catch (e: any) {
+      toast.error(e.message ?? "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isLive = cfg?.mode === "live";
+  const ready = cfg?.has_key_id && cfg?.has_key_secret && cfg?.has_webhook_secret;
+
+  return (
+    <Card className="glass p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <WalletIcon className="size-4 text-primary" />
+        <h2 className="font-semibold">Razorpay payments</h2>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">Mode: <span className={isLive ? "text-success" : "text-warning"}>{isLive ? "LIVE" : "TEST"}</span></p>
+          <p className="text-xs text-muted-foreground">
+            {isLive
+              ? "Real payments are being processed."
+              : "Test mode — coins credit instantly without real money."}
+          </p>
+        </div>
+        <Switch
+          checked={isLive}
+          disabled={isLoading || busy || (!isLive && !ready)}
+          onCheckedChange={(v) => save({ mode: v ? "live" : "test" })}
+        />
+      </div>
+      {!ready && (
+        <p className="text-xs text-warning">
+          Add all 3 values below before switching to LIVE.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium">Razorpay Key ID {cfg?.has_key_id && <span className="text-muted-foreground">· current: {cfg.key_id_masked}</span>}</label>
+        <div className="flex gap-2">
+          <Input placeholder="rzp_live_… or rzp_test_…" value={keyId} onChange={(e) => setKeyId(e.target.value)} />
+          <Button disabled={busy || !keyId} onClick={() => save({ key_id: keyId })}>Save</Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium">Razorpay Key Secret {cfg?.has_key_secret && <span className="text-muted-foreground">· current: {cfg.key_secret_masked}</span>}</label>
+        <div className="flex gap-2">
+          <Input type="password" placeholder="••••••••" value={keySecret} onChange={(e) => setKeySecret(e.target.value)} />
+          <Button disabled={busy || !keySecret} onClick={() => save({ key_secret: keySecret })}>Save</Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-medium">Webhook Secret {cfg?.has_webhook_secret && <span className="text-muted-foreground">· current: {cfg.webhook_secret_masked}</span>}</label>
+        <div className="flex gap-2">
+          <Input type="password" placeholder="••••••••" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} />
+          <Button disabled={busy || !webhookSecret} onClick={() => save({ webhook_secret: webhookSecret })}>Save</Button>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border/60 p-3 text-xs space-y-1">
+        <p className="font-semibold">Webhook URL (paste in Razorpay Dashboard → Settings → Webhooks):</p>
+        <code className="block break-all bg-muted/40 p-2 rounded text-[11px]">
+          {typeof window !== "undefined" ? window.location.origin : ""}/api/public/razorpay-webhook
+        </code>
+        <p className="text-muted-foreground mt-1">Enable events: <b>payment.captured</b>, <b>payment.failed</b>, <b>order.paid</b>.</p>
+      </div>
+    </Card>
+  );
+}
+
+
 
 
 function BanDialog({ onBan, label = "Ban" }: { onBan: (reason: string, type: "temp"|"perm", days?: number) => Promise<void>; label?: string }) {

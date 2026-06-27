@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getPaymentSettings } from "./payments.functions";
 
 const CreateOrderInput = z.object({ planId: z.string().uuid() });
 
@@ -9,10 +10,11 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => CreateOrderInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) {
-      throw new Error("Payment gateway not configured. Please contact support.");
+    const settings = await getPaymentSettings();
+    const keyId = settings.key_id;
+    const keySecret = settings.key_secret;
+    if (settings.mode !== "live" || !keyId || !keySecret) {
+      throw new Error("Live payments not configured. Switch to live mode in Admin → Payments after adding Razorpay keys.");
     }
 
     // Verify plan
@@ -91,7 +93,8 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => VerifyInput.parse(d))
   .handler(async ({ data, context }) => {
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const settings = await getPaymentSettings();
+    const keySecret = settings.key_secret;
     if (!keySecret) throw new Error("Gateway not configured");
 
     // HMAC-SHA256(order_id|payment_id, key_secret) === signature
