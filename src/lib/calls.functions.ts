@@ -141,8 +141,18 @@ export const endCallLog = createServerFn({ method: "POST" })
     status?: "completed" | "cancelled";
   }) => input)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Verify ownership: only the caller or callee can end their own call.
+    const { data: log } = await supabaseAdmin
+      .from("call_logs")
+      .select("caller_id, callee_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!log || (log.caller_id !== userId && log.callee_id !== userId)) {
+      throw new Error("Not authorized to end this call.");
+    }
+    const { error } = await supabaseAdmin
       .from("call_logs")
       .update({
         ended_at: new Date().toISOString(),
@@ -154,6 +164,7 @@ export const endCallLog = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
 
 // Periodic heartbeat from the active call screen: persist the seconds-of-free-time
 // and coins consumed so far. Lets the "5:00 free" countdown / coin balance survive
