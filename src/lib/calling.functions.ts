@@ -627,13 +627,22 @@ export const adminTestCredential = createServerFn({ method: "POST" })
         } catch (impErr: any) {
           throw new Error(`Failed to import 'agora-token' module: ${impErr?.message ?? impErr}`);
         }
-        const resolved = agoraMod.default ?? agoraMod;
+        const RtcTokenBuilder =
+          agoraMod.RtcTokenBuilder ??
+          agoraMod.default?.RtcTokenBuilder ??
+          agoraMod.default?.default?.RtcTokenBuilder;
+        const RtcRole =
+          agoraMod.RtcRole ??
+          agoraMod.default?.RtcRole ??
+          agoraMod.default?.default?.RtcRole;
         diagnostics.agoraModule = {
           topLevelKeys: Object.keys(agoraMod).slice(0, 20),
           hasDefault: !!agoraMod.default,
-          resolvedKeys: resolved ? Object.keys(resolved).slice(0, 20) : [],
+          defaultKeys: agoraMod.default ? Object.keys(agoraMod.default).slice(0, 20) : [],
+          resolvedRtcTokenBuilder: !!RtcTokenBuilder,
+          resolvedRtcRole: !!RtcRole,
         };
-        const { RtcTokenBuilder, RtcRole } = resolved ?? {};
+
         if (!RtcTokenBuilder) {
           throw new Error(`RtcTokenBuilder missing from agora-token module. Resolved keys: [${diagnostics.agoraModule.resolvedKeys.join(", ")}]`);
         }
