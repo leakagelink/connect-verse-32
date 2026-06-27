@@ -54,9 +54,10 @@ export const getTrendingNow = createServerFn({ method: "GET" })
     if (profileIds.length) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, country, language, is_creator, gender")
+        .select("id, username, avatar_url, ai_avatar_style, country, language, is_creator, gender")
         .in("id", profileIds);
-      const map = new Map((profs ?? []).map((p) => [p.id, p]));
+      const mapped = withAiAvatars(profs ?? []);
+      const map = new Map(mapped.map((p) => [p.id, p]));
       if (topGiftedId) topGifted = { ...map.get(topGiftedId), coins_received: topGiftedCoins };
       if (hot) hotHost = map.get(hot.host_id);
     }
@@ -67,6 +68,7 @@ export const getTrendingNow = createServerFn({ method: "GET" })
       newJoinersLastHour: newJoiners ?? 0,
     };
   });
+
 
 // =============================================================
 // FEATURED FAN CLUBS — most members, open clubs
