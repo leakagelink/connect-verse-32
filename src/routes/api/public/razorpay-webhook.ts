@@ -26,9 +26,11 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        const { getPaymentSettings } = await import("@/lib/payments.functions");
+        const settings = await getPaymentSettings();
+        const secret = settings.webhook_secret;
         if (!secret) {
-          console.error("RAZORPAY_WEBHOOK_SECRET not set");
+          console.error("razorpay_webhook_secret not set in app_settings");
           return new Response("Not configured", { status: 500 });
         }
 

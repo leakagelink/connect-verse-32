@@ -93,7 +93,8 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => VerifyInput.parse(d))
   .handler(async ({ data, context }) => {
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const settings = await getPaymentSettings();
+    const keySecret = settings.key_secret;
     if (!keySecret) throw new Error("Gateway not configured");
 
     // HMAC-SHA256(order_id|payment_id, key_secret) === signature
