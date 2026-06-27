@@ -118,6 +118,16 @@ function Settings() {
         gender={p?.gender}
       />
 
+      {p?.id && (
+        <AiAvatarPicker
+          userId={p.id}
+          currentStyle={p.ai_avatar_style}
+          gender={p.gender}
+          hasPhoto={!!p.avatar_path}
+        />
+      )}
+
+
       {/* Profile details */}
       <Card className="glass mt-4 p-4 space-y-3 text-sm">
         <p className="text-xs text-muted-foreground uppercase tracking-wide">Profile details</p>
