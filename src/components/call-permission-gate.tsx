@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Mic, Video as VideoIcon, CheckCircle2, XCircle, AlertCircle, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { Mic, Video as VideoIcon, CheckCircle2, XCircle, AlertCircle, Loader2, Settings as SettingsIcon, Wrench } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,10 +8,14 @@ import {
   checkCallPermissions,
   requestCallPermissions,
   openAppSettings,
+  getPermFailCount,
   isNative,
   type PermState,
 } from "@/lib/native";
 import { toast } from "sonner";
+
+const AUTO_OPEN_DEBUG_THRESHOLD = 3;
+const SHOW_DEBUG_CTA_THRESHOLD = 2;
 
 interface Props {
   kind: "voice" | "video";
