@@ -62,18 +62,20 @@ export function TrendingNowSection() {
           </Link>
         )}
         {newJoinersLastHour > 0 && (
-          <Card className="glass p-3 flex items-center gap-3 border-emerald-500/30">
-            <div className="size-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-              <Sparkles className="size-5 text-emerald-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
-                Joined This Hour
+          <Link to="/new-joiners">
+            <Card className="glass p-3 flex items-center gap-3 border-emerald-500/30 hover:border-emerald-500 transition h-full">
+              <div className="size-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <Sparkles className="size-5 text-emerald-400" />
               </div>
-              <p className="text-sm font-semibold">{newJoinersLastHour} new users</p>
-              <p className="text-[11px] text-muted-foreground">Say hi & make friends</p>
-            </div>
-          </Card>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
+                  Joined This Hour
+                </div>
+                <p className="text-sm font-semibold">{newJoinersLastHour} new users</p>
+                <p className="text-[11px] text-muted-foreground">Tap to say hi →</p>
+              </div>
+            </Card>
+          </Link>
         )}
       </div>
     </div>
