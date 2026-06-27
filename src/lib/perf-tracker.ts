@@ -50,6 +50,19 @@ function push(ev: PerfEvent) {
 
 async function flush() {
   if (!buffer.length) return;
+  // Skip when no Supabase session — perf endpoint requires auth, and
+  // calling it from public/auth routes would 401 in a feedback loop.
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      buffer.length = 0;
+      return;
+    }
+  } catch {
+    buffer.length = 0;
+    return;
+  }
   const all = buffer.splice(0, buffer.length);
   // Server caps batch at 50 events — chunk before sending.
   for (let i = 0; i < all.length; i += 50) {
