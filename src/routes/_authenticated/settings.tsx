@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAlert, FileText, HeartHandshake, BadgeIndianRupee, ChevronRight, UserX, Trash2 } from "lucide-react";
+import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAlert, FileText, HeartHandshake, BadgeIndianRupee, ChevronRight, UserX, Trash2, Download } from "lucide-react";
 import { APP_LANGUAGES } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -168,6 +168,7 @@ function Settings() {
         <LinkRow to="/privacy" icon={<Shield className="size-4 text-primary" />} label="Privacy Policy" />
         <LinkRow to="/terms" icon={<FileText className="size-4 text-primary" />} label="Terms of Service" />
         <LinkRow to="/refund-policy" icon={<BadgeIndianRupee className="size-4 text-primary" />} label="Refund Policy" />
+        <LinkRow to="/data-export" icon={<Download className="size-4 text-primary" />} label="Download my data" />
       </Card>
 
       <Button onClick={signOut} variant="outline" className="mt-6 w-full">
