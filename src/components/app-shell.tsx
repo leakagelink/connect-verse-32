@@ -141,18 +141,18 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       <SafetySignalsProbe />
 
       <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t safe-bottom">
-        <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 relative">
+        <div className="mx-auto flex max-w-3xl items-stretch justify-around gap-0.5 px-1 relative">
 
           {nav.slice(0, 2).map((n) => {
             const active = pathname.startsWith(n.to);
             const Icon = n.icon;
             return (
               <Link key={n.to} to={n.to} className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+                "flex flex-1 min-w-0 flex-col items-center gap-0.5 py-2 text-[10px] sm:text-xs transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
-                <Icon className="size-5" />
-                <span>{n.label}</span>
+                <Icon className="size-5 shrink-0" />
+                <span className="truncate max-w-full">{n.label}</span>
               </Link>
             );
           })}
@@ -160,16 +160,16 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
           {/* Highlighted Connect CTA */}
           <Link
             to="/connect"
-            className="flex flex-1 flex-col items-center justify-end py-1 text-xs"
+            className="flex flex-1 min-w-0 flex-col items-center justify-end py-1 text-[10px] sm:text-xs"
           >
             <div className={cn(
-              "-mt-6 size-14 rounded-full brand-gradient shadow-lg shadow-primary/40 flex items-center justify-center ring-4 ring-background transition-transform",
+              "-mt-5 size-12 sm:size-14 rounded-full brand-gradient shadow-lg shadow-primary/40 flex items-center justify-center ring-4 ring-background transition-transform shrink-0",
               pathname.startsWith("/connect") ? "scale-110" : "hover:scale-105 animate-pulse"
             )}>
-              <Zap className="size-6 text-primary-foreground" fill="currentColor" />
+              <Zap className="size-5 sm:size-6 text-primary-foreground" fill="currentColor" />
             </div>
             <span className={cn(
-              "mt-1 font-semibold",
+              "mt-0.5 font-semibold truncate max-w-full",
               pathname.startsWith("/connect") ? "text-primary" : "text-foreground"
             )}>Connect</span>
           </Link>
@@ -179,21 +179,21 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
             const Icon = n.icon;
             return (
               <Link key={n.to} to={n.to} className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+                "flex flex-1 min-w-0 flex-col items-center gap-0.5 py-2 text-[10px] sm:text-xs transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}>
-                <Icon className="size-5" />
-                <span>{n.label}</span>
+                <Icon className="size-5 shrink-0" />
+                <span className="truncate max-w-full">{n.label}</span>
               </Link>
             );
           })}
           {admin && (
             <Link to="/admin" className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+              "flex flex-1 min-w-0 flex-col items-center gap-0.5 py-2 text-[10px] sm:text-xs transition-colors",
               pathname.startsWith("/admin") ? "text-accent" : "text-muted-foreground hover:text-foreground"
             )}>
-              <Shield className="size-5" />
-              <span>Admin</span>
+              <Shield className="size-5 shrink-0" />
+              <span className="truncate max-w-full">Admin</span>
             </Link>
           )}
         </div>
