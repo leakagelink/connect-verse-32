@@ -37,7 +37,7 @@ export const getTrendingNow = createServerFn({ method: "GET" })
     // Aggregate top gifted creator
     const tally = new Map<string, number>();
     for (const g of gifts ?? []) {
-      tally.set(g.receiver_id, (tally.get(g.receiver_id) ?? 0) + Number(g.coins ?? 0));
+      tally.set(g.receiver_id, (tally.get(g.receiver_id) ?? 0) + Number(g.coins_spent ?? 0));
     }
     let topGiftedId: string | null = null;
     let topGiftedCoins = 0;
