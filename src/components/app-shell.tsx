@@ -6,6 +6,7 @@ import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap,
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
+import { SafetySignalsProbe } from "@/components/safety-signals-probe";
 
 export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -81,6 +82,7 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pt-4">{children}</main>
+      <SafetySignalsProbe />
 
       <nav className="fixed inset-x-0 bottom-0 z-50 glass border-t">
         <div className="mx-auto flex max-w-3xl items-stretch justify-around px-2 relative">

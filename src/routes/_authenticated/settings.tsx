@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, Shield, Languages, MapPin, Globe, UserCircle, Coins, ShieldAlert, FileText, HeartHandshake, BadgeIndianRupee, ChevronRight, UserX, Trash2, Download } from "lucide-react";
 import { APP_LANGUAGES } from "@/lib/constants";
+import { CreatorSafetyCard } from "@/components/creator-safety-card";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -133,6 +134,9 @@ function Settings() {
           </SelectContent>
         </Select>
       </Card>
+
+      {/* Creator safety: availability + country/state blocks (only renders if is_creator) */}
+      <CreatorSafetyCard />
 
       {/* Blocked users */}
       <Card className="glass mt-4 p-4">

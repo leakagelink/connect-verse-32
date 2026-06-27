@@ -60,10 +60,11 @@ export const listOnlineCreators = createServerFn({ method: "GET" })
     const [{ data: creators }, { data: me }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at")
+        .select("id, username, gender, country, state, language, avatar_url, is_creator, last_seen_at, availability, blocked_countries, blocked_states")
         .eq("is_banned", false)
         .eq("onboarded", true)
         .eq("is_creator", true)
+        .eq("availability", "online")
         .neq("id", userId)
         .gte("last_seen_at", cutoff)
         .order("last_seen_at", { ascending: false })
@@ -74,8 +75,18 @@ export const listOnlineCreators = createServerFn({ method: "GET" })
         .eq("id", userId)
         .maybeSingle(),
     ]);
+    // Filter out creators who have blocked my country/state.
+    const myCountry = me?.country ?? null;
+    const myState = me?.state ?? null;
+    const filtered = (creators ?? []).filter((c: any) => {
+      const bc: string[] = c.blocked_countries ?? [];
+      const bs: string[] = c.blocked_states ?? [];
+      if (myCountry && bc.includes(myCountry)) return false;
+      if (myState && bs.includes(myState)) return false;
+      return true;
+    });
     return {
-      creators: creators ?? [],
-      me: { language: me?.language ?? null, country: me?.country ?? null, state: me?.state ?? null },
+      creators: filtered,
+      me: { language: me?.language ?? null, country: myCountry, state: myState },
     };
   });
