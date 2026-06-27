@@ -356,21 +356,30 @@ export const recordCallMetrics = createServerFn({ method: "POST" })
     if (typeof data.disconnects === "number") patch.disconnects = data.disconnects;
     if (data.credentialId) patch.credential_id = data.credentialId;
     if (data.failoverChain) patch.failover_chain = data.failoverChain;
-    const { error } = await (context.supabase as any)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Verify ownership before admin-context update.
+    const { data: log } = await supabaseAdmin
+      .from("call_logs")
+      .select("caller_id, callee_id")
+      .eq("id", data.callLogId)
+      .maybeSingle();
+    if (!log || (log.caller_id !== context.userId && log.callee_id !== context.userId)) {
+      throw new Error("Not authorized for this call.");
+    }
+    const { error } = await supabaseAdmin
       .from("call_logs")
       .update(patch)
-      .eq("id", data.callLogId)
-      .or(`caller_id.eq.${context.userId},callee_id.eq.${context.userId}`);
+      .eq("id", data.callLogId);
     if (error) throw new Error(error.message);
 
 
     // Credit successful minutes against the credential quota + mark success
     if (data.credentialId && data.durationSeconds && data.durationSeconds > 0) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const minutes = Math.ceil(data.durationSeconds / 60);
       await supabaseAdmin.rpc("add_credential_minutes", { _id: data.credentialId, _minutes: minutes });
       await supabaseAdmin.rpc("report_credential_success", { _id: data.credentialId });
     }
+
     return { ok: true };
   });
 
