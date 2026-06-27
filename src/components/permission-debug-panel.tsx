@@ -44,6 +44,9 @@ export function PermissionDebugPanel() {
   const [checking, setChecking] = useState(true);
   const [requesting, setRequesting] = useState<"voice" | "video" | null>(null);
   const [last, setLast] = useState<LastPermDenial | null>(null);
+  const [failCount, setFailCount] = useState<number>(0);
+  const [highlight, setHighlight] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const refresh = useCallback(async () => {
     setChecking(true);
@@ -51,10 +54,23 @@ export function PermissionDebugPanel() {
     setMic(s.mic);
     setCamera(s.camera);
     setLast(getLastPermDenial());
+    setFailCount(getPermFailCount());
     setChecking(false);
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Auto-scroll + highlight when navigated here from a failing permission flow.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#permission-diagnostics") return;
+    const t = setTimeout(() => {
+      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setHighlight(true);
+      setTimeout(() => setHighlight(false), 2400);
+    }, 150);
+    return () => clearTimeout(t);
+  }, []);
 
   async function handleRequest(kind: "voice" | "video") {
     setRequesting(kind);
