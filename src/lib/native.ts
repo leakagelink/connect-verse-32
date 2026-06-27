@@ -215,7 +215,7 @@ function recordPermDenial(kind: 'voice' | 'video', reason: string): void {
   } catch { /* ignore */ }
 }
 
-export async function requestCallPermissions(kind: 'voice' | 'video'): Promise<{
+async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
   granted: boolean;
   reason?: 'mic-denied' | 'camera-denied' | 'media-denied' | 'media-unavailable' | 'plugin-missing';
 }> {
