@@ -7,16 +7,25 @@ export const listBlockedUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data, error } = await supabase
+    const { data: rows, error } = await supabase
       .from("blocks")
-      .select("blocked_id, created_at, profiles:blocked_id(username, avatar_url)")
+      .select("blocked_id, created_at")
       .eq("blocker_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r: any) => ({
+    const ids = (rows ?? []).map((r: any) => r.blocked_id);
+    let profilesById = new Map<string, { username: string | null; avatar_url: string | null }>();
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", ids);
+      profilesById = new Map((profs ?? []).map((p: any) => [p.id, p]));
+    }
+    return (rows ?? []).map((r: any) => ({
       userId: r.blocked_id,
-      username: r.profiles?.username ?? "—",
-      avatarUrl: r.profiles?.avatar_url ?? null,
+      username: profilesById.get(r.blocked_id)?.username ?? "—",
+      avatarUrl: profilesById.get(r.blocked_id)?.avatar_url ?? null,
       blockedAt: r.created_at,
     }));
   });
