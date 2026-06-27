@@ -3,12 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const EventSchema = z.object({
-  event_type: z.enum(["route_load", "api_call", "error"]),
+  event_type: z.enum(["route_load", "api_call", "error", "component"]),
   route: z.string().max(200).optional().nullable(),
   label: z.string().max(200).optional().nullable(),
   duration_ms: z.number().int().min(0).max(600000).optional().nullable(),
   status: z.number().int().optional().nullable(),
   ok: z.boolean().optional().nullable(),
+  trace_id: z.string().max(64).optional().nullable(),
   meta: z.record(z.any()).optional().nullable(),
 });
 
@@ -110,4 +111,75 @@ export const adminPerfSummary = createServerFn({ method: "POST" })
       errors,
       generatedAt: new Date().toISOString(),
     };
+  });
+
+export const adminPerfTraces = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      windowMinutes: z.number().int().min(1).max(1440).default(60),
+      minDurationMs: z.number().int().min(0).max(60000).default(0),
+      limit: z.number().int().min(1).max(50).default(20),
+    }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const since = new Date(Date.now() - data.windowMinutes * 60_000).toISOString();
+    const { data: rows, error } = await supabaseAdmin
+      .from("perf_events")
+      .select("event_type, route, label, duration_ms, status, ok, created_at, trace_id, meta")
+      .gte("created_at", since)
+      .not("trace_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error) throw new Error(error.message);
+
+    const byTrace = new Map<string, any[]>();
+    for (const r of rows ?? []) {
+      const id = r.trace_id as string;
+      const arr = byTrace.get(id) ?? [];
+      arr.push(r);
+      byTrace.set(id, arr);
+    }
+
+    const traces = [...byTrace.entries()].map(([trace_id, events]) => {
+      const sorted = [...events].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+      const routeLoad = sorted.find((e) => e.event_type === "route_load");
+      const route = routeLoad?.route ?? sorted[0]?.route ?? "(unknown)";
+      const startedAt = sorted[0]?.created_at;
+      const apis = sorted.filter((e) => e.event_type === "api_call");
+      const components = sorted.filter((e) => e.event_type === "component");
+      const errs = sorted.filter((e) => e.event_type === "error");
+      const apiTotal = apis.reduce((s, e) => s + (e.duration_ms ?? 0), 0);
+      const apiMax = apis.reduce((m, e) => Math.max(m, e.duration_ms ?? 0), 0);
+      const totalMs = Math.max(
+        routeLoad?.duration_ms ?? 0,
+        apiMax,
+        components.reduce((m, e) => Math.max(m, e.duration_ms ?? 0), 0),
+      );
+      // Worst offenders inside this trace
+      const slowApis = [...apis].sort((a, b) => (b.duration_ms ?? 0) - (a.duration_ms ?? 0)).slice(0, 5);
+      const slowComponents = [...components].sort((a, b) => (b.duration_ms ?? 0) - (a.duration_ms ?? 0)).slice(0, 5);
+      return {
+        trace_id, route, startedAt,
+        routeLoadMs: routeLoad?.duration_ms ?? null,
+        totalMs,
+        apiCount: apis.length,
+        apiErrors: apis.filter((e) => e.ok === false).length,
+        apiTotalMs: apiTotal,
+        componentCount: components.length,
+        errorCount: errs.length,
+        slowApis: slowApis.map((e) => ({ label: e.label, duration_ms: e.duration_ms, ok: e.ok, status: e.status })),
+        slowComponents: slowComponents.map((e) => ({ label: e.label, duration_ms: e.duration_ms })),
+        errors: errs.map((e) => ({ label: e.label })),
+      };
+    })
+      .filter((t) => t.totalMs >= data.minDurationMs)
+      .sort((a, b) => b.totalMs - a.totalMs)
+      .slice(0, data.limit);
+
+    return { traces, generatedAt: new Date().toISOString() };
   });

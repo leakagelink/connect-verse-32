@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminPerfSummary } from "@/lib/perf.functions";
+import { adminPerfSummary, adminPerfTraces } from "@/lib/perf.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, AlertTriangle, Gauge, Timer } from "lucide-react";
+import { Activity, AlertTriangle, ChevronDown, ChevronRight, Gauge, Route as RouteIcon, Timer } from "lucide-react";
+import { format } from "date-fns";
 
 function msColor(ms: number) {
   if (ms < 400) return "text-success";
@@ -125,6 +126,124 @@ export function PerformanceTab() {
           ))}
         </div>
       </Card>
+
+      <TracesSection windowMinutes={windowMinutes} />
     </div>
+  );
+}
+
+function TracesSection({ windowMinutes }: { windowMinutes: number }) {
+  const fn = useServerFn(adminPerfTraces);
+  const [minDurationMs, setMinDurationMs] = useState(0);
+  const [openTrace, setOpenTrace] = useState<string | null>(null);
+  const { data } = useQuery({
+    queryKey: ["admin", "perf", "traces", windowMinutes, minDurationMs],
+    queryFn: () => fn({ data: { windowMinutes, minDurationMs, limit: 25 } }),
+    refetchInterval: 15_000,
+  });
+
+  return (
+    <Card className="glass p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-sm flex items-center gap-2">
+          <RouteIcon className="size-4 text-accent" />
+          Per-navigation traces
+        </h3>
+        <Select value={String(minDurationMs)} onValueChange={(v) => setMinDurationMs(Number(v))}>
+          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">All navs</SelectItem>
+            <SelectItem value="500">≥ 500ms</SelectItem>
+            <SelectItem value="1000">≥ 1s</SelectItem>
+            <SelectItem value="2000">≥ 2s</SelectItem>
+            <SelectItem value="5000">≥ 5s</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <p className="text-[11px] text-muted-foreground mb-2">
+        Each row = one screen navigation. Expand to see the API calls and components that ran during it.
+      </p>
+      {!data?.traces.length && (
+        <p className="text-xs text-muted-foreground">No traces in this window.</p>
+      )}
+      <div className="space-y-1">
+        {data?.traces.map((t) => {
+          const isOpen = openTrace === t.trace_id;
+          return (
+            <div key={t.trace_id} className="border-b border-border/30 last:border-0">
+              <button
+                type="button"
+                onClick={() => setOpenTrace(isOpen ? null : t.trace_id)}
+                className="w-full grid grid-cols-12 gap-2 items-center text-sm py-2 text-left hover:bg-muted/30 rounded px-1"
+              >
+                <div className="col-span-1">
+                  {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                </div>
+                <div className="col-span-5 truncate font-mono text-xs">{t.route}</div>
+                <div className="col-span-2 text-right text-[10px] text-muted-foreground">
+                  {t.startedAt ? format(new Date(t.startedAt), "HH:mm:ss") : "—"}
+                </div>
+                <div className="col-span-1 text-right text-[10px] text-muted-foreground">{t.apiCount} API</div>
+                <div className="col-span-1 text-right">
+                  {t.apiErrors > 0 && <Badge variant="destructive" className="text-[10px]">{t.apiErrors}</Badge>}
+                </div>
+                <div className={`col-span-2 text-right font-medium ${msColor(t.totalMs)}`}>
+                  {t.totalMs}ms<span className="text-[10px] text-muted-foreground ml-1">total</span>
+                </div>
+              </button>
+              {isOpen && (
+                <div className="pl-6 pb-3 pr-1 text-xs space-y-2">
+                  {t.routeLoadMs !== null && (
+                    <div className="text-[11px] text-muted-foreground">
+                      Route load: <span className={msColor(t.routeLoadMs)}>{t.routeLoadMs}ms</span>
+                    </div>
+                  )}
+                  {t.slowApis.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Slowest APIs</div>
+                      {t.slowApis.map((a, i) => (
+                        <div key={i} className="grid grid-cols-12 gap-2 items-center py-0.5">
+                          <div className="col-span-9 truncate font-mono text-[11px]">{a.label}</div>
+                          <div className="col-span-1 text-right">
+                            {a.ok === false && <Badge variant="destructive" className="text-[9px]">err</Badge>}
+                          </div>
+                          <div className={`col-span-2 text-right ${msColor(a.duration_ms ?? 0)}`}>
+                            {a.duration_ms}ms
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {t.slowComponents.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Slowest components</div>
+                      {t.slowComponents.map((c, i) => (
+                        <div key={i} className="grid grid-cols-12 gap-2 items-center py-0.5">
+                          <div className="col-span-10 truncate font-mono text-[11px]">{c.label}</div>
+                          <div className={`col-span-2 text-right ${msColor(c.duration_ms ?? 0)}`}>
+                            {c.duration_ms}ms
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {t.errors.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-destructive mb-1">Errors</div>
+                      {t.errors.map((e, i) => (
+                        <div key={i} className="font-mono text-[11px] text-destructive truncate">{e.label}</div>
+                      ))}
+                    </div>
+                  )}
+                  {t.slowApis.length === 0 && t.slowComponents.length === 0 && t.errors.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">No child events recorded.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
