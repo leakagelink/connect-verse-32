@@ -987,6 +987,7 @@ export type Database = {
       profiles: {
         Row: {
           availability: string
+          avatar_path: string | null
           avatar_url: string | null
           ban_reason: string | null
           bio: string | null
@@ -1019,6 +1020,7 @@ export type Database = {
         }
         Insert: {
           availability?: string
+          avatar_path?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
@@ -1051,6 +1053,7 @@ export type Database = {
         }
         Update: {
           availability?: string
+          avatar_path?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
