@@ -94,14 +94,14 @@ export const listFeaturedFanClubs = createServerFn({ method: "GET" })
         .gt("expires_at", now),
       supabase
         .from("profiles")
-        .select("id, username, avatar_url, country, language, gender")
+        .select("id, username, avatar_url, ai_avatar_style, country, language, gender")
         .in("id", ids),
     ]);
     const counts = new Map<string, number>();
     for (const m of members ?? []) {
       counts.set(m.creator_id, (counts.get(m.creator_id) ?? 0) + 1);
     }
-    const profMap = new Map((profs ?? []).map((p) => [p.id, p]));
+    const profMap = new Map(withAiAvatars(profs ?? []).map((p) => [p.id, p]));
     return (clubs ?? [])
       .map((c) => ({
         ...c,
@@ -111,6 +111,7 @@ export const listFeaturedFanClubs = createServerFn({ method: "GET" })
       .sort((a, b) => b.member_count - a.member_count)
       .slice(0, 8);
   });
+
 
 
 // =============================================================
