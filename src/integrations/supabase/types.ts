@@ -1242,6 +1242,8 @@ export type Database = {
         | "withdrawal_hold"
         | "withdrawal_refund"
         | "withdrawal_paid"
+        | "daily_checkin"
+        | "referral_bonus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1397,6 +1399,8 @@ export const Constants = {
         "withdrawal_hold",
         "withdrawal_refund",
         "withdrawal_paid",
+        "daily_checkin",
+        "referral_bonus",
       ],
     },
   },
