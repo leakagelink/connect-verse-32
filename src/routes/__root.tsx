@@ -62,8 +62,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/85f3bb53-f992-44d4-be5d-3b667091fa41/talkora-logo.png" },
-      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/85f3bb53-f992-44d4-be5d-3b667091fa41/talkora-logo.png" },
+      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/0cae957f-686c-4df8-ad6b-155643af95c3/talkora-logo.png" },
+      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/0cae957f-686c-4df8-ad6b-155643af95c3/talkora-logo.png" },
     ],
   }),
   shellComponent: RootShell,
