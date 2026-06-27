@@ -36,6 +36,12 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
   const [checking, setChecking] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [askedOnce, setAskedOnce] = useState(false);
+  const [failCount, setFailCount] = useState<number>(() => getPermFailCount());
+  const navigate = useNavigate();
+
+  function goToDebugPanel() {
+    navigate({ to: "/settings", hash: "permission-diagnostics" });
+  }
 
   async function refresh(): Promise<{ mic: PermState; camera: PermState }> {
     const s = await checkCallPermissions();
@@ -66,15 +72,23 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
       setAskedOnce(true);
       const s = await refresh();
       if (res.granted) {
+        setFailCount(0);
         onReady();
         return;
       }
+      const nextCount = getPermFailCount();
+      setFailCount(nextCount);
       if (res.reason === "mic-denied") toast.error("Microphone access denied.");
       else if (res.reason === "camera-denied") toast.error("Camera access denied.");
       else if (res.reason === "media-denied") toast.error("Camera or microphone access denied.");
       else if (res.reason === "media-unavailable") toast.error("Camera or microphone not available on this device.");
       else if (res.reason === "plugin-missing") toast.error("Permission module unavailable. Reinstall the latest app.");
-      // If denied and we're native, the next CTA flips to "Open Settings".
+      // After repeated failures, jump the user straight into diagnostics.
+      if (nextCount >= AUTO_OPEN_DEBUG_THRESHOLD) {
+        toast.message("Opening permission diagnostics to help fix this.");
+        goToDebugPanel();
+        return;
+      }
       void s;
     } finally {
       setRequesting(false);
@@ -95,6 +109,7 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
     mic === "denied" || (needsCamera && camera === "denied");
   // After a denial, native OS often won't prompt again — guide to Settings.
   const useSettingsCta = isNative() && askedOnce && anyDenied;
+  const showDebugCta = failCount >= SHOW_DEBUG_CTA_THRESHOLD && !allGranted;
 
   return (
     <div className="min-h-[60vh] grid place-items-center px-4">
