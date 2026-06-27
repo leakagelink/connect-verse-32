@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MessageCircle, Shield, Coins, Sparkles, Users, Heart } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import talkoraLogo from "@/assets/talkora-logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: `${APP_NAME} — Meet, chat, connect safely` },
-      { name: "description", content: "Join a premium, verified community for real conversations. 5 free minutes on signup. Strict safety. Built for everyone." },
+      { title: `${APP_NAME} — Voice Chat & Live Rooms` },
+      { name: "description", content: "Talkora — join voice rooms, chat with friends and meet new people safely. Get 5 free minutes on signup." },
+      { property: "og:title", content: `${APP_NAME} — Voice Chat & Live Rooms` },
+      { property: "og:description", content: "Join voice rooms, chat & meet new friends safely on Talkora." },
     ],
   }),
   component: Landing,
@@ -19,9 +22,7 @@ function Landing() {
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <div className="size-8 rounded-lg brand-gradient grid place-items-center">
-            <Sparkles className="size-4 text-primary-foreground" />
-          </div>
+          <img src={talkoraLogo} alt={`${APP_NAME} logo`} width={32} height={32} className="size-8 rounded-lg" />
           {APP_NAME}
         </div>
         <Link to="/auth"><Button variant="ghost">Sign in</Button></Link>
@@ -32,10 +33,10 @@ function Landing() {
           <Heart className="size-3 text-primary" /> Safe · Verified · 18+
         </span>
         <h1 className="mt-6 text-5xl md:text-7xl font-bold tracking-tight">
-          Real <span className="text-gradient">conversations</span>,<br />real people.
+          Voice rooms.<br /><span className="text-gradient">Real conversations.</span>
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-          A premium social community where verified members chat, connect and earn — without the noise. Get <strong className="text-foreground">5 free minutes</strong> on signup.
+          {APP_NAME} is a premium voice-first community where verified members chat, host live rooms and meet new friends — safely. Get <strong className="text-foreground">5 free minutes</strong> on signup.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/auth"><Button size="lg" className="brand-gradient text-primary-foreground">Get started — free</Button></Link>
