@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { differenceInYears, parseISO } from "date-fns";
 import { GUIDELINES_VERSION, MIN_AGE } from "./constants";
+import { AI_AVATAR_STYLES, withAiAvatar, withAiAvatars } from "./ai-avatar";
+
+const AI_STYLE_IDS = AI_AVATAR_STYLES.map((s) => s.id) as [string, ...string[]];
+
 
 const OnboardingInput = z.object({
   username: z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, underscore only"),
