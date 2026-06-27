@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, Video as VideoIcon, CheckCircle2, XCircle, AlertCircle, Loader2, Settings as SettingsIcon, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import {
   openAppSettings,
   getLastPermDenial,
   clearLastPermDenial,
+  getPermFailCount,
+  resetPermFailCount,
   isNative,
   platform,
   type PermState,
