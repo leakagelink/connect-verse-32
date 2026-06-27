@@ -1221,6 +1221,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_avatar_style: string | null
           availability: string
           avatar_path: string | null
           avatar_url: string | null
@@ -1254,6 +1255,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          ai_avatar_style?: string | null
           availability?: string
           avatar_path?: string | null
           avatar_url?: string | null
@@ -1287,6 +1289,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          ai_avatar_style?: string | null
           availability?: string
           avatar_path?: string | null
           avatar_url?: string | null
