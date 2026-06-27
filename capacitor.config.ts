@@ -22,12 +22,19 @@ const config: CapacitorConfig = {
     url: 'https://talkora.lovable.app',
     cleartext: false,
     androidScheme: 'https',
+    // Phase 10 — App Links host so https://talkora.app/<path> opens the app.
+    hostname: 'talkora.app',
+    allowNavigation: ['talkora.app', '*.talkora.app', 'talkora.lovable.app'],
   },
   android: {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
+    // Phase 10 — custom URL scheme: talkora://chat/<id>, talkora://recharge, …
+    // Register the intent-filter in android/app/src/main/AndroidManifest.xml
+    // with <data android:scheme="talkora" />.
   },
+
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,

@@ -1,28 +1,36 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Home, MessageCircle, Wallet, User, Shield, Inbox, Coins, Sparkles, Zap, History } from "lucide-react";
+import { Home, MessageCircle, Wallet, User, Shield, Coins, Sparkles, Zap, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMyProfile } from "@/lib/onboarding.functions";
 import { APP_NAME } from "@/lib/constants";
 import { SafetySignalsProbe } from "@/components/safety-signals-probe";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { applyChromeForApp, registerPushNotifications, isNative } from "@/lib/native";
+import { installDeepLinkHandler } from "@/lib/deep-links";
 import { supabase } from "@/integrations/supabase/client";
+import { useT, syncStoredLocale, type Locale } from "@/lib/i18n";
+
 
 
 export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
   const profileFn = useServerFn(getMyProfile);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => profileFn() });
   const balance = me?.walletBalance ?? 0;
   const unread = me?.unreadCount ?? 0;
   const admin = isAdmin ?? me?.isAdmin;
+  const { t, setLocale, locale } = useT();
 
   // Phase 4 — Capacitor: status-bar colour, splash hide, push token registration.
+  // Phase 10 — deep-link bridge (talkora:// → in-app route).
   useEffect(() => {
     void applyChromeForApp();
-    if (!isNative()) return;
+    const dispose = installDeepLinkHandler(router);
+    if (!isNative()) return dispose;
     void (async () => {
       const reg = await registerPushNotifications();
       if (!reg) return;
@@ -30,15 +38,25 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
       if (!user) return;
       await supabase.from("profiles").update({ push_token: reg.token, push_platform: reg.platform }).eq("id", user.id);
     })();
-  }, []);
+    return dispose;
+  }, [router]);
 
+  // Phase 10 — sync stored locale from profile.app_language whenever it changes.
+  useEffect(() => {
+    const lang = me?.profile?.language as string | undefined;
+    if (lang && lang !== locale) {
+      syncStoredLocale(lang);
+      setLocale(lang as Locale);
+    }
+  }, [me?.profile?.language, locale, setLocale]);
 
   const nav = [
-    { to: "/home", label: "Discover", icon: Home },
-    { to: "/chat", label: "Chats", icon: MessageCircle },
-    { to: "/wallet", label: "Wallet", icon: Wallet },
-    { to: "/settings", label: "Profile", icon: User },
+    { to: "/home", label: t("nav.discover"), icon: Home },
+    { to: "/chat", label: t("nav.chats"), icon: MessageCircle },
+    { to: "/wallet", label: t("nav.wallet"), icon: Wallet },
+    { to: "/settings", label: t("nav.profile"), icon: User },
   ] as const;
+
 
   return (
     <div className="min-h-screen pb-20">
@@ -66,13 +84,15 @@ export function AppShell({ children, isAdmin }: { children: ReactNode; isAdmin?:
               )}
               title="Inbox"
             >
-              <Inbox className="size-4.5" />
+              <MessageCircle className="size-4.5" />
               {unread > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
                   {unread > 99 ? "99+" : unread}
                 </span>
               )}
             </Link>
+            <NotificationsBell active={pathname.startsWith("/notifications")} />
+
             <Link
               to="/recents"
               className={cn(
