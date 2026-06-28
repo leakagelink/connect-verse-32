@@ -422,7 +422,7 @@ function CreatorMarquee({
   onStartCall,
 }: {
   creators: Creator[];
-  onStartCall: (kind: "voice" | "video", userId: string) => Promise<void>;
+  onStartCall: (kind: "voice" | "video", userId: string) => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const items = useMemo(
