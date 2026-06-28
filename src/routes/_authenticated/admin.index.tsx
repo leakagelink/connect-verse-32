@@ -131,6 +131,13 @@ function AdminPanel() {
                   {[u.gender, u.country].filter(Boolean).join(" · ")}
                   {u.ban_reason ? ` · Reason: ${u.ban_reason}` : ""}
                 </p>
+                <p className="text-xs mt-1 truncate">
+                  <span className="text-muted-foreground">Email:</span>{" "}
+                  <span className="font-mono">{u.email ?? "—"}</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Password: hidden (securely hashed — cannot be displayed)
+                </p>
               </div>
               {u.is_banned ? (
                 <Button size="sm" variant="outline" onClick={async () => {
