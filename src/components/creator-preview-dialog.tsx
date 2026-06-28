@@ -318,5 +318,12 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
         )}
       </DialogContent>
     </Dialog>
+    <PrecallPermissionDialog
+      open={permOpen}
+      kind={kind}
+      onCancel={() => setPermOpen(false)}
+      onReady={handlePermReady}
+    />
+    </>
   );
 }
