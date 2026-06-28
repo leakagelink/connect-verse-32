@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw, Radio, Trophy, Crown } from "lucide-react";
 import { getFanClubFor, joinFanClub } from "@/lib/creator.functions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { requestCallPermissions } from "@/lib/native";
 
 
 type Props = {
@@ -120,6 +121,15 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
       const res = await checkOnline({ data: { userId: p.id } });
       if (!res.online) {
         setOffline(true);
+        return;
+      }
+      const perms = await requestCallPermissions(kind);
+      if (!perms.granted) {
+        toast.error(
+          kind === "video"
+            ? "Camera/Microphone permission allow karein, phir video call start hoga."
+            : "Microphone permission allow karein, phir call start hoga.",
+        );
         return;
       }
       onConfirm(p.id);
