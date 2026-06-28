@@ -413,6 +413,17 @@ function ConnectScreen() {
           })}
         </div>
       )}
+
+      <PrecallPermissionDialog
+        open={!!pendingCall}
+        kind={pendingCall?.kind ?? "voice"}
+        onCancel={() => setPendingCall(null)}
+        onReady={() => {
+          const p = pendingCall;
+          setPendingCall(null);
+          if (p) navigate({ to: "/call/$kind/$userId", params: { kind: p.kind, userId: p.userId } });
+        }}
+      />
     </AppShell>
   );
 }
