@@ -17,6 +17,14 @@ const config: CapacitorConfig = {
   appName: 'Talkora',
   webDir: '.output/public',
   server: {
+    // Talkora is a TanStack Start app — it NEEDS a live backend for server
+    // functions (presence, creators list, calls, wallet, gifts, …). A pure
+    // bundled APK has no server, so every server-fn POST returns 404 and the
+    // app appears empty (no online creators, calls never start, etc.).
+    //
+    // Loading the published deployment makes the Android wrap behave exactly
+    // like the website that already works for the user.
+    url: 'https://connect-verse-32.lovable.app',
     cleartext: false,
     androidScheme: 'https',
     allowNavigation: ['*.lovable.app', 'talkora.app', '*.talkora.app'],
