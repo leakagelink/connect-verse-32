@@ -35,7 +35,7 @@ import {
   APP_LANGUAGES,
 } from "@/lib/constants";
 import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
-import { requestCallPermissions } from "@/lib/native";
+import { PrecallPermissionDialog } from "@/components/precall-permission-dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/connect")({
@@ -155,17 +155,12 @@ function ConnectScreen() {
     });
   }, [all, me, language, country, state, activeOnly, filtersVisible]);
 
-  async function startCall(kind: "voice" | "video", userId: string) {
-    const res = await requestCallPermissions(kind);
-    if (!res.granted) {
-      toast.error(
-        kind === "video"
-          ? "Camera/Microphone permission allow karein, phir video call start hoga."
-          : "Microphone permission allow karein, phir call start hoga.",
-      );
-      return;
-    }
-    navigate({ to: "/call/$kind/$userId", params: { kind, userId } });
+  const [pendingCall, setPendingCall] = useState<{ kind: "voice" | "video"; userId: string } | null>(null);
+
+  function startCall(kind: "voice" | "video", userId: string) {
+    // Open the pre-call permission dialog so the user can see mic/camera
+    // status BEFORE we navigate to the live call screen.
+    setPendingCall({ kind, userId });
   }
 
   function autoConnect(kind: "voice" | "video") {
@@ -176,7 +171,7 @@ function ConnectScreen() {
     // pick from top 5 priority creators
     const pool = sorted.slice(0, Math.min(sorted.length, 5));
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    void startCall(kind, pick.id);
+    startCall(kind, pick.id);
   }
 
   const hasFilters =
