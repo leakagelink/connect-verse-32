@@ -141,6 +141,7 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
   }
 
   return (
+    <>
     <Dialog open={!!userId} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
