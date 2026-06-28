@@ -103,10 +103,13 @@
 }
 
 @utility safe-top {
-  padding-top: env(safe-area-inset-top, 0px);
+  /* Use the OS-reported inset, but guarantee a sensible minimum so the
+     header never sits under the device status bar / notch on Android
+     OEMs that don't surface env(safe-area-inset-top). */
+  padding-top: max(env(safe-area-inset-top, 0px), 1.5rem);
 }
 @utility safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
 }
 
 
