@@ -118,11 +118,6 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
     if (!p) return;
     setChecking(true);
     try {
-      const res = await checkOnline({ data: { userId: p.id } });
-      if (!res.online) {
-        setOffline(true);
-        return;
-      }
       const perms = await requestCallPermissions(kind);
       if (!perms.granted) {
         toast.error(
@@ -130,6 +125,11 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
             ? "Camera/Microphone permission allow karein, phir video call start hoga."
             : "Microphone permission allow karein, phir call start hoga.",
         );
+        return;
+      }
+      const res = await checkOnline({ data: { userId: p.id } });
+      if (!res.online) {
+        setOffline(true);
         return;
       }
       onConfirm(p.id);
