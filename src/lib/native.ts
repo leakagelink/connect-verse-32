@@ -291,9 +291,21 @@ async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
 
   if (!isNative()) return verifyWebRtcCapture();
   try {
-    // Preferred path for Android builds: one small native bridge owns the
-    // runtime permission dialog for RECORD_AUDIO/CAMERA. This is more reliable
-    // than depending on Camera/VoiceRecorder side-effects across OEM WebViews.
+    // Android WebView/WebRTC is the source of truth for calls. Trigger
+    // getUserMedia first while we are still inside the user's tap handler so
+    // Capacitor's WebChromeClient can surface the real mic/camera prompt used
+    // by Agora/100ms. Native plugin requests are only a fallback for devices
+    // where WebView refuses before the OS permission is primed.
+    const directWebRtc = await verifyWebRtcCapture();
+    if (directWebRtc.granted) return directWebRtc;
+
+    if (directWebRtc.reason === 'media-unavailable') {
+      return directWebRtc;
+    }
+
+    // Fallback path for Android builds: one small native bridge owns the
+    // runtime permission dialog for RECORD_AUDIO/CAMERA when WebRTC did not
+    // show the prompt itself.
     try {
       if (Capacitor.isPluginAvailable('CallPermissions')) {
         const status = await CallPermissions.request({ kind });
@@ -346,8 +358,7 @@ async function _requestCallPermissionsImpl(kind: 'voice' | 'video'): Promise<{
     }
 
     // Final and most important check: WebRTC itself must be allowed in the
-    // Android WebView. Calling getUserMedia from the user's button tap triggers
-    // Capacitor's native WebView permission dialog for RECORD_AUDIO/CAMERA.
+    // Android WebView.
     return await verifyWebRtcCapture();
   } catch (e) {
     console.warn('[perm] requestCallPermissions failed', e);
