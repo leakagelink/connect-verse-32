@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, BadgeCheck, Camera, Sparkles, Phone, Video, Lock, AlertTriangle, Loader2, RefreshCw, Radio, Trophy, Crown } from "lucide-react";
 import { getFanClubFor, joinFanClub } from "@/lib/creator.functions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { requestCallPermissions } from "@/lib/native";
+import { PrecallPermissionDialog } from "@/components/precall-permission-dialog";
 
 
 type Props = {
@@ -114,25 +114,19 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
     !offline && (liveOnline === true ||
       (liveOnline === null && !!p?.last_seen_at && Date.now() - new Date(p.last_seen_at).getTime() < 90_000));
 
+  const [permOpen, setPermOpen] = useState(false);
+
   async function handleConfirm() {
     if (!p) return;
     setChecking(true);
     try {
-      const perms = await requestCallPermissions(kind);
-      if (!perms.granted) {
-        toast.error(
-          kind === "video"
-            ? "Camera/Microphone permission allow karein, phir video call start hoga."
-            : "Microphone permission allow karein, phir call start hoga.",
-        );
-        return;
-      }
       const res = await checkOnline({ data: { userId: p.id } });
       if (!res.online) {
         setOffline(true);
         return;
       }
-      onConfirm(p.id);
+      // Show the pre-call permission status BEFORE moving to the live call.
+      setPermOpen(true);
     } catch {
       setOffline(true);
     } finally {
@@ -140,7 +134,14 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
     }
   }
 
+  function handlePermReady() {
+    if (!p) return;
+    setPermOpen(false);
+    onConfirm(p.id);
+  }
+
   return (
+    <>
     <Dialog open={!!userId} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
@@ -318,5 +319,12 @@ export function CreatorPreviewDialog({ userId, kind, onOpenChange, onConfirm, on
         )}
       </DialogContent>
     </Dialog>
+    <PrecallPermissionDialog
+      open={permOpen}
+      kind={kind}
+      onCancel={() => setPermOpen(false)}
+      onReady={handlePermReady}
+    />
+    </>
   );
 }
