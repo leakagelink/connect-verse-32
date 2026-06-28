@@ -46,7 +46,22 @@ export const adminListUsers = createServerFn({ method: "POST" })
     if (data.filter === "creators") q = q.eq("is_creator", true);
     if (data.q) q = q.ilike("username", `%${data.q}%`);
     const { data: rows } = await q;
-    return rows ?? [];
+    if (!rows?.length) return [];
+    // Fetch emails from auth.users via Admin API (paginate to cover up to 1000 users)
+    const emailMap = new Map<string, string>();
+    try {
+      let page = 1;
+      while (page <= 10) {
+        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+        const list = usersPage?.users ?? [];
+        list.forEach((u: any) => { if (u.id && u.email) emailMap.set(u.id, u.email); });
+        if (list.length < 1000) break;
+        page++;
+      }
+    } catch (e) {
+      console.error("[admin] listUsers email fetch failed", e);
+    }
+    return rows.map((r) => ({ ...r, email: emailMap.get(r.id) ?? null }));
   });
 
 export const adminListReports = createServerFn({ method: "GET" })
