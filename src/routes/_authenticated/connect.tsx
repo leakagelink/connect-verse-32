@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { heartbeat, listOnlineCreators } from "@/lib/presence.functions";
@@ -70,11 +71,32 @@ function ConnectScreen() {
   });
   const filtersVisible = settings?.connect_filters_visible ?? true;
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     beat().catch(() => {});
     const i = setInterval(() => beat().catch(() => {}), 30_000);
-    return () => clearInterval(i);
-  }, [beat]);
+    // On Android WebView, returning from background fires
+    // visibilitychange but often not 'focus' — refresh both presence
+    // and the creators list immediately so the user never sees a
+    // stale empty Connect screen.
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      beat().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["online-creators"] });
+    };
+    const onOnline = () => {
+      beat().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["online-creators"] });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
+    return () => {
+      clearInterval(i);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [beat, queryClient]);
 
   const all: Creator[] = (data && "creators" in data ? data.creators : []) as Creator[];
   const me = data && "me" in data ? data.me : { language: null, country: null, state: null };
