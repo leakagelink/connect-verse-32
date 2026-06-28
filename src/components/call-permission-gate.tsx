@@ -63,9 +63,10 @@ export function CallPermissionGate({ kind, onReady, onCancel }: Props) {
         onReady();
         return;
       }
-      // Auto-request permissions on screen open so the OS dialog appears
-      // immediately without requiring an extra tap. If the OS won't prompt
-      // (previously denied), the UI falls back to the "Open Settings" CTA.
+      // Native Android WebView needs mic/camera capture to start from a user
+      // tap. Call buttons request permission before navigation; direct visits
+      // should show the Allow CTA instead of auto-requesting on mount.
+      if (isNative()) return;
       const canPrompt =
         (s.mic !== "denied") &&
         (!needsCamera || s.camera !== "denied");

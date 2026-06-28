@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -34,6 +34,7 @@ import {
   APP_LANGUAGES,
 } from "@/lib/constants";
 import { COUNTRIES, STATES_BY_COUNTRY } from "@/lib/locations";
+import { requestCallPermissions } from "@/lib/native";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/connect")({
@@ -132,6 +133,19 @@ function ConnectScreen() {
     });
   }, [all, me, language, country, state, activeOnly, filtersVisible]);
 
+  async function startCall(kind: "voice" | "video", userId: string) {
+    const res = await requestCallPermissions(kind);
+    if (!res.granted) {
+      toast.error(
+        kind === "video"
+          ? "Camera/Microphone permission allow karein, phir video call start hoga."
+          : "Microphone permission allow karein, phir call start hoga.",
+      );
+      return;
+    }
+    navigate({ to: "/call/$kind/$userId", params: { kind, userId } });
+  }
+
   function autoConnect(kind: "voice" | "video") {
     if (!sorted.length) {
       toast.error("No creators match your filters right now.");
@@ -140,7 +154,7 @@ function ConnectScreen() {
     // pick from top 5 priority creators
     const pool = sorted.slice(0, Math.min(sorted.length, 5));
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    navigate({ to: "/call/$kind/$userId", params: { kind, userId: pick.id } });
+    void startCall(kind, pick.id);
   }
 
   const hasFilters =
@@ -310,7 +324,7 @@ function ConnectScreen() {
           </div>
           <span className="text-xs text-muted-foreground">{sorted.length} online</span>
         </div>
-        <CreatorMarquee creators={sorted.slice(0, 12)} />
+        <CreatorMarquee creators={sorted.slice(0, 12)} onStartCall={startCall} />
       </div>
 
       {/* All online creators grid */}
@@ -370,22 +384,12 @@ function ConnectScreen() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Link
-                    to="/call/$kind/$userId"
-                    params={{ kind: "voice", userId: u.id }}
-                  >
-                    <Button size="sm" variant="secondary" className="h-7 px-2">
-                      <Phone className="size-3.5" />
-                    </Button>
-                  </Link>
-                  <Link
-                    to="/call/$kind/$userId"
-                    params={{ kind: "video", userId: u.id }}
-                  >
-                    <Button size="sm" className="h-7 px-2 brand-gradient">
-                      <Video className="size-3.5" />
-                    </Button>
-                  </Link>
+                  <Button size="sm" variant="secondary" className="h-7 px-2" onClick={() => void startCall("voice", u.id)}>
+                    <Phone className="size-3.5" />
+                  </Button>
+                  <Button size="sm" className="h-7 px-2 brand-gradient" onClick={() => void startCall("video", u.id)}>
+                    <Video className="size-3.5" />
+                  </Button>
                 </div>
               </Card>
             );
@@ -396,7 +400,13 @@ function ConnectScreen() {
   );
 }
 
-function CreatorMarquee({ creators }: { creators: Creator[] }) {
+function CreatorMarquee({
+  creators,
+  onStartCall,
+}: {
+  creators: Creator[];
+  onStartCall: (kind: "voice" | "video", userId: string) => Promise<void>;
+}) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const items = useMemo(
     () => (creators.length ? [...creators, ...creators] : []),
@@ -444,11 +454,11 @@ function CreatorMarquee({ creators }: { creators: Creator[] }) {
       style={{ scrollBehavior: "auto" }}
     >
       {items.map((u, idx) => (
-        <Link
+        <button
+          type="button"
           key={`${u.id}-${idx}`}
-          to="/call/$kind/$userId"
-          params={{ kind: "video", userId: u.id }}
           className="shrink-0 w-[140px]"
+          onClick={() => void onStartCall("video", u.id)}
         >
           <Card className="glass p-3 text-center hover:border-primary/40 transition">
             <div className="relative mx-auto w-fit">
@@ -468,7 +478,7 @@ function CreatorMarquee({ creators }: { creators: Creator[] }) {
               <Coins className="size-2.5" /> {VIDEO_CALL_COINS_PER_MINUTE}/m
             </div>
           </Card>
-        </Link>
+        </button>
       ))}
     </div>
   );
