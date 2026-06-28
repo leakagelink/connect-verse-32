@@ -54,6 +54,11 @@ export async function applyChromeForApp(): Promise<void> {
     ]);
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: '#0B0B12' });
+    // Force the WebView to render BELOW the system status bar. Some Android
+    // OEMs ignore the capacitor.config 'overlaysWebView' flag, which causes
+    // the app header to clip into the notification bar. Calling this at
+    // runtime guarantees no overlap regardless of OEM defaults.
+    try { await StatusBar.setOverlaysWebView({ overlay: false }); } catch { /* ignore */ }
     await SplashScreen.hide();
   } catch {
     /* ignore */
