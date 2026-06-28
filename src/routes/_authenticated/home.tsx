@@ -131,11 +131,22 @@ function Home() {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     };
     const onOffline = () => setRtConnected(false);
+    // Android WebView often skips the window 'focus' event when returning
+    // from background, so visibilitychange is the reliable trigger to
+    // re-beat presence and refresh the online lists.
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      beat().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["online"] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [beat, queryClient]);
 
